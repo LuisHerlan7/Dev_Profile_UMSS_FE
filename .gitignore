@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+.DS_Store
+*.log
+.env
+.env.*
+coverage
+*.local
+/.vite
+/.turbo
+/.parcel-cache
+/.cache
+
