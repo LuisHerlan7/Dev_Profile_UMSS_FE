@@ -105,33 +105,33 @@ export function HomePage() {
               <FadeInSection>
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-[#6C63FF]" />
-                  EXCLUSIVE FOR UMSS COMMUNITY
+                  EXCLUSIVO PARA LA COMUNIDAD UMSS
                 </div>
 
                 <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                  Create your digital portfolio of{' '}
-                  <span className="text-[#6C63FF]">software projects</span>
+                  Crea tu portafolio digital de{' '}
+                  <span className="text-[#6C63FF]">proyectos de software</span>
                 </h1>
 
                 <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                  The ultimate platform for UMSS developers to automate their portfolio and
-                  stand out in the global market.
+                  La plataforma definitiva para desarrolladores UMSS: automatiza tu portafolio
+                  y destaca en el mercado global.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <Link to="/register">
-                    <Button className="w-full sm:w-auto">Get Started</Button>
+                    <Button className="w-full sm:w-auto">Empezar</Button>
                   </Link>
                   <Link to="/explore">
                     <Button variant="secondary" className="w-full sm:w-auto">
-                      View Directory
+                      Ver directorio
                     </Button>
                   </Link>
                 </div>
 
                 <p className="mt-4 text-sm text-slate-500">
-                  Join more than <span className="font-semibold text-slate-700">500</span>{' '}
-                  active students
+                  Únete a más de <span className="font-semibold text-slate-700">500</span>{' '}
+                  estudiantes activos
                 </p>
               </FadeInSection>
 
@@ -147,11 +147,11 @@ export function HomePage() {
           <FadeInSection>
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Why choose Dev Profile UMSS?
+                ¿Por qué elegir Dev Profile UMSS?
               </h2>
               <p className="mt-4 text-base leading-relaxed text-slate-600">
-                Designed specifically for the technological community of San Simón, providing
-                professional-level tools.
+                Diseñado específicamente para la comunidad tecnológica de San Simón,
+                ofreciendo herramientas de nivel profesional.
               </p>
             </div>
           </FadeInSection>
@@ -159,22 +159,22 @@ export function HomePage() {
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             <FadeInSection>
               <BenefitCard
-                title="Centralization"
-                description="All your projects, certificates and skills in one place."
+                title="Centralización"
+                description="Todos tus proyectos, certificados y habilidades en un solo lugar."
                 icon={<IconStack />}
               />
             </FadeInSection>
             <FadeInSection>
               <BenefitCard
-                title="Visibility"
-                description="Connect with recruiters and companies locally and internationally."
+                title="Visibilidad"
+                description="Conecta con reclutadores y empresas a nivel local e internacional."
                 icon={<IconGlobe />}
               />
             </FadeInSection>
             <FadeInSection>
               <BenefitCard
-                title="GitHub Integration"
-                description="Automatically sync your repositories and keep your profile updated."
+                title="Integración con GitHub"
+                description="Sincroniza tus repositorios automáticamente y mantén tu perfil actualizado."
                 icon={<IconGitHub />}
               />
             </FadeInSection>
@@ -187,7 +187,7 @@ export function HomePage() {
             <FadeInSection>
               <div className="mx-auto max-w-2xl text-center">
                 <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                  Your career in three steps
+                  Tu carrera en tres pasos
                 </h2>
               </div>
             </FadeInSection>
@@ -196,22 +196,22 @@ export function HomePage() {
               <FadeInSection>
                 <StepItem
                   number={1}
-                  title="Institutional Registration"
-                  description="Validate your identity with your UMSS email."
+                  title="Registro institucional"
+                  description="Valida tu identidad con tu correo UMSS."
                 />
               </FadeInSection>
               <FadeInSection>
                 <StepItem
                   number={2}
-                  title="GitHub Sync"
-                  description="Connect your account to automatically import projects."
+                  title="Sincronización con GitHub"
+                  description="Conecta tu cuenta para importar proyectos automáticamente."
                 />
               </FadeInSection>
               <FadeInSection>
                 <StepItem
                   number={3}
-                  title="Share Your Profile"
-                  description="Customize your portfolio and share it with companies."
+                  title="Comparte tu perfil"
+                  description="Personaliza tu portafolio y compártelo con empresas."
                 />
               </FadeInSection>
             </div>
@@ -221,19 +221,19 @@ export function HomePage() {
                 <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                      Ready to build your portfolio?
+                      ¿Listo para construir tu portafolio?
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Start in minutes and keep everything synced automatically.
+                      Empieza en minutos y mantén todo sincronizado automáticamente.
                     </p>
                   </div>
                   <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                     <Link to="/register" className="w-full sm:w-auto">
-                      <Button className="w-full sm:w-auto">Register</Button>
+                      <Button className="w-full sm:w-auto">Registrarse</Button>
                     </Link>
                     <Link to="/login" className="w-full sm:w-auto">
                       <Button variant="secondary" className="w-full sm:w-auto">
-                        Login
+                        Iniciar sesión
                       </Button>
                     </Link>
                   </div>
@@ -247,8 +247,8 @@ export function HomePage() {
           <div className="container-page py-10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">Dev Profile UMSS</span> · Built
-                for the UMSS community
+                <span className="font-semibold text-slate-900">Dev Profile UMSS</span> · Hecho
+                para la comunidad UMSS
               </div>
               <div className="text-sm text-slate-500">
                 © {new Date().getFullYear()} Dev Profile UMSS

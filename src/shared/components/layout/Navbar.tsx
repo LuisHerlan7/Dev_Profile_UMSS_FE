@@ -69,9 +69,9 @@ export function Navbar() {
 
   const navItems = useMemo<NavItem[]>(
     () => [
-      { label: 'Benefits', href: '#benefits', kind: 'hash' },
-      { label: 'How it works', href: '#how-it-works', kind: 'hash' },
-      { label: 'Explore', href: '/explore', kind: 'route' },
+      { label: 'Beneficios', href: '#benefits', kind: 'hash' },
+      { label: 'Cómo funciona', href: '#how-it-works', kind: 'hash' },
+      { label: 'Explorar', href: '/explore', kind: 'route' },
     ],
     []
   );
@@ -124,10 +124,10 @@ export function Navbar() {
 
           <div className="hidden items-center gap-2 md:flex">
             <Link to="/login" className="rounded-lg px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100">
-              Login
+              Iniciar sesión
             </Link>
             <Link to="/register">
-              <Button size="sm">Register</Button>
+              <Button size="sm">Registrarse</Button>
             </Link>
           </div>
 
@@ -168,11 +168,11 @@ export function Navbar() {
               <div className="mt-2 grid gap-2 px-1">
                 <Link to="/login" onClick={() => setOpen(false)}>
                   <Button variant="secondary" className="w-full">
-                    Login
+                    Iniciar sesión
                   </Button>
                 </Link>
                 <Link to="/register" onClick={() => setOpen(false)}>
-                  <Button className="w-full">Register</Button>
+                  <Button className="w-full">Registrarse</Button>
                 </Link>
               </div>
             </div>
