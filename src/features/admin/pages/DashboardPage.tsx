@@ -1,6 +1,7 @@
 // src/features/admin/pages/DashboardPage.tsx
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tab, User, SecurityEvent } from '../../../shared/types/admin';
 import { EmptyState } from '../../../shared/components/EmptyState';
 import { RoleBadge } from '../../../shared/components/RoleBadge';
@@ -11,6 +12,7 @@ import { USERS, SECURITY_EVENTS, BAR_DATA } from '../services/mockData';
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>("Todos los Reservas");
   const [activeNav, setActiveNav] = useState("Estado del Sistema");
+  const navigate = useNavigate();
 
   const dark = {
     bg: "#0d1117", card: "#161b22", border: "#21262d",
@@ -32,7 +34,12 @@ export default function DashboardPage() {
 
         <nav style={{ flex: 1, padding: "12px 8px" }}>
           {NAV_ITEMS.map((item) => (
-            <button key={item.label} onClick={() => setActiveNav(item.label)}
+            <button key={item.label} onClick={() => {
+              setActiveNav(item.label);
+              if (item.label === "Gestión de Usuarios") {
+                navigate("/admin/users");
+              }
+            }}
               style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 10px", borderRadius: 6, border: "none", cursor: "pointer", background: activeNav === item.label ? "#1f2937" : "transparent", color: activeNav === item.label ? dark.text : dark.muted, fontSize: 13, fontWeight: activeNav === item.label ? 600 : 400, textAlign: "left", marginBottom: 2 }}>
               <span style={{ fontSize: 15 }}>{item.icon}</span>
               {item.label}
