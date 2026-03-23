@@ -1,5 +1,9 @@
 ﻿import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Navbar } from '@shared/components/layout/Navbar';
+import { FadeInSection } from './home/components/FadeInSection';
+
+
 
 type Portfolio = {
   id: number;
@@ -70,7 +74,8 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-select { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 10px; background: #fff; color: #1f2a45; }
         .vp-clear { display: grid;height: 35px; width: 190px;margin-top: 25px;margin-left: 40px; background: #f8fafc; color: #1f2a45; border: 1px solid #cbd5e1;}
         .vp-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 16px; }
-        .vp-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); }
+        .vp-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); transition: transform .2s ease, box-shadow .2s ease; }
+        .vp-card:hover { transform: scale(1.03); box-shadow: 0 8px 20px rgba(15,23,42,0.18); }
         .vp-card-top { display: flex; align-items: center; gap: 12px; }
         .vp-avatar { width: 46px; height: 46px; border-radius: 50%; background: #e0e7ff; display: grid; place-items: center; color: #3730a3; font-weight: 700; }
         .vp-name { margin: 0; font-size: 1.05rem; font-weight: 700; }
@@ -90,94 +95,102 @@ export function VisitanteOfertaPortafolioPage() {
         @media (min-width: 1024px) { .vp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       `}</style>
 
-      <section className="vp-header">
-        <h1 className="vp-title">Explorador de Portafolios</h1>
-        <p className="vp-subtitle">Descubre y conecta con los mejores talentos de la comunidad UMSS.</p>
+      <div className="-mt-[10px]">
+        <Navbar />
+      </div>
 
-        <div className="vp-search-wrap">
-          <input
-            aria-label="Buscar portafolios"
-            className="vp-input"
-            placeholder="Buscar por nombre, lenguaje, especialidad..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+      <FadeInSection>
+        <section className="vp-header">
+          <h1 className="vp-title">Explorador de Portafolios</h1>
+          <p className="vp-subtitle">Descubre y conecta con los mejores talentos de la comunidad UMSS.</p>
 
-          <div className="vp-filters">
-            <div className="vp-filter-group">
-              <label>Tecnología</label>
-              <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)} className="vp-select">
-                <option value="all">Todas</option>
-                {technologyOptions.map((tech) => (
-                  <option value={tech} key={tech}>{tech}</option>
-                ))}
-              </select>
-            </div>
+          <div className="vp-search-wrap">
+            <input
+              aria-label="Buscar portafolios"
+              className="vp-input"
+              placeholder="Buscar por nombre, lenguaje, especialidad..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
 
-            <div className="vp-filter-group">
-              <label>Nivel de Experiencia</label>
-              <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as any)} className="vp-select">
-                <option value="all">Todos</option>
-                <option value="Senior">Senior</option>
-                <option value="Semi-Senior">Semi-Senior</option>
-                <option value="Junior">Junior</option>
-              </select>
-            </div>
-
-            <div className="vp-filter-group">
-              <label>Tipo de Perfil</label>
-              <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as any)} className="vp-select">
-                <option value="all">Todos</option>
-                <option value="Full Stack">Full Stack</option>
-                <option value="Frontend">Frontend</option>
-                <option value="Backend">Backend</option>
-                <option value="Data">Data</option>
-              </select>
-            </div>
-
-            <button type="button" className="vp-btn vp-clear" onClick={() => {
-              setQuery('');
-              setTechnologyFilter('all');
-              setLevelFilter('all');
-              setProfileFilter('all');
-            }}>
-              Limpiar Filtros
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="vp-grid">
-        {filtered.map((portfolio) => (
-          <article key={portfolio.id} className="vp-card">
-            <div className="vp-card-top">
-              <span className="vp-avatar">{portfolio.name.split(' ').map((p) => p[0]).join('').slice(0, 2)}</span>
-              <div>
-                <p className="vp-name">{portfolio.name}</p>
-                <p className="vp-role">{portfolio.title}</p>
+            <div className="vp-filters">
+              <div className="vp-filter-group">
+                <label>Tecnología</label>
+                <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)} className="vp-select">
+                  <option value="all">Todas</option>
+                  {technologyOptions.map((tech) => (
+                    <option value={tech} key={tech}>{tech}</option>
+                  ))}
+                </select>
               </div>
+
+              <div className="vp-filter-group">
+                <label>Nivel de Experiencia</label>
+                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as any)} className="vp-select">
+                  <option value="all">Todos</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Semi-Senior">Semi-Senior</option>
+                  <option value="Junior">Junior</option>
+                </select>
+              </div>
+
+              <div className="vp-filter-group">
+                <label>Tipo de Perfil</label>
+                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as any)} className="vp-select">
+                  <option value="all">Todos</option>
+                  <option value="Full Stack">Full Stack</option>
+                  <option value="Frontend">Frontend</option>
+                  <option value="Backend">Backend</option>
+                  <option value="Data">Data</option>
+                </select>
+              </div>
+
+              <button type="button" className="vp-btn vp-clear" onClick={() => {
+                setQuery('');
+                setTechnologyFilter('all');
+                setLevelFilter('all');
+                setProfileFilter('all');
+              }}>
+                Limpiar Filtros
+              </button>
             </div>
+          </div>
+        </section>
+      </FadeInSection>
 
-            <span className="vp-level">{portfolio.level}</span>
+      <FadeInSection>
+        <section className="vp-grid">
+          {filtered.map((portfolio) => (
+            <article key={portfolio.id} className="vp-card">
+              <div className="vp-card-top">
+                <span className="vp-avatar">{portfolio.name.split(' ').map((p) => p[0]).join('').slice(0, 2)}</span>
+                <div>
+                  <p className="vp-name">{portfolio.name}</p>
+                  <p className="vp-role">{portfolio.title}</p>
+                </div>
+              </div>
 
-            <div className="vp-tags">
-              {portfolio.tags.map((tag) => (
-                <span key={tag} className="vp-tag">{tag}</span>
-              ))}
-            </div>
+              <span className="vp-level">{portfolio.level}</span>
 
-            <button
-              type="button"
-              className="vp-link"
-              onClick={() => navigate(`/portafolio/${portfolio.id}`)}
-            >
-              Ver Portafolio →
-            </button>
-          </article>
-        ))}
+              <div className="vp-tags">
+                {portfolio.tags.map((tag) => (
+                  <span key={tag} className="vp-tag">{tag}</span>
+                ))}
+              </div>
 
-        {filtered.length === 0 && <p>No se encontraron resultados.</p>}
-      </section>
+              <button
+                type="button"
+                className="vp-link"
+                onClick={() => navigate(`/portafolio/${portfolio.id}`)}
+              >
+                Ver Portafolio →
+              </button>
+            </article>
+          ))}
+
+          {filtered.length === 0 && <p>No se encontraron resultados.</p>}
+        </section>
+      </FadeInSection>
 
       <nav className="vp-pagination" aria-label="Paginación">
         <button className="vp-page" type="button">1</button>

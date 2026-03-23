@@ -71,7 +71,7 @@ export function Navbar() {
     () => [
       { label: 'Beneficios', href: '#benefits', kind: 'hash' },
       { label: 'Cómo funciona', href: '#how-it-works', kind: 'hash' },
-      { label: 'Explorar', href: '/explore', kind: 'route' },
+      { label: 'Explorar', href: '/visitante', kind: 'route' },
     ],
     []
   );

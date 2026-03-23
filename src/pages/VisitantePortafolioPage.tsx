@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { FadeInSection } from './home/components/FadeInSection';
 
 interface Project {
   title: string;
@@ -87,12 +88,14 @@ export function VisitantePortafolioPage() {
         .vp-section p {text-align: center; max-width: 760px; margin: 12px auto 30px; color: #4b5f84;}
 
         .vp-skills {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;}
-        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; text-align: center; min-height: 96px;}
+        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; text-align: center; min-height: 96px; transition: transform 0.3s ease;}
+        .vp-skill-card:hover {transform: scale(1.03);}
         .vp-skill-card h3 {margin: 0; font-size: 14px; color: #5565a8; font-weight: 700;}
         .vp-skill-card p {margin: 8px 0 0; font-size: 16px; font-weight: 700; color: #233675;}
 
         .vp-projects {display: grid; grid-template-columns: 1fr; gap: 18px;}
-        .vp-project {background: #fff; border: 1px solid #e5edff; border-radius: 16px; padding: 18px;}
+        .vp-project {background: #fff; border: 1px solid #e5edff; border-radius: 16px; padding: 18px; transition: transform 0.3s ease;}
+        .vp-project:hover {transform: scale(1.03);}
         .vp-project-subtitle {color: #7181ab; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;}
         .vp-project-title {font-size: 20px; font-weight: 800; margin: 0 0 10px;}
         .vp-project-desc {color: #4d5e83; margin: 0 0 12px; line-height: 1.45;}
@@ -100,7 +103,8 @@ export function VisitantePortafolioPage() {
         .vp-badge {background: #eef2ff; color: #4155b0; border-radius: 999px; font-size: 12px; padding: 6px 10px; border: 1px solid #d3defe;}
 
         .vp-timeline {display: grid; gap: 16px;}
-        .vp-timeline-item {background: #fff; border: 1px solid #e9efff; border-radius: 14px; padding: 18px;}
+        .vp-timeline-item {background: #fff; border: 1px solid #e9efff; border-radius: 14px; padding: 18px; transition: transform 0.3s ease;}
+        .vp-timeline-item:hover {transform: scale(1.03);}
         .vp-timeline-item h4 {margin: 0; font-size: 18px; color: #21376d;}
         .vp-timeline-item .period {color: #63779a; font-size: 13px; font-weight: 700; text-transform: uppercase; margin-bottom: 5px;}
         .vp-timeline-item p {margin: 6px 0 0; color: #506286; line-height: 1.5;}
@@ -141,81 +145,91 @@ export function VisitantePortafolioPage() {
         <a className="vp-nav__cta" href="#contact">Descargar CV</a>
       </header>
 
-      <section className="vp-hero">
-        <div className="vp-hero__info">
-          <span className="vp-tagline">Disponible para proyectos</span>
-          <h1 className="vp-hero__title">Hola, soy <span>{profile.name}</span></h1>
-          <p className="vp-subtitle">{profile.title}</p>
-          <p className="vp-subtitle">{profile.summary}</p>
-          <div className="vp-btn-group">
-            <a className="vp-btn--primary" href="#">GitHub</a>
-            <a className="vp-btn--secondary" href="#">LinkedIn</a>
+      <FadeInSection>
+        <section className="vp-hero">
+          <div className="vp-hero__info">
+            <span className="vp-tagline">Disponible para proyectos</span>
+            <h1 className="vp-hero__title">Hola, soy <span>{profile.name}</span></h1>
+            <p className="vp-subtitle">{profile.title}</p>
+            <p className="vp-subtitle">{profile.summary}</p>
+            <div className="vp-btn-group">
+              <a className="vp-btn--primary" href="#">GitHub</a>
+              <a className="vp-btn--secondary" href="#">LinkedIn</a>
+            </div>
+            <div className="vp-btn-group" style={{ marginTop: '10px' }}>
+              <button onClick={() => navigate('/visitante')} className="vp-btn--secondary" style={{ cursor: 'pointer' }}>
+                Volver al listado
+              </button>
+            </div>
           </div>
-          <div className="vp-btn-group" style={{ marginTop: '10px' }}>
-            <button onClick={() => navigate('/visitante')} className="vp-btn--secondary" style={{ cursor: 'pointer' }}>
-              Volver al listado
-            </button>
+
+          <div className="vp-hero__hero-box">
+            <div className="vp-image">AR</div>
           </div>
-        </div>
+        </section>
+      </FadeInSection>
 
-        <div className="vp-hero__hero-box">
-          <div className="vp-image">AR</div>
-        </div>
-      </section>
+      <FadeInSection>
+        <section id="skills" className="vp-section">
+          <h2>Habilidades Técnicas</h2>
+          <p>Herramientas y tecnologías que domino para dar vida a grandes ideas.</p>
+          <div className="vp-skills">
+            <div className="vp-skill-card"><h3>HTML</h3><p>React</p></div>
+            <div className="vp-skill-card"><h3>React</h3><p>Node.js</p></div>
+            <div className="vp-skill-card"><h3>Node.js</h3><p>PostgreSQL</p></div>
+            <div className="vp-skill-card"><h3>PostgreSQL</h3><p>AWS</p></div>
+            <div className="vp-skill-card"><h3>AWS</h3><p>Docker</p></div>
+            <div className="vp-skill-card"><h3>Docker</h3><p>TypeScript</p></div>
+          </div>
+        </section>
+      </FadeInSection>
 
-      <section id="skills" className="vp-section">
-        <h2>Habilidades Técnicas</h2>
-        <p>Herramientas y tecnologías que domino para dar vida a grandes ideas.</p>
-        <div className="vp-skills">
-          <div className="vp-skill-card"><h3>HTML</h3><p>React</p></div>
-          <div className="vp-skill-card"><h3>React</h3><p>Node.js</p></div>
-          <div className="vp-skill-card"><h3>Node.js</h3><p>PostgreSQL</p></div>
-          <div className="vp-skill-card"><h3>PostgreSQL</h3><p>AWS</p></div>
-          <div className="vp-skill-card"><h3>AWS</h3><p>Docker</p></div>
-          <div className="vp-skill-card"><h3>Docker</h3><p>TypeScript</p></div>
-        </div>
-      </section>
+      <FadeInSection>
+        <section id="projects" className="vp-section">
+          <h2>Proyectos Destacados</h2>
+          <p>Una selección de mis trabajos más recientes y desafiantes.</p>
+          <div className="vp-projects">
+            {projects.map((project) => (
+              <article key={project.title} className="vp-project">
+                <p className="vp-project-subtitle">{project.subtitle}</p>
+                <h3 className="vp-project-title">{project.title}</h3>
+                <p className="vp-project-desc">{project.description}</p>
+                <div className="vp-project-tags">
+                  {project.tags.map((tag) => <span key={tag} className="vp-badge">{tag}</span>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </FadeInSection>
 
-      <section id="projects" className="vp-section">
-        <h2>Proyectos Destacados</h2>
-        <p>Una selección de mis trabajos más recientes y desafiantes.</p>
-        <div className="vp-projects">
-          {projects.map((project) => (
-            <article key={project.title} className="vp-project">
-              <p className="vp-project-subtitle">{project.subtitle}</p>
-              <h3 className="vp-project-title">{project.title}</h3>
-              <p className="vp-project-desc">{project.description}</p>
-              <div className="vp-project-tags">
-                {project.tags.map((tag) => <span key={tag} className="vp-badge">{tag}</span>)}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <FadeInSection>
+        <section id="trajectory" className="vp-section">
+          <h2>Trayectoria</h2>
+          <p>Mi camino profesional y académico hasta hoy.</p>
+          <div className="vp-timeline">
+            {timeline.map((item) => (
+              <article key={item.period} className="vp-timeline-item">
+                <p className="period">{item.period}</p>
+                <h4>{item.title}</h4>
+                <strong>{item.company}</strong>
+                <p>{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </FadeInSection>
 
-      <section id="trajectory" className="vp-section">
-        <h2>Trayectoria</h2>
-        <p>Mi camino profesional y académico hasta hoy.</p>
-        <div className="vp-timeline">
-          {timeline.map((item) => (
-            <article key={item.period} className="vp-timeline-item">
-              <p className="period">{item.period}</p>
-              <h4>{item.title}</h4>
-              <strong>{item.company}</strong>
-              <p>{item.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="contact" className="vp-cta-section">
-        <h3>¿Tienes un proyecto en mente?</h3>
-        <p>Hagamos realidad tu idea con la tecnología adecuada. Estoy disponible para nuevas oportunidades y colaboraciones.</p>
-        <div className="vp-cta-buttons">
-          <button className="vp-cta-btn vp-cta-btn--white">Contactar por Email</button>
-          <button className="vp-cta-btn vp-cta-btn--outline">Agendar Llamada</button>
-        </div>
-      </section>
+      <FadeInSection>
+        <section id="contact" className="vp-cta-section">
+          <h3>¿Tienes un proyecto en mente?</h3>
+          <p>Hagamos realidad tu idea con la tecnología adecuada. Estoy disponible para nuevas oportunidades y colaboraciones.</p>
+          <div className="vp-cta-buttons">
+            <button className="vp-cta-btn vp-cta-btn--white">Contactar por Email</button>
+            <button className="vp-cta-btn vp-cta-btn--outline">Agendar Llamada</button>
+          </div>
+        </section>
+      </FadeInSection>
 
       <footer className="vp-footer">© 2026 Dev Profile UMSS. Todos los derechos reservados.</footer>
     </main>
