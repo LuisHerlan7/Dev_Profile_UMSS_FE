@@ -4,7 +4,7 @@ import { VisitanteOfertaPortafolioPage } from '../pages/VisitanteOfertaPortafoli
 import { VisitantePortafolioPage } from '../pages/VisitantePortafolioPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { DashboardPage } from '../features/dashboard/pages/DashboardPage';
+import { DeveloperDashboardPage } from '../features/dashboard/pages/DeveloperDashboardPage';
 
 function AdminPage() {
   return <h1>Admin</h1>;
@@ -23,9 +23,10 @@ export function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Temporary direct access while authentication is still pending. */}
+        <Route path="/dev-dashboard" element={<DeveloperDashboardPage />} />
+        {/* Compatibility route while teammates connect login and role-based redirects. */}
+        <Route path="/dashboard" element={<DeveloperDashboardPage />} />
         <Route path="/visitante" element={<VisitanteOfertaPortafolioPage />} />
         <Route path="/portafolio/:id" element={<VisitantePortafolioPage />} />
         <Route path="/admin" element={<AdminPage />} />
