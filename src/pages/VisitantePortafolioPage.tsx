@@ -135,7 +135,9 @@ export function VisitantePortafolioPage() {
       `}</style>
 
       <header className="vp-nav">
-        <div className="vp-nav__brand">Dev Profile UMSS</div>
+        <a href='/'>
+          <div className="vp-nav__brand">Dev Profile UMSS</div>
+        </a>
         <ul className="vp-nav__list">
           <li className="vp-nav__item"><a href="#skills">Habilidades</a></li>
           <li className="vp-nav__item"><a href="#projects">Proyectos</a></li>
@@ -148,6 +150,11 @@ export function VisitantePortafolioPage() {
       <FadeInSection>
         <section className="vp-hero">
           <div className="vp-hero__info">
+            <div className="vp-btn-group" style={{ marginBottom: '20px',marginTop: '-30px' }}>
+              <button onClick={() => navigate('/visitante')} className="vp-btn--secondary" style={{ cursor: 'pointer' }}>
+                Volver al listado
+              </button>
+            </div>
             <span className="vp-tagline">Disponible para proyectos</span>
             <h1 className="vp-hero__title">Hola, soy <span>{profile.name}</span></h1>
             <p className="vp-subtitle">{profile.title}</p>
@@ -156,11 +163,7 @@ export function VisitantePortafolioPage() {
               <a className="vp-btn--primary" href="#">GitHub</a>
               <a className="vp-btn--secondary" href="#">LinkedIn</a>
             </div>
-            <div className="vp-btn-group" style={{ marginTop: '10px' }}>
-              <button onClick={() => navigate('/visitante')} className="vp-btn--secondary" style={{ cursor: 'pointer' }}>
-                Volver al listado
-              </button>
-            </div>
+
           </div>
 
           <div className="vp-hero__hero-box">
