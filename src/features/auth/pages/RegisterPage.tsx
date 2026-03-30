@@ -63,9 +63,6 @@ export function RegisterPage() {
 
         <div className="pt-2">
           <Link to="/">
-            <Button variant="ghost" className="px-0">
-              Volver al inicio
-            </Button>
           </Link>
         </div>
       </form>

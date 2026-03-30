@@ -89,9 +89,6 @@ export function LoginPage() {
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         <div className="mt-1 flex items-center justify-between text-sm">
-          <Link to="/" className="text-slate-500 hover:text-slate-700">
-            Volver al inicio
-          </Link>
           <Link to="/register" className="font-semibold text-[#6C63FF] hover:text-[#5A52FF]">
             Crear cuenta
           </Link>
