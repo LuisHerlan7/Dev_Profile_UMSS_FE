@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@shared/utils/cn';
 import { Button } from '@shared/components/ui/Button';
 
@@ -65,20 +65,27 @@ type NavItem = { label: string; href: string; kind: 'hash' | 'route' };
 
 export function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const navItems = useMemo<NavItem[]>(
     () => [
       { label: 'Beneficios', href: '#benefits', kind: 'hash' },
       { label: 'Cómo funciona', href: '#how-it-works', kind: 'hash' },
-      { label: 'Explorar', href: '/explore', kind: 'route' },
+      { label: 'Explorar', href: '/visitante', kind: 'route' },
     ],
     []
   );
 
   function onHashClick(href: string) {
     setOpen(false);
-    if (location.pathname !== '/') return;
+
+    // Si no estamos en Home, vamos a Home con hash. Al llegar se hará el scroll.
+    if (location.pathname !== '/') {
+      navigate({ pathname: '/', hash: href });
+      return;
+    }
+
     const id = href.replace('#', '');
     const el = document.getElementById(id);
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -122,7 +122,7 @@ export function HomePage() {
                   <Link to="/register">
                     <Button className="w-full sm:w-auto">Empezar</Button>
                   </Link>
-                  <Link to="/explore">
+                  <Link to="/visitante">
                     <Button variant="secondary" className="w-full sm:w-auto">
                       Ver directorio
                     </Button>
