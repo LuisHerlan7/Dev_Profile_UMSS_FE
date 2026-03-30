@@ -1,6 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FadeInSection } from './home/components/FadeInSection';
+import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 
 interface Project {
   title: string;

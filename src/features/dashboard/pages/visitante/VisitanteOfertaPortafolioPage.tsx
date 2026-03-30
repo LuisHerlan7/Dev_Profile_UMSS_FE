@@ -1,7 +1,7 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
-import { FadeInSection } from './home/components/FadeInSection';
+import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 
 
 
@@ -17,12 +17,12 @@ type Portfolio = {
 const portfolios: Portfolio[] = [
   { id: 1, name: 'Alejandro Vargas', title: 'Arquitecto Full Stack', level: 'Senior', type: 'Full Stack', tags: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'] },
   { id: 2, name: 'Mariana Rios', title: 'Diseñadora UI/UX y Dev Frontend', level: 'Semi-Senior', type: 'Frontend', tags: ['Figma', 'Vue.js', 'Tailwind', 'Next.js'] },
-  { id: 3, name: 'Carlos Mendez', title: 'Especialista Backend', level: 'Junior', tags: ['Python', 'Django', 'PostgreSQL', 'Docker'] },
-  { id: 4, name: 'Sofía Blanco', title: 'Ingeniera de Datos', level: 'Senior', tags: ['PySpark', 'AWS', 'SQL', 'Airflow'] },
-  { id: 5, name: 'Mateo Flores', title: 'Desarrollador Móvil', level: 'Semi-Senior', tags: ['Flutter', 'Dart', 'Firebase', 'API'] },
-  { id: 6, name: 'Valentina Gomez', title: 'Ingeniera DevOps', level: 'Senior', tags: ['Kubernetes', 'Docker', 'Terraform', 'CI/CD'] },
-  { id: 7, name: 'Julián Salazar', title: 'Especialista en Ciberseguridad', level: 'Senior', tags: ['Rust', 'Linux', 'Go', 'Pentesting'] },
-  { id: 8, name: 'Lucía Fernández', title: 'Investigadora de IA / ML', level: 'Semi-Senior', tags: ['PyTorch', 'Scikit-learn', 'OpenCV', 'Data Science'] },
+  { id: 3, name: 'Carlos Mendez', title: 'Especialista Backend', level: 'Junior', type: 'Backend', tags: ['Python', 'Django', 'PostgreSQL', 'Docker'] },
+  { id: 4, name: 'Sofía Blanco', title: 'Ingeniera de Datos', level: 'Senior', type: 'Data', tags: ['PySpark', 'AWS', 'SQL', 'Airflow'] },
+  { id: 5, name: 'Mateo Flores', title: 'Desarrollador Móvil', level: 'Semi-Senior', type: 'Frontend', tags: ['Flutter', 'Dart', 'Firebase', 'API'] },
+  { id: 6, name: 'Valentina Gomez', title: 'Ingeniera DevOps', level: 'Senior', type: 'Backend', tags: ['Kubernetes', 'Docker', 'Terraform', 'CI/CD'] },
+  { id: 7, name: 'Julián Salazar', title: 'Especialista en Ciberseguridad', level: 'Senior', type: 'Backend', tags: ['Rust', 'Linux', 'Go', 'Pentesting'] },
+  { id: 8, name: 'Lucía Fernández', title: 'Investigadora de IA / ML', level: 'Semi-Senior', type: 'Data', tags: ['PyTorch', 'Scikit-learn', 'OpenCV', 'Data Science'] },
 ];
 
 export function VisitanteOfertaPortafolioPage() {

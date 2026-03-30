@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
-import { VisitanteOfertaPortafolioPage } from '../pages/VisitanteOfertaPortafolioPage';
-import { VisitantePortafolioPage } from '../pages/VisitantePortafolioPage';
+import { VisitanteOfertaPortafolioPage } from '../features/dashboard/pages/visitante/VisitanteOfertaPortafolioPage';
+import { VisitantePortafolioPage } from '../features/dashboard/pages/visitante/VisitantePortafolioPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
-import { DeveloperDashboardPage } from '../features/dashboard/pages/DeveloperDashboardPage';
+import { DeveloperDashboardPage } from '../features/dashboard/pages/desarrollador/DeveloperDashboardPage';
 
 function AdminPage() {
   return <h1>Admin</h1>;
