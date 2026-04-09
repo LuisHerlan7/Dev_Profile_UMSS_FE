@@ -6,6 +6,12 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   server: {
     port: 4200,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:9200',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

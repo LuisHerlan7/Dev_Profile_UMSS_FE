@@ -6,31 +6,63 @@ import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
 
-const HARD_CODED_USERS = [
-  { role: 'admin', email: 'admin@umss.com', password: 'admin123', redirectTo: '/admin' },
-  { role: 'desarrollador', email: 'dev@umss.com', password: 'dev123', redirectTo: '/desarrollador' },
-  { role: 'visitante', email: 'visitante@umss.com', password: 'visitante123', redirectTo: '/visitante' },
-];
-
 export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const user = HARD_CODED_USERS.find(
-      (item) => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password
-    );
+  const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
+  const loginEndpoint = `${apiBase || ''}/api/auth/login`;
+  const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
+  const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
 
-    if (!user) {
-      setError('Correo o contraseña incorrectos');
-      return;
-    }
+  const getRedirectByRole = (role?: string) => {
+    if (role === 'desarrollador') return '/desarrollador';
+    if (role === 'admin') return '/admin';
+    return '/visitante';
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     setError('');
-    navigate(user.redirectTo);
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(loginEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const firstValidationError = data?.errors
+          ? Object.values(data.errors)[0]
+          : null;
+        const validationMessage = Array.isArray(firstValidationError) ? firstValidationError[0] : null;
+        throw new Error(validationMessage || data?.message || 'Correo o contrasena incorrectos');
+      }
+
+      if (data?.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+
+      navigate(getRedirectByRole(data?.user?.role));
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesion.';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -41,12 +73,17 @@ export function LoginPage() {
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <SocialButton icon={<Github className="h-4 w-4" />} aria-label="Continuar con GitHub">
+        <SocialButton
+          icon={<Github className="h-4 w-4" />}
+          aria-label="Continuar con GitHub"
+          onClick={() => window.location.assign(githubOauthUrl)}
+        >
           GitHub
         </SocialButton>
         <SocialButton
           icon={<Linkedin className="h-4 w-4" />}
           aria-label="Continuar con LinkedIn"
+          onClick={() => window.location.assign(linkedinOauthUrl)}
         >
           LinkedIn
         </SocialButton>
@@ -67,6 +104,7 @@ export function LoginPage() {
           inputMode="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          required
         />
 
         <TextField
@@ -76,13 +114,15 @@ export function LoginPage() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          required
         />
 
         <Button
           type="submit"
+          disabled={isSubmitting}
           className="mt-1 h-12 w-full bg-gradient-to-r from-[#6C63FF] via-[#4F46E5] to-[#0EA5E9] hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#0284C7]"
         >
-          <span>Iniciar sesión →</span>
+          <span>{isSubmitting ? 'Ingresando...' : 'Iniciar sesion ->'}</span>
           <span className="sr-only">en UMSS Dev Network</span>
         </Button>
 
@@ -104,18 +144,9 @@ export function LoginPage() {
           <div className="mt-2 flex items-start gap-2">
             <LockKeyhole className="mt-0.5 h-4 w-4 text-slate-600" />
             <p className="leading-relaxed">
-              Sin lógica de autenticación aún: este diseño está listo para conectar después.
+              Tus credenciales se validan contra la base de datos del backend.
             </p>
           </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-          <strong>Prueba estas credenciales:</strong>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>admin@umss.com / admin123 - Admin</li>
-            <li>dev@umss.com / dev123 - Desarrollador</li>
-            <li>visitante@umss.com / visitante123 - Visitante</li>
-          </ul>
         </div>
       </form>
     </AuthSplitLayout>
