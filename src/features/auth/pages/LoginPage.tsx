@@ -1,10 +1,16 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Github, Linkedin, LockKeyhole, Mail } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
+import {
+  getRedirectPathForRole,
+  loginUser,
+  persistAuthSession,
+  readStoredAuthSession,
+} from '@services/auth';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -14,15 +20,18 @@ export function LoginPage() {
   const [error, setError] = useState('');
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
-  const loginEndpoint = `${apiBase || ''}/api/auth/login`;
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
   const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
 
-  const getRedirectByRole = (role?: string) => {
-    if (role === 'desarrollador') return '/desarrollador';
-    if (role === 'admin') return '/admin';
-    return '/visitante';
-  };
+  useEffect(() => {
+    const storedSession = readStoredAuthSession();
+
+    if (!storedSession?.user) {
+      return;
+    }
+
+    navigate(getRedirectPathForRole(storedSession.user.role, storedSession.dashboard), { replace: true });
+  }, [navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -30,33 +39,12 @@ export function LoginPage() {
     setError('');
     try {
       setIsSubmitting(true);
-      const response = await fetch(loginEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
+      const data = await loginUser({
+        email: email.trim(),
+        password,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const firstValidationError = data?.errors
-          ? Object.values(data.errors)[0]
-          : null;
-        const validationMessage = Array.isArray(firstValidationError) ? firstValidationError[0] : null;
-        throw new Error(validationMessage || data?.message || 'Correo o contrasena incorrectos');
-      }
-
-      if (data?.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
-
-      navigate(getRedirectByRole(data?.user?.role));
+      persistAuthSession(data);
+      navigate(getRedirectPathForRole(data.user.role, data.dashboard), { replace: true });
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesion.';
       setError(message);
