@@ -1,24 +1,20 @@
 import { Plus } from 'lucide-react';
 import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
-import { ExperienceTimelineCard } from './ExperienceTimelineCard';
 import { SectionHeading } from './SectionHeading';
 
-const technicalSkills = [
-  { name: 'React.js', level: 'Avanzado', progress: 84 },
-  { name: 'TypeScript', level: 'Intermedio', progress: 68 },
-  { name: 'Node.js', level: 'Intermedio', progress: 58 },
-  { name: 'PostgreSQL', level: 'Principiante', progress: 42 },
-] as const;
+type TechnicalSkill = {
+  name: string;
+  level: string;
+  progress: number;
+};
 
-const softSkills = [
-  'Trabajo en equipo',
-  'Comunicacion asertiva',
-  'Resolucion de problemas',
-  'Liderazgo',
-];
+type SkillsSectionProps = {
+  technicalSkills: TechnicalSkill[];
+  softSkills: string[];
+};
 
-export function SkillsSection() {
+export function SkillsSection({ technicalSkills, softSkills }: SkillsSectionProps) {
   return (
     <div className="space-y-6">
       <SectionHeading
@@ -34,6 +30,7 @@ export function SkillsSection() {
           action={
             <button
               type="button"
+              // pending: conectar formulario real de habilidades técnicas.
               className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--umss-lavender)] text-[var(--umss-brand)] transition hover:bg-[rgba(80,72,229,0.18)]"
               aria-label="Agregar habilidad"
             >
@@ -41,28 +38,34 @@ export function SkillsSection() {
             </button>
           }
         >
-          <div className="grid gap-4 md:grid-cols-2">
-            {technicalSkills.map((skill) => (
-              <div
-                key={skill.name}
-                className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-900">{skill.name}</p>
-                  <span className="text-sm font-semibold text-[var(--umss-brand)]">
-                    {skill.level}
-                  </span>
-                </div>
+          {technicalSkills.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.45)] p-4 text-sm text-slate-600">
+              Aún no registraste habilidades técnicas. Agrega tus tecnologías principales para mejorar tu perfil.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {technicalSkills.map((skill) => (
+                <div
+                  key={skill.name}
+                  className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">{skill.name}</p>
+                    <span className="text-sm font-semibold text-[var(--umss-brand)]">
+                      {skill.level}
+                    </span>
+                  </div>
 
-                <div className="mt-4 h-3 rounded-full bg-white p-1 shadow-inner">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]"
-                    style={{ width: `${skill.progress}%` }}
-                  />
+                  <div className="mt-4 h-3 rounded-full bg-white p-1 shadow-inner">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]"
+                      style={{ width: `${skill.progress}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </DashboardCard>
 
         <DashboardCard
@@ -86,16 +89,21 @@ export function SkillsSection() {
             </div>
           }
         >
-          <div className="flex flex-wrap gap-2">
-            {softSkills.map((skill) => (
-              <DashboardBadge key={skill} tone="brand">
-                {skill}
-              </DashboardBadge>
-            ))}
-          </div>
+          {softSkills.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.45)] p-4 text-sm text-slate-600">
+              No tienes habilidades blandas registradas. Agrega al menos una para completar tu perfil.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {softSkills.map((skill) => (
+                <DashboardBadge key={skill} tone="brand">
+                  {skill}
+                </DashboardBadge>
+              ))}
+            </div>
+          )}
         </DashboardCard>
 
-        <ExperienceTimelineCard />
       </div>
     </div>
   );

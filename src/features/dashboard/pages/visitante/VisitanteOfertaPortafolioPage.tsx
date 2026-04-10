@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
+import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
+import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
+import { useAuthSession } from '@shared/hooks/useAuthSession';
+import { resolveRoleLabel } from '@services/auth';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 
 
@@ -27,6 +31,7 @@ const portfolios: Portfolio[] = [
 
 export function VisitanteOfertaPortafolioPage() {
   const navigate = useNavigate();
+  const { session, isLoading, error } = useAuthSession();
   const [query, setQuery] = useState('');
   const [technologyFilter, setTechnologyFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<'all' | 'Senior' | 'Semi-Senior' | 'Junior'>('all');
@@ -47,6 +52,34 @@ export function VisitanteOfertaPortafolioPage() {
         return levelMatch && technologyMatch && profileMatch && (q.length === 0 || textMatch);
       });
   }, [query, levelFilter, technologyFilter, profileFilter]);
+
+  if (isLoading && !session) {
+    return (
+      <main className="min-h-screen bg-[var(--umss-surface)]">
+        <Navbar />
+        <div className="container-page py-10">
+          <DashboardCard title="Cargando tu panel" description="Estamos preparando tu vista de visitante.">
+            <p className="text-sm text-slate-600">
+              Validamos tu sesion antes de mostrar los perfiles disponibles.
+            </p>
+          </DashboardCard>
+        </div>
+      </main>
+    );
+  }
+
+  const profileRole = session?.dashboard?.profile_role_label
+    || (session ? resolveRoleLabel(session.user.role) : 'Visitante');
+  const profileName = session?.user.name || 'Invitado';
+  const profileEmail = session?.user.email || 'explorar@umss.edu';
+  const isGuest = !session;
+  const profileInitials = profileName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'VU';
+
   return (
     <main className="vp-container">
       <style>{`
@@ -100,6 +133,32 @@ export function VisitanteOfertaPortafolioPage() {
       </div>
 
       <FadeInSection>
+        <div className="mb-6">
+          <DashboardCard
+            title={session.dashboard?.welcome_title || 'Tu panel de visitante'}
+            description={session.dashboard?.welcome_message || 'Explora portafolios y perfiles de la comunidad UMSS.'}
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[var(--umss-brand)]">
+                  {isGuest ? 'Explorador invitado' : 'Sesion activa'}
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold text-slate-900">{profileName}</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <DashboardBadge tone="brand">{profileRole}</DashboardBadge>
+                  <DashboardBadge>{profileEmail}</DashboardBadge>
+                </div>
+              </div>
+
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-lg font-semibold text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
+                {profileInitials || 'VU'}
+              </div>
+            </div>
+          </DashboardCard>
+        </div>
+      </FadeInSection>
+
+      <FadeInSection>
         <section className="vp-header">
           <h1 className="vp-title">Explorador de Portafolios</h1>
           <p className="vp-subtitle">Descubre y conecta con los mejores talentos de la comunidad UMSS.</p>
@@ -126,7 +185,11 @@ export function VisitanteOfertaPortafolioPage() {
 
               <div className="vp-filter-group">
                 <label>Nivel de Experiencia</label>
-                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as any)} className="vp-select">
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value as 'all' | 'Senior' | 'Semi-Senior' | 'Junior')}
+                  className="vp-select"
+                >
                   <option value="all">Todos</option>
                   <option value="Senior">Senior</option>
                   <option value="Semi-Senior">Semi-Senior</option>
@@ -136,7 +199,11 @@ export function VisitanteOfertaPortafolioPage() {
 
               <div className="vp-filter-group">
                 <label>Tipo de Perfil</label>
-                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as any)} className="vp-select">
+                <select
+                  value={profileFilter}
+                  onChange={(e) => setProfileFilter(e.target.value as 'all' | 'Full Stack' | 'Frontend' | 'Backend' | 'Data')}
+                  className="vp-select"
+                >
                   <option value="all">Todos</option>
                   <option value="Full Stack">Full Stack</option>
                   <option value="Frontend">Frontend</option>

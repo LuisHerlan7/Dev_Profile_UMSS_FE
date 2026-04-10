@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { VisitanteOfertaPortafolioPage } from '../features/dashboard/pages/visitante/VisitanteOfertaPortafolioPage';
 import { VisitantePortafolioPage } from '../features/dashboard/pages/visitante/VisitantePortafolioPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
+import { AuthCallbackPage } from '../features/auth/pages/AuthCallbackPage';
 import { DeveloperDashboardPage } from '../features/dashboard/pages/desarrollador/DeveloperDashboardPage';
 import { DashboardPageAdmin } from '../features/dashboard/pages/adminstrador/DashboardPageAdmin';
+import { getRedirectPathForRole, readStoredAuthSession } from '@services/auth';
 
 function ProfilePage() {
   return <h1>Profile</h1>;
@@ -14,6 +16,21 @@ function ProfilePage() {
 
 function ExplorePage() {
   return <h1>Explore</h1>;
+}
+
+function DashboardEntryPage() {
+  const storedSession = readStoredAuthSession();
+
+  if (!storedSession?.user) {
+    return <Navigate to="/visitante" replace />;
+  }
+
+  return (
+    <Navigate
+      to={getRedirectPathForRole(storedSession.user.role, storedSession.dashboard)}
+      replace
+    />
+  );
 }
 
 function ScrollToTop() {
@@ -50,11 +67,12 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/dev-dashboard" element={<DeveloperDashboardPage />} />
-        <Route path="/dashboard" element={<DeveloperDashboardPage />} />
+        <Route path="/dashboard" element={<DashboardEntryPage />} />
         <Route path="/desarrollador" element={<DeveloperDashboardPage />} />
         <Route path="/admin" element={<DashboardPageAdmin />} />
         <Route path="/visitante" element={<VisitanteOfertaPortafolioPage />} />
         <Route path="/portafolio/:id" element={<VisitantePortafolioPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/profile" element={<ProfilePage />} />

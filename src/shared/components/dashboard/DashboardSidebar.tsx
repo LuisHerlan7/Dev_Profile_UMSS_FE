@@ -35,6 +35,13 @@ export function DashboardSidebar({
   onToggleCollapse,
   onItemSelect,
 }: DashboardSidebarProps) {
+  const profileInitials = profileName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name[0]?.toUpperCase() ?? '')
+    .join('') || 'DU';
+
   return (
     <div
       className={cn(
@@ -55,7 +62,7 @@ export function DashboardSidebar({
           </button>
 
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-            <span className="text-lg font-semibold">D</span>
+            <span className="text-lg font-semibold">{profileInitials}</span>
           </div>
         </div>
       ) : (
@@ -64,7 +71,7 @@ export function DashboardSidebar({
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-                  <span className="text-lg font-semibold">D</span>
+                  <span className="text-lg font-semibold">{profileInitials}</span>
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold leading-tight text-slate-900">{brand}</p>
@@ -81,6 +88,16 @@ export function DashboardSidebar({
               >
                 <PanelLeftClose className="h-4 w-4" />
               </button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm">
+              <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
+              <p className="mt-1 text-xs text-slate-500">{profileRole}</p>
+              {profileBadge ? (
+                <span className="mt-3 inline-flex rounded-full bg-[var(--umss-lavender)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--umss-brand)]">
+                  {profileBadge}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
