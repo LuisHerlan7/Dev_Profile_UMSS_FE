@@ -22,7 +22,7 @@ function DashboardEntryPage() {
   const storedSession = readStoredAuthSession();
 
   if (!storedSession?.user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/visitante" replace />;
   }
 
   return (
