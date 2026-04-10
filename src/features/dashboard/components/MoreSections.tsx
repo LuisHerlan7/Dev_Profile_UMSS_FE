@@ -1,5 +1,5 @@
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
-import { ExperienceTimelineCard } from './ExperienceTimelineCard';
+import { ExperienceTimelineCard, type ExperienceEntry } from './ExperienceTimelineCard';
 import { SectionHeading } from './SectionHeading';
 
 const quickSettings = [
@@ -17,7 +17,10 @@ const quickSettings = [
   },
 ] as const;
 
-export function ExperienceSection() {
+export function ExperienceSection({ entries }: { entries: ExperienceEntry[] }) {
+  const workCount = entries.filter((entry) => entry.type === 'work').length;
+  const studyCount = entries.filter((entry) => entry.type === 'study').length;
+
   return (
     <div className="space-y-6">
       <SectionHeading
@@ -27,17 +30,25 @@ export function ExperienceSection() {
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_320px]">
-        <ExperienceTimelineCard />
+        <ExperienceTimelineCard entries={entries} showEmptyState />
 
         <DashboardCard title="Resumen del perfil" description="Puntos fuertes visibles para reclutadores.">
           <div className="space-y-3">
             <HighlightRow
-              title="2 experiencias clave"
-              description="Frontend senior, arquitectura UI y colaboracion open source."
+              title={`${workCount || 0} experiencias clave`}
+              description={
+                workCount > 0
+                  ? 'Tus cargos recientes ya estan visibles en el panel.'
+                  : 'Agrega tu primera experiencia laboral para mostrar tu trayectoria.'
+              }
             />
             <HighlightRow
-              title="Formacion UMSS"
-              description="Ingenieria de Sistemas con enfoque en software y producto."
+              title={`${studyCount || 0} formaciones registradas`}
+              description={
+                studyCount > 0
+                  ? 'Tu formacion academica ya aparece en el perfil.'
+                  : 'Incluye tu formacion academica para completar tu historial.'
+              }
             />
             <HighlightRow
               title="Disponibilidad"
