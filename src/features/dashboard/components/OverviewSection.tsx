@@ -14,56 +14,72 @@ import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { DashboardMetricCard } from '@shared/components/dashboard/DashboardMetricCard';
 import { Button } from '@shared/components/ui/Button';
 
-const metrics = [
-  {
-    label: 'Total de Proyectos',
-    value: '12',
-    icon: <FolderKanban className="h-5 w-5" />,
-    trend: '+20%',
-    trendTone: 'success' as const,
-  },
-  {
-    label: 'Habilidades Dominadas',
-    value: '24',
-    icon: <Sparkles className="h-5 w-5" />,
-    trend: '+5%',
-    trendTone: 'success' as const,
-  },
-  {
-    label: 'Visitas al Perfil',
-    value: '1.240',
-    icon: <Eye className="h-5 w-5" />,
-    trend: '-2%',
-    trendTone: 'warning' as const,
-  },
-];
+type OverviewMetric = {
+  label: string;
+  value: string;
+  icon: JSX.Element;
+  trend: string;
+  trendTone: 'success' | 'warning';
+};
 
-const recentProjects = [
-  {
-    id: 'api-commerce',
-    name: 'Backend API E-commerce',
-    stack: 'Node.js',
-    updatedAt: 'Actualizado hace 2 dias',
-    accentClassName: 'bg-[rgba(80,72,229,0.12)] text-[var(--umss-brand)]',
-  },
-  {
-    id: 'portfolio-v3',
-    name: 'Sitio Web Portafolio v3',
-    stack: 'React',
-    updatedAt: 'Actualizado hace 5 dias',
-    accentClassName: 'bg-[rgba(16,185,129,0.12)] text-[var(--umss-success)]',
-  },
-] as const;
+type RecentProject = {
+  id: string;
+  name: string;
+  stack: string;
+  updated_at: string;
+};
 
-const skillBadges = ['TypeScript', 'React.js', 'GraphQL', 'Docker', 'AWS', 'PostgreSQL'];
+type OverviewSectionProps = {
+  profileName: string;
+  completion: number;
+  nextStep: string;
+  metrics: {
+    projects: number;
+    skills: number;
+    profile_views: number;
+  };
+  recentProjects: RecentProject[];
+  skillBadges: string[];
+  onOpenProjects: () => void;
+  onOpenSkills: () => void;
+  onAddProject: () => void;
+};
 
 export function OverviewSection({
   onOpenProjects,
   onOpenSkills,
-}: {
-  onOpenProjects: () => void;
-  onOpenSkills: () => void;
-}) {
+  onAddProject,
+  profileName,
+  completion,
+  nextStep,
+  metrics,
+  recentProjects,
+  skillBadges,
+}: OverviewSectionProps) {
+  const metricCards: OverviewMetric[] = [
+    {
+      label: 'Total de Proyectos',
+      value: `${metrics.projects}`,
+      icon: <FolderKanban className="h-5 w-5" />,
+      trend: metrics.projects > 0 ? '+activo' : 'Sin datos',
+      trendTone: metrics.projects > 0 ? 'success' : 'warning',
+    },
+    {
+      label: 'Habilidades Dominadas',
+      value: `${metrics.skills}`,
+      icon: <Sparkles className="h-5 w-5" />,
+      trend: metrics.skills > 0 ? '+activo' : 'Sin datos',
+      trendTone: metrics.skills > 0 ? 'success' : 'warning',
+    },
+    {
+      label: 'Visitas al Perfil',
+      value: `${metrics.profile_views}`,
+      icon: <Eye className="h-5 w-5" />,
+      trend: metrics.profile_views > 0 ? '+activo' : 'Pendiente',
+      trendTone: metrics.profile_views > 0 ? 'success' : 'warning',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <DashboardCard
@@ -78,7 +94,7 @@ export function OverviewSection({
               Dashboard del desarrollador
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-              Bienvenido de nuevo, Alex!
+              Bienvenido de nuevo, {profileName}!
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
               Gestiona tu portafolio profesional y realiza un seguimiento del crecimiento
@@ -92,7 +108,10 @@ export function OverviewSection({
               Editar bio
             </Button>
 
-            <Button className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]">
+            <Button
+              className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
+              onClick={onAddProject}
+            >
               <Plus className="h-4 w-4" />
               Anadir proyecto
             </Button>
@@ -112,15 +131,20 @@ export function OverviewSection({
                 </p>
               </div>
             </div>
-            <span className="text-sm font-semibold text-[var(--umss-brand)]">75%</span>
+            <span className="text-sm font-semibold text-[var(--umss-brand)]">
+              {completion}%
+            </span>
           </div>
 
           <div className="mt-4 h-3 rounded-full bg-white p-1 shadow-inner">
-            <div className="h-full w-[75%] rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]" />
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]"
+              style={{ width: `${completion}%` }}
+            />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">Anade una bio para llegar al 100%.</p>
+            <p className="text-sm text-slate-500">{nextStep}</p>
             <button
               type="button"
               className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
@@ -132,7 +156,7 @@ export function OverviewSection({
       </DashboardCard>
 
       <section className="grid gap-4 xl:grid-cols-3">
-        {metrics.map((metric) => (
+        {metricCards.map((metric) => (
           <DashboardMetricCard
             key={metric.label}
             icon={metric.icon}
@@ -159,38 +183,52 @@ export function OverviewSection({
           }
         >
           <div className="space-y-3">
-            {recentProjects.map((project) => (
-              <article
-                key={project.id}
-                className="flex items-center justify-between gap-4 rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 transition hover:border-[rgba(80,72,229,0.2)] hover:bg-white"
-              >
-                <div className="flex min-w-0 items-center gap-4">
-                  <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${project.accentClassName}`}
-                  >
-                    <Grip className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
-                      {project.name}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <span>{project.stack}</span>
-                      <span className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span>{project.updatedAt}</span>
-                    </div>
-                  </div>
-                </div>
-
+            {recentProjects.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.45)] p-4">
+                <p className="text-sm font-semibold text-slate-900">Aún no tienes proyectos.</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Agrega tu primer proyecto para que aparezca en este resumen.
+                </p>
                 <button
                   type="button"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-slate-400 transition hover:bg-white hover:text-slate-700"
-                  aria-label={`Acciones para ${project.name}`}
+                  onClick={onOpenProjects}
+                  className="mt-3 text-sm font-semibold text-[var(--umss-brand)]"
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  Ir a Proyectos
                 </button>
-              </article>
-            ))}
+              </div>
+            ) : (
+              recentProjects.map((project) => (
+                <article
+                  key={project.id}
+                  className="flex items-center justify-between gap-4 rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 transition hover:border-[rgba(80,72,229,0.2)] hover:bg-white"
+                >
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(80,72,229,0.12)] text-[var(--umss-brand)]">
+                      <Grip className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {project.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span>{project.stack}</span>
+                        <span className="h-1 w-1 rounded-full bg-slate-300" />
+                        <span>{project.updated_at}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-slate-400 transition hover:bg-white hover:text-slate-700"
+                    aria-label={`Acciones para ${project.name}`}
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </article>
+              ))
+            )}
           </div>
         </DashboardCard>
 
@@ -209,12 +247,15 @@ export function OverviewSection({
             }
           >
             <div className="flex flex-wrap gap-2">
-              {skillBadges.map((skill, index) => (
-                <DashboardBadge key={skill} tone={index < 2 ? 'brand' : 'neutral'}>
-                  {skill}
-                </DashboardBadge>
-              ))}
-              <DashboardBadge tone="brand">+4 mas</DashboardBadge>
+              {skillBadges.length === 0 ? (
+                <DashboardBadge tone="neutral">Sin habilidades cargadas</DashboardBadge>
+              ) : (
+                skillBadges.map((skill, index) => (
+                  <DashboardBadge key={skill} tone={index < 2 ? 'brand' : 'neutral'}>
+                    {skill}
+                  </DashboardBadge>
+                ))
+              )}
             </div>
           </DashboardCard>
 
