@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Github, Linkedin } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
+import { getRedirectPathForRole, readStoredAuthSession, registerUser } from '@services/auth';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -18,9 +19,18 @@ export function RegisterPage() {
   const [success, setSuccess] = useState('');
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
-  const registerEndpoint = `${apiBase || ''}/api/auth/register`;
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
   const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
+
+  useEffect(() => {
+    const storedSession = readStoredAuthSession();
+
+    if (!storedSession?.user) {
+      return;
+    }
+
+    navigate(getRedirectPathForRole(storedSession.user.role, storedSession.dashboard), { replace: true });
+  }, [navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,36 +44,14 @@ export function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(registerEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          role,
-          password,
-          password_confirmation: passwordConfirmation,
-        }),
+      await registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        role,
+        password,
+        password_confirmation: passwordConfirmation,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const firstValidationError = data?.errors
-          ? Object.values(data.errors)[0]
-          : null;
-        const validationMessage = Array.isArray(firstValidationError) ? firstValidationError[0] : null;
-        throw new Error(validationMessage || data?.message || 'No se pudo registrar la cuenta.');
-      }
-
-      if (data?.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
-
-      setSuccess('Cuenta creada correctamente. Ya puedes iniciar sesión.');
+      setSuccess('Cuenta creada correctamente. Ahora puedes iniciar sesion con tu rol asignado.');
       setTimeout(() => navigate('/login'), 800);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'Ocurrió un error al registrar.';
