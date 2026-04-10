@@ -32,3 +32,34 @@
   }
 }
 
+/* Custom date picker styles */
+.date-input-custom {
+  cursor: text; /* Allow text cursor for manual input */
+}
+
+/* Enhanced calendar icon styling */
+.calendar-icon {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Style the calendar icon button */
+input[type="text"] + button svg {
+  transition: all 0.2s ease;
+}
+
+input[type="text"] + button:hover svg {
+  opacity: 1 !important;
+  transform: scale(1.05);
+}
+
+input[type="text"]:focus + button svg {
+  color: var(--umss-brand);
+}
+
+input[type="text"] + button {
+  background: none;
+  border: none;
+  outline: none;
+}
+

@@ -59,10 +59,14 @@ const skillBadges = ['TypeScript', 'React.js', 'GraphQL', 'Docker', 'AWS', 'Post
 
 export function OverviewSection({
   onOpenProjects,
+  onOpenProjectForm,
   onOpenSkills,
+  onOpenSettings,
 }: {
   onOpenProjects: () => void;
+  onOpenProjectForm: () => void;
   onOpenSkills: () => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <div className="space-y-6">
@@ -87,14 +91,21 @@ export function OverviewSection({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" className="h-11 rounded-2xl px-4 text-sm">
+            <Button 
+              onClick={onOpenSettings}
+              variant="secondary" 
+              className="h-11 rounded-2xl px-4 text-sm"
+            >
               <PencilLine className="h-4 w-4" />
               Editar bio
             </Button>
 
-            <Button className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]">
+            <Button
+              onClick={onOpenProjectForm}
+              className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#2563EB] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
+            >
               <Plus className="h-4 w-4" />
-              Anadir proyecto
+              Añadir proyecto
             </Button>
           </div>
         </div>
@@ -147,14 +158,14 @@ export function OverviewSection({
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
         <DashboardCard
           title="Proyectos Recientes"
-          description="Resumen rapido de tus proyectos mas activos."
+          description="Resumen rápido de tus proyectos más activos."
           action={
             <button
               type="button"
               onClick={onOpenProjects}
               className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
             >
-              Ver todo
+              Ver todos
             </button>
           }
         >
@@ -197,7 +208,7 @@ export function OverviewSection({
         <div className="space-y-4">
           <DashboardCard
             title="Habilidades Principales"
-            description="Tecnologias destacadas de tu stack."
+            description="Tecnologías destacadas de tu stack."
             action={
               <button
                 type="button"
@@ -215,20 +226,6 @@ export function OverviewSection({
                 </DashboardBadge>
               ))}
               <DashboardBadge tone="brand">+4 mas</DashboardBadge>
-            </div>
-          </DashboardCard>
-
-          <DashboardCard title="Ultimo logro" description="Actividad destacada de este mes.">
-            <div className="flex items-start gap-4 rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(245,158,11,0.12)] text-[var(--umss-warning)]">
-                <Trophy className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Colaborador Open Source</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500">
-                  Fusionaste 5 PRs en librerias importantes este mes.
-                </p>
-              </div>
             </div>
           </DashboardCard>
         </div>

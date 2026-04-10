@@ -1,175 +1,232 @@
-import type { ReactNode } from 'react';
-import { ArrowUpRight, Link2, PencilLine, Plus, Search, SlidersHorizontal } from 'lucide-react';
-import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
-import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@shared/components/ui/Button';
+import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { SectionHeading } from './SectionHeading';
+import { Plus, Edit, Filter, Search } from 'lucide-react';
 
-const managedProjects = [
-  {
-    id: 'neuralnexus',
-    title: 'NeuralNexus Dashboard',
-    category: 'WEB',
-    summary:
-      'Sistema de monitoreo en tiempo real para redes neuronales distribuidas con alertas de mantenimiento.',
-    role: 'Arquitecto Frontend Principal',
-    tags: ['React', 'TypeScript', 'D3.js', 'AWS'],
-    imageClassName: 'from-sky-100 via-slate-100 to-slate-300',
-  },
-  {
-    id: 'campusconnect',
-    title: 'CampusConnect App',
-    category: 'MOVIL',
-    summary:
-      'Plataforma de comunicacion centralizada para estudiantes de la UMSS con chat en tiempo real.',
-    role: 'Desarrollador Full-Stack',
-    tags: ['Flutter', 'Firebase', 'Node.js'],
-    imageClassName: 'from-orange-100 via-rose-50 to-stone-200',
-  },
-  {
-    id: 'visualizer',
-    title: 'AlgoVisualizer Pro',
-    category: 'DATA',
-    summary:
-      'Suite interactiva para visualizar estructuras de datos y algoritmos con escenas paso a paso.',
-    role: 'Diseño y Experiencia',
-    tags: ['Next.js', 'Tailwind', 'Framer'],
-    imageClassName: 'from-violet-100 via-white to-indigo-100',
-  },
-] as const;
+export type ProjectItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  tags: string[];
+  label: string;
+  accentClassName: string;
+  themeClassName: string;
+  visible: boolean;
+};
 
-export function ProjectsSection() {
+export function ProjectsSection({
+  projects,
+  onOpenProjectForm,
+  onToggleVisibility,
+  onEditProject,
+}: {
+  projects: ProjectItem[];
+  onOpenProjectForm: () => void;
+  onToggleVisibility: (projectId: string) => void;
+  onEditProject: (projectId: string) => void;
+}) {
+  const navigate = useNavigate();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isFilterMode, setIsFilterMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch =
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesFilters =
+      selectedFilters.length === 0 ||
+      selectedFilters.includes(project.status) ||
+      selectedFilters.some((filter) => project.tags.includes(filter));
+
+    return matchesSearch && matchesFilters;
+  });
+
+  const uniqueStatuses = Array.from(new Set(projects.map((p) => p.status)));
+  const uniqueTags = Array.from(new Set(projects.flatMap((p) => p.tags)));
+
+  const toggleFilter = (filter: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+    );
+  };
   return (
     <div className="space-y-6">
       <SectionHeading
-        eyebrow="Gestion de proyectos"
-        title="Gestion de Proyectos"
-        description="Crea, gestiona y organiza tu portafolio de ingenieria de software. Muestra tu mejor trabajo a la comunidad UMSS."
+        eyebrow="Gestión de portafolio"
+        title="Subir Proyecto"
+        description="Comparte tus creaciones más recientes con la comunidad universitaria. Completa los detalles técnicos y visuales para destacar tu trabajo."
         actions={
-          <Button className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]">
-            <Plus className="h-4 w-4" />
-            Agregar nuevo proyecto
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={onOpenProjectForm}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-[#4F46E5] px-6 text-sm font-semibold text-white shadow-lg shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]"
+            >
+              <Plus className="h-4 w-4" />
+              Subir
+            </Button>
+            <Button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black border border-slate-200 shadow-md transition hover:bg-slate-50"
+            >
+              <Edit className="h-4 w-4 text-black" />
+              <span className="text-black">Editar</span>
+            </Button>
+            <Button
+              onClick={() => setIsFilterMode(!isFilterMode)}
+              className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black border border-slate-200 shadow-md transition hover:bg-slate-50"
+            >
+              <Filter className="h-4 w-4 text-black" />
+              <span className="text-black">Filtrar</span>
+            </Button>
+          </div>
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <DashboardCard title="Filtros" description="Categorias del portafolio.">
-            <div className="space-y-2">
-              <SidebarFilterButton active>Todos los Proyectos</SidebarFilterButton>
-              <SidebarFilterButton>Apps Web</SidebarFilterButton>
-              <SidebarFilterButton>Movil</SidebarFilterButton>
-              <SidebarFilterButton>IA / ML</SidebarFilterButton>
+      {isFilterMode && (
+        <div className="rounded-[24px] border border-[var(--umss-border)] bg-white p-6 shadow-sm">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar proyectos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] pl-10 pr-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[var(--umss-brand)] focus:ring-2 focus:ring-[rgba(80,72,229,0.12)]"
+              />
             </div>
-          </DashboardCard>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-900">Filtros rápidos</p>
+              <div className="flex flex-wrap gap-2">
+                {uniqueStatuses.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => toggleFilter(status)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                      selectedFilters.includes(status)
+                        ? 'bg-[var(--umss-brand)] text-white'
+                        : 'bg-[var(--umss-surface)] text-slate-700'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+                {uniqueTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleFilter(tag)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      selectedFilters.includes(tag)
+                        ? 'bg-[var(--umss-brand)] text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-          <div className="rounded-[28px] border border-[rgba(80,72,229,0.12)] bg-[rgba(240,240,255,0.9)] p-4 shadow-[0_18px_40px_-34px_rgba(80,72,229,0.35)]">
-            <p className="text-sm font-semibold text-[var(--umss-brand)]">Fortalezas del Portafolio</p>
-            <div className="mt-3 h-1.5 w-20 rounded-full bg-[var(--umss-brand)]" />
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Agrega una URL de demo y 2 etiquetas tecnologicas mas para alcanzar el 100%
-              de completitud del perfil.
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filteredProjects.map((project) => (
+          <div key={project.id} className="space-y-3">
+            <article
+              className={`group overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-40px_rgba(15,23,42,0.22)] ${
+                isEditMode ? 'cursor-pointer' : ''
+              }`}
+              onClick={isEditMode ? () => onEditProject(project.id) : undefined}
+            >
+              <div className={`relative h-44 bg-gradient-to-br ${project.accentClassName}`}>
+                <div className="absolute inset-x-4 top-4 flex items-center justify-between">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${project.themeClassName}`}
+                  >
+                    {project.status}
+                  </span>
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 shadow-sm">
+                    {project.label}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">{project.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{project.subtitle}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {project.tags.map((tag) => (
+                    <DashboardBadge key={tag} className="rounded-full px-3 py-1 text-xs font-semibold">
+                      {tag}
+                    </DashboardBadge>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-gradient-to-r from-slate-50 to-slate-100 px-6 text-sm font-semibold text-slate-700 transition hover:from-slate-100 hover:to-slate-200 hover:border-slate-300 hover:shadow-sm"
+                  >
+                    Ver Proyecto
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg"
+                  >
+                    Ver Código
+                  </button>
+                </div>
+              </div>
+            </article>
+            {isEditMode && (
+              <div className="flex items-center justify-between rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3">
+                <span className="text-sm font-semibold text-slate-900">Visible</span>
+                <button
+                  type="button"
+                  onClick={() => onToggleVisibility(project.id)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                    project.visible ? 'bg-[var(--umss-brand)]' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                      project.visible ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={onOpenProjectForm}
+          className="flex min-h-[340px] flex-col items-center justify-center gap-4 overflow-hidden rounded-[28px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.5)] p-8 text-center transition duration-300 hover:border-[var(--umss-brand)] hover:bg-[rgba(240,240,255,0.75)] hover:-translate-y-1"
+        >
+          <span className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-[var(--umss-brand)] shadow-sm transition group-hover:scale-105">
+            <Plus className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xl font-semibold text-slate-900">Agregar Nuevo Proyecto</p>
+            <p className="mt-2 max-w-[260px] text-sm leading-6 text-slate-500">
+              Comparte tu última creación con la comunidad y aumenta tu portafolio profesional.
             </p>
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <label className="relative block flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                placeholder="Buscar por nombre, rol o stack tecnologico..."
-                className="h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white pr-4 pl-11 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgba(80,72,229,0.3)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-              />
-            </label>
-
-            <button
-              type="button"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Ordenar
-            </button>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {managedProjects.map((project) => (
-              <article
-                key={project.id}
-                className="overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.22)]"
-              >
-                <div className={`relative h-44 bg-gradient-to-br ${project.imageClassName}`}>
-                  <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between">
-                    <DashboardBadge tone="brand">{project.category}</DashboardBadge>
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <Link2 className="h-4 w-4" />
-                      <PencilLine className="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 p-5">
-                  <div>
-                    <h3 className="text-xl font-semibold tracking-tight text-slate-900">
-                      {project.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                      {project.summary}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-[var(--umss-surface)] px-3 py-2 text-sm text-slate-600">
-                    {project.role}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag) => (
-                      <DashboardBadge key={tag}>{tag}</DashboardBadge>
-                    ))}
-                  </div>
-                </div>
-              </article>
-            ))}
-
-            <button
-              type="button"
-              className="flex min-h-[320px] flex-col items-center justify-center rounded-[28px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.45)] p-6 text-center transition hover:border-[var(--umss-brand)] hover:bg-[rgba(240,240,255,0.7)]"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-white text-[var(--umss-brand)] shadow-sm">
-                <Plus className="h-6 w-6" />
-              </div>
-              <p className="mt-5 text-lg font-semibold text-slate-900">Lanzar un nuevo proyecto</p>
-              <p className="mt-2 max-w-[240px] text-sm leading-relaxed text-slate-500">
-                Listo para compartir algo nuevo? Comienza a documentar tu ultima creacion.
-              </p>
-            </button>
-          </div>
-        </div>
+        </button>
       </div>
     </div>
   );
 }
 
-function SidebarFilterButton({
-  children,
-  active = false,
-}: {
-  children: ReactNode;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm transition ${
-        active
-          ? 'bg-[var(--umss-lavender)] font-semibold text-[var(--umss-brand)]'
-          : 'bg-white text-slate-600 hover:bg-[var(--umss-surface)]'
-      }`}
-    >
-      <span>{children}</span>
-      <ArrowUpRight className="h-4 w-4" />
-    </button>
-  );
-}

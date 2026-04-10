@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HomePage } from '../pages/HomePage';
 import { VisitanteOfertaPortafolioPage } from '../features/dashboard/pages/visitante/VisitanteOfertaPortafolioPage';
+import { NewProjectPage } from '../features/dashboard/pages/desarrollador/NewProjectPage';
 import { VisitantePortafolioPage } from '../features/dashboard/pages/visitante/VisitantePortafolioPage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
 import { DeveloperDashboardPage } from '../features/dashboard/pages/desarrollador/DeveloperDashboardPage';
+import { EditProjectPage } from '../features/dashboard/pages/desarrollador/EditProjectPage';
 import { DashboardPageAdmin } from '../features/dashboard/pages/adminstrador/DashboardPageAdmin';
 
 function ProfilePage() {
@@ -59,6 +61,8 @@ export function AppRouter() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/nuevo-proyecto" element={<NewProjectPage />} />
+        <Route path="/editar-proyecto/:projectId" element={<EditProjectPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
   BriefcaseBusiness,
@@ -17,10 +18,62 @@ import { DashboardTopbar } from '@shared/components/dashboard/DashboardTopbar';
 import { OverviewSection } from '@features/dashboard/components/OverviewSection';
 import { ProjectsSection } from '@features/dashboard/components/ProjectsSection';
 import { SkillsSection } from '@features/dashboard/components/SkillsSection';
-import { ExperienceSection, SettingsSection } from '@features/dashboard/components/MoreSections';
+import { ExperienceSection } from '@features/dashboard/components/ExperienceSection';
+import { SettingsSection } from '@features/dashboard/components/SettingsSection';
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
 
 type SectionId = 'overview' | 'projects' | 'skills' | 'experience' | 'settings';
+
+type ProjectItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  tags: string[];
+  label: string;
+  accentClassName: string;
+  themeClassName: string;
+  visible: boolean;
+};
+
+const initialProjects: ProjectItem[] = [
+  {
+    id: 'nexus-erp',
+    title: 'Nexus ERP Dashboard',
+    subtitle:
+      'Plataforma de gestión empresarial de alta densidad con visualización de datos en tiempo real y microservicios.',
+    status: 'EN PRODUCCIÓN',
+    tags: ['React', 'Node.js', 'PostgreSQL'],
+    label: 'React',
+    accentClassName: 'from-slate-100 via-slate-200 to-slate-300',
+    themeClassName: 'bg-[rgba(56,189,248,0.12)] text-sky-600 border-sky-200',
+    visible: true,
+  },
+  {
+    id: 'architect-ui',
+    title: 'Architect UI Kit',
+    subtitle:
+      'Librería de componentes UI de código abierto enfocada en accesibilidad y rendimiento extremo para SaaS.',
+    status: 'BETA',
+    tags: ['TypeScript', 'Next.js 14', 'Tailwind'],
+    label: 'TypeScript',
+    accentClassName: 'from-violet-100 via-purple-100 to-fuchsia-100',
+    themeClassName: 'bg-[rgba(168,85,247,0.12)] text-violet-600 border-violet-200',
+    visible: true,
+  },
+  {
+    id: 'blockaudit',
+    title: 'BlockAudit Pro',
+    subtitle:
+      'Herramienta de análisis estático de smart contracts para detectar vulnerabilidades en redes EVM.',
+    status: 'COMPLETADO',
+    tags: ['Solidity', 'Ether.js', 'Hardhat'],
+    label: 'Solidity',
+    accentClassName: 'from-slate-100 via-slate-200 to-slate-300',
+    themeClassName: 'bg-[rgba(34,197,94,0.12)] text-emerald-600 border-emerald-200',
+    visible: true,
+  },
+];
 
 const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }> = [
   // Future route hook: replace `setActiveSection` with `navigate(item.path)`
@@ -53,14 +106,72 @@ const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId
 ];
 
 export function DeveloperDashboardPage() {
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
+  const [projects, setProjects] = useState<ProjectItem[]>(() => {
+    const stored = localStorage.getItem('umss_projects');
+    if (!stored) return initialProjects;
+    try {
+      const parsed = JSON.parse(stored) as ProjectItem[];
+      return parsed.length > 0 ? parsed : initialProjects;
+    } catch {
+      return initialProjects;
+    }
+  });
+  const navigate = useNavigate();
 
   const navItems = baseNavItems.map((item) => ({
     ...item,
     active: item.id === activeSection,
   }));
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const section = params.get('section');
+    if (section === 'projects') {
+      setActiveSection('projects');
+    }
+  }, [location.search]);
+
+  const saveProjects = (items: ProjectItem[]) => {
+    localStorage.setItem('umss_projects', JSON.stringify(items));
+  };
+
+  const handleOpenProjectForm = () => {
+    setActiveSection('projects');
+    navigate('/nuevo-proyecto');
+  };
+
+  const handleAddProject = (project: ProjectItem) => {
+    setProjects((items) => {
+      const next = [project, ...items];
+      saveProjects(next);
+      return next;
+    });
+    setActiveSection('projects');
+    navigate('/dashboard?section=projects');
+  };
+
+  const handleToggleVisibility = (projectId: string) => {
+    setProjects((items) => {
+      const next = items.map((p) =>
+        p.id === projectId ? { ...p, visible: !p.visible } : p
+      );
+      saveProjects(next);
+      return next;
+    });
+  };
+
+  const handleEditProject = (projectId: string) => {
+    navigate(`/editar-proyecto/${projectId}`);
+  };
+
+  const handleOpenSettings = () => {
+    setActiveSection('settings');
+  };
+
 
   return (
     <DashboardLayout
@@ -114,10 +225,19 @@ export function DeveloperDashboardPage() {
       {activeSection === 'overview' ? (
         <OverviewSection
           onOpenProjects={() => setActiveSection('projects')}
+          onOpenProjectForm={handleOpenProjectForm}
           onOpenSkills={() => setActiveSection('skills')}
+          onOpenSettings={handleOpenSettings}
         />
       ) : null}
-      {activeSection === 'projects' ? <ProjectsSection /> : null}
+      {activeSection === 'projects' ? (
+        <ProjectsSection
+          projects={projects}
+          onOpenProjectForm={handleOpenProjectForm}
+          onToggleVisibility={handleToggleVisibility}
+          onEditProject={handleEditProject}
+        />
+      ) : null}
       {activeSection === 'skills' ? <SkillsSection /> : null}
       {activeSection === 'experience' ? <ExperienceSection /> : null}
       {activeSection === 'settings' ? <SettingsSection /> : null}
