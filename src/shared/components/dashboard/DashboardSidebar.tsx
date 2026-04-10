@@ -15,6 +15,7 @@ type DashboardSidebarProps = {
   subtitle: string;
   profileName: string;
   profileRole: string;
+  profileImageUrl?: string | null;
   profileBadge?: string;
   navItems: DashboardSidebarItem[];
   footer?: ReactNode;
@@ -28,6 +29,7 @@ export function DashboardSidebar({
   subtitle,
   profileName,
   profileRole,
+  profileImageUrl,
   profileBadge,
   navItems,
   footer,
@@ -54,8 +56,12 @@ export function DashboardSidebar({
             <PanelLeftOpen className="h-4 w-4" />
           </button>
 
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-            <span className="text-lg font-semibold">D</span>
+          <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt={profileName} className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-lg font-semibold">D</span>
+            )}
           </div>
         </div>
       ) : (
@@ -63,8 +69,12 @@ export function DashboardSidebar({
           <div className="rounded-[28px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-                  <span className="text-lg font-semibold">D</span>
+                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
+                  {profileImageUrl ? (
+                    <img src={profileImageUrl} alt={profileName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-semibold">D</span>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold leading-tight text-slate-900">{brand}</p>

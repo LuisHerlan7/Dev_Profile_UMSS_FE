@@ -1,19 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BarChart3, Calendar, Code2, FileText, Plus, ShieldCheck } from 'lucide-react';
+import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
+import { saveExperience, saveFormation, deleteExperience, deleteFormation } from '@features/dashboard/api/developerDashboard';
 
-type ExperienceEntry = {
-  id: string;
-  recordType: 'Experiencia' | 'Certificación';
-  badge: string;
-  title: string;
-  description: string;
-  tone: 'brand' | 'neutral' | 'success' | 'warning' | 'info';
-  icon: typeof FileText;
-  footer: string;
-  fileSize?: string;
-};
-
-const initialExperienceEntries: ExperienceEntry[] = [
+const initialExperienceEntries: ExperienceRecord[] = [
   {
     id: 'cloudscale',
     recordType: 'Experiencia',
@@ -76,8 +66,16 @@ const filters = ['Todos', 'Documentos', 'Certificaciones', 'Codigo', 'Reportes']
 
 type RecordType = typeof recordTypes[number];
 
-export function ExperienceSection() {
+export function ExperienceSection({
+  initialFromServer,
+  onDataDirty,
+}: {
+  initialFromServer?: ExperienceRecord[];
+  onDataDirty?: () => void;
+}) {
   const formRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showAddRecordForm, setShowAddRecordForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -86,7 +84,15 @@ export function ExperienceSection() {
   const [recordType, setRecordType] = useState<RecordType>('Experiencia');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<typeof filters[number]>('Todos');
-  const [records, setRecords] = useState<ExperienceEntry[]>(initialExperienceEntries);
+  const [records, setRecords] = useState<ExperienceRecord[]>(() =>
+    initialFromServer === undefined ? initialExperienceEntries : initialFromServer
+  );
+  
+  useEffect(() => {
+    if (initialFromServer) {
+      setRecords(initialFromServer);
+    }
+  }, [initialFromServer]);
   const [experienceForm, setExperienceForm] = useState({
     experienceType: '',
     company: '',
@@ -95,6 +101,8 @@ export function ExperienceSection() {
     endDate: '',
     description: '',
     evidence: '',
+    evidenceUrl: '',
+    evidenceFile: null as File | null,
     fileSize: '',
   });
   const [certificationForm, setCertificationForm] = useState({
@@ -103,6 +111,8 @@ export function ExperienceSection() {
     credentialId: '',
     credentialUrl: '',
     evidence: '',
+    evidenceUrl: '',
+    evidenceFile: null as File | null,
     fileSize: '',
   });
 
@@ -121,14 +131,16 @@ export function ExperienceSection() {
       endDate: '',
       description: '',
       evidence: '',
+      evidenceUrl: '',
+      evidenceFile: null,
       fileSize: '',
     });
-    setCertificationForm({ name: '', issuer: '', credentialId: '', credentialUrl: '', evidence: '', fileSize: '' });
+    setCertificationForm({ name: '', issuer: '', credentialId: '', credentialUrl: '', evidence: '', evidenceUrl: '', evidenceFile: null, fileSize: '' });
     setEditingRecordId(null);
     setSelectedRecordId(null);
   };
 
-  const handleSelectRecord = (record: ExperienceEntry) => {
+  const handleSelectRecord = (record: ExperienceRecord) => {
     if (!isEditMode) return;
 
     setSelectedRecordId(record.id);
@@ -139,12 +151,15 @@ export function ExperienceSection() {
     if (record.recordType === 'Experiencia') {
       setExperienceForm({
         experienceType: record.badge,
-        company: record.title.replace(/.*@\s*/, ''),
-        position: record.title.replace(/@\s*.*/, '').trim(),
+        company: record.title.includes('@') ? record.title.split('@')[1].trim() : '',
+        position: record.title.includes('@') ? record.title.split('@')[0].trim() : record.title,
         startDate: record.footer.includes('—') ? record.footer.split('—')[0].trim() : '',
         endDate: record.footer.includes('—') ? record.footer.split('—')[1].trim() : '',
         description: record.description,
         evidence: '',
+        evidenceUrl: record.evidenceUrl || '',
+        evidenceFile: null,
+        fileSize: record.fileSize || '',
       });
     } else {
       setCertificationForm({
@@ -153,52 +168,155 @@ export function ExperienceSection() {
         credentialId: '',
         credentialUrl: '',
         evidence: '',
+        evidenceUrl: record.evidenceUrl || '',
+        evidenceFile: null,
+        fileSize: record.fileSize || '',
       });
     }
   };
 
-  const handleSave = () => {
-    const newRecord: ExperienceEntry =
-      recordType === 'Experiencia'
-        ? {
-            id: editingRecordId ?? `${Date.now()}`,
-            recordType: 'Experiencia',
-            badge: experienceForm.experienceType || 'EXPERIENCIA',
-            title: `${experienceForm.position || 'Experiencia nueva'}${experienceForm.company ? ` @ ${experienceForm.company}` : ''}`,
-            description: experienceForm.description || 'Detalles de la experiencia profesional.',
-            tone: 'brand',
-            icon: FileText,
-            footer: experienceForm.fileSize || (experienceForm.startDate || experienceForm.endDate ? `${experienceForm.startDate} — ${experienceForm.endDate}` : 'Sin fechas'),
-            fileSize: experienceForm.fileSize,
-          }
-        : {
-            id: editingRecordId ?? `${Date.now()}`,
-            recordType: 'Certificación',
-            badge: certificationForm.name || 'CERTIFICACIÓN',
-            title: certificationForm.name || 'Nueva certificación',
-            description: certificationForm.issuer || 'Organización emisora',
-            tone: 'neutral',
-            icon: ShieldCheck,
-            footer: certificationForm.fileSize || (certificationForm.credentialUrl || 'Sin enlace'),
-            fileSize: certificationForm.fileSize,
-          };
-
-    setRecords((current) => {
-      if (editingRecordId) {
-        return current.map((record) => (record.id === editingRecordId ? newRecord : record));
-      }
-      return [newRecord, ...current];
-    });
-
-    setShowAddRecordForm(false);
-    resetForm();
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleDeleteRecord = (recordId: string) => {
-    setRecords((current) => current.filter((record) => record.id !== recordId));
-    if (selectedRecordId === recordId) {
-      resetForm();
+  const handleFileUpload = (file: File) => {
+    if (!['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      alert('Formato no soportado. Por favor sube un PDF, PNG o JPG.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('El archivo es demasiado grande. Máx. 5MB.');
+      return;
+    }
+    
+    const sizeStr = formatFileSize(file.size);
+    const fileName = file.name;
+    const url = URL.createObjectURL(file);
+
+    if (recordType === 'Experiencia') {
+      setExperienceForm((curr) => ({ ...curr, evidence: fileName, evidenceUrl: url, evidenceFile: file, fileSize: sizeStr }));
+    } else {
+      setCertificationForm((curr) => ({ ...curr, evidence: fileName, evidenceUrl: url, evidenceFile: file, fileSize: sizeStr }));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files[0]);
+      e.dataTransfer.clearData();
+    }
+  };
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (recordType === 'Experiencia') {
+        const bdDateFrom = experienceForm.startDate ? experienceForm.startDate.split('/').reverse().join('-') : new Date().toISOString().split('T')[0];
+        const bdDateTo = experienceForm.endDate ? experienceForm.endDate.split('/').reverse().join('-') : null;
+
+        const formData = new FormData();
+        formData.append('titulo_puesto', experienceForm.position || 'Experiencia nueva');
+        formData.append('nombre_empresa', experienceForm.company || 'Sin Empresa');
+        formData.append('descripcion_puesto', experienceForm.description);
+        formData.append('fecha_inicio', bdDateFrom);
+        if (bdDateTo) formData.append('fecha_fin', bdDateTo);
+        if (experienceForm.evidenceFile) {
+          formData.append('archivo', experienceForm.evidenceFile);
+        }
+
+        const res = await saveExperience(formData);
+
+        const newRecord: ExperienceRecord = {
+          id: res.id.toString(),
+          recordType: 'Experiencia',
+          badge: experienceForm.experienceType || 'EXPERIENCIA',
+          title: `${experienceForm.position || 'Experiencia nueva'}${experienceForm.company ? ` @ ${experienceForm.company}` : ''}`,
+          description: experienceForm.description || 'Detalles de la experiencia profesional.',
+          tone: 'brand',
+          icon: FileText,
+          footer: experienceForm.fileSize || (experienceForm.startDate || experienceForm.endDate ? `${experienceForm.startDate} — ${experienceForm.endDate}` : 'Sin fechas'),
+          fileSize: experienceForm.fileSize,
+          evidenceUrl: experienceForm.evidenceUrl || (experienceForm.evidenceFile ? '/api/developer/files/experiencia/' + res.id : undefined),
+        };
+
+        setRecords((current) => {
+          if (editingRecordId) return current.map((record) => (record.id === editingRecordId ? newRecord : record));
+          return [newRecord, ...current];
+        });
+
+      } else {
+        const bdDateFrom = new Date().toISOString().split('T')[0];
+        
+        const formData = new FormData();
+        formData.append('institucion', certificationForm.issuer || 'Institucion');
+        formData.append('carrera_especialidad', certificationForm.name || 'Certificacion nueva');
+        formData.append('fecha_inicio', bdDateFrom);
+        if (certificationForm.evidenceFile) {
+          formData.append('archivo', certificationForm.evidenceFile);
+        }
+
+        const res = await saveFormation(formData);
+
+        const newRecord: ExperienceRecord = {
+          id: res.id.toString(),
+          recordType: 'Certificación',
+          badge: certificationForm.name || 'CERTIFICACIÓN',
+          title: certificationForm.name || 'Nueva certificación',
+          description: certificationForm.issuer || 'Organización emisora',
+          tone: 'neutral',
+          icon: ShieldCheck,
+          footer: certificationForm.fileSize || (certificationForm.credentialUrl || 'Sin enlace'),
+          fileSize: certificationForm.fileSize,
+          evidenceUrl: certificationForm.evidenceUrl || (certificationForm.evidenceFile ? '/api/developer/files/formacion/' + res.id : undefined),
+        };
+
+        setRecords((current) => {
+          if (editingRecordId) return current.map((record) => (record.id === editingRecordId ? newRecord : record));
+          return [newRecord, ...current];
+        });
+      }
+
       setShowAddRecordForm(false);
+      resetForm();
+      if (onDataDirty) onDataDirty();
+    } catch (e: any) {
+      alert(e.message || 'Error al guardar');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteRecord = async (recordId: string, type: 'Experiencia' | 'Certificación') => {
+    try {
+      const isDbRecord = recordId.startsWith('db-');
+      const rawId = recordId.replace('db-exp-', '').replace('db-form-', '');
+      
+      if (isDbRecord) {
+        if (type === 'Experiencia') {
+          await deleteExperience(rawId);
+        } else {
+          await deleteFormation(rawId);
+        }
+      }
+      setRecords((current) => current.filter((record) => record.id !== recordId));
+      if (selectedRecordId === recordId) {
+        resetForm();
+        setShowAddRecordForm(false);
+      }
+      if (editingRecordId === recordId) {
+        setEditingRecordId(null);
+      }
+      if (onDataDirty) onDataDirty();
+    } catch (e: any) {
+      alert(e.message || 'Error al eliminar registro');
     }
   };
 
@@ -216,6 +334,8 @@ export function ExperienceSection() {
       return nextMode;
     });
   };
+
+  const currentEvidence = recordType === 'Experiencia' ? experienceForm.evidence : certificationForm.evidence;
 
   return (
     <div className="space-y-6">
@@ -356,15 +476,70 @@ export function ExperienceSection() {
 
             <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-5">
               <p className="text-sm font-semibold text-slate-900">{recordType === 'Experiencia' ? 'Evidencia de trabajo (PDF o imagen)' : 'Certificado (PDF o imagen)'}</p>
-              <div className="mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-[var(--umss-border)] bg-white p-6 text-center text-slate-500">
-                <Plus className="mb-4 h-5 w-5 text-[var(--umss-brand)]" />
-                <p className="text-sm font-semibold text-slate-900">Haz clic o arrastra el archivo aquí</p>
-                <p className="mt-2 text-xs text-slate-500">Formato PDF, PNG o JPG (Máx. 5MB)</p>
+              <div 
+                className={`mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-[24px] border-2 border-dashed transition-colors cursor-pointer ${
+                  isDragging ? 'border-[var(--umss-brand)] bg-[rgba(79,70,229,0.04)]' : 'border-[var(--umss-border)] bg-white hover:border-[var(--umss-brand)] hover:bg-[rgba(79,70,229,0.02)]'
+                } p-6 text-center text-slate-500`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="application/pdf,image/png,image/jpeg,image/jpg"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleFileUpload(e.target.files[0]);
+                      e.target.value = ''; // clear input
+                    }
+                  }}
+                />
+                {currentEvidence ? (
+                  <>
+                    <FileText className="mb-4 h-8 w-8 text-[var(--umss-brand)]" />
+                    <p className="text-sm font-semibold text-slate-900 line-clamp-2 max-w-full">{currentEvidence}</p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Archivo cargado con éxito ({recordType === 'Experiencia' ? experienceForm.fileSize : certificationForm.fileSize})
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-4 inline-flex items-center text-xs font-semibold text-[var(--umss-brand)] hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (recordType === 'Experiencia') {
+                          setExperienceForm(curr => ({ ...curr, evidence: '', evidenceUrl: '', evidenceFile: null, fileSize: '' }));
+                        } else {
+                          setCertificationForm(curr => ({ ...curr, evidence: '', evidenceUrl: '', evidenceFile: null, fileSize: '' }));
+                        }
+                      }}
+                    >
+                      Remover archivo
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mb-4 h-5 w-5 text-[var(--umss-brand)]" />
+                    <p className="text-sm font-semibold text-slate-900">Haz clic o arrastra el archivo aquí</p>
+                    <p className="mt-2 text-xs text-slate-500">Formato PDF, PNG o JPG (Máx. 5MB)</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            {editingRecordId ? (
+              <button
+                type="button"
+                onClick={() => handleDeleteRecord(editingRecordId, recordType)}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-6 text-sm font-semibold text-red-600 transition hover:bg-red-100 mr-auto"
+              >
+                Eliminar {recordType === 'Experiencia' ? 'Experiencia' : 'Certificación'}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -378,9 +553,10 @@ export function ExperienceSection() {
             <button
               type="button"
               onClick={handleSave}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+              disabled={isSaving}
+              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'}`}
             >
-              {recordType === 'Experiencia' ? 'Guardar Experiencia' : 'Guardar Certificación'}
+              {isSaving ? 'Guardando...' : (recordType === 'Experiencia' ? 'Guardar Experiencia' : 'Guardar Certificación')}
             </button>
           </div>
         </div>
@@ -457,7 +633,7 @@ export function ExperienceSection() {
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        handleDeleteRecord(entry.id);
+                        handleDeleteRecord(entry.id, entry.recordType);
                       }}
                       className="absolute right-[-8px] top-[-8px] inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:bg-red-600 hover:text-white"
                       aria-label="Eliminar registro"
@@ -479,13 +655,42 @@ export function ExperienceSection() {
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-[rgb(80,72,229)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (entry.evidenceUrl) {
+                      window.open(entry.evidenceUrl, '_blank');
+                    } else {
+                      alert('No hay documento adjunto para este registro.');
+                    }
+                  }}
+                  className={`inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-sm transition ${
+                    entry.evidenceUrl
+                      ? 'bg-[rgb(80,72,229)] text-white hover:bg-[#4338CA]'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                  disabled={!entry.evidenceUrl}
                 >
                   Ver documento
                 </button>
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[var(--umss-brand)] hover:text-[var(--umss-brand)]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (entry.evidenceUrl) {
+                      const a = document.createElement('a');
+                      a.href = entry.evidenceUrl;
+                      a.download = entry.title || 'documento';
+                      a.click();
+                    } else {
+                      alert('No hay documento adjunto para este registro.');
+                    }
+                  }}
+                  className={`inline-flex h-11 items-center justify-center rounded-2xl border px-4 text-sm font-semibold shadow-sm transition ${
+                    entry.evidenceUrl 
+                      ? 'border-[var(--umss-border)] bg-white text-slate-700 hover:border-[var(--umss-brand)] hover:text-[var(--umss-brand)]'
+                      : 'border-transparent bg-slate-50 text-slate-400 cursor-not-allowed'
+                  }`}
+                  disabled={!entry.evidenceUrl}
                 >
                   Descargar
                 </button>

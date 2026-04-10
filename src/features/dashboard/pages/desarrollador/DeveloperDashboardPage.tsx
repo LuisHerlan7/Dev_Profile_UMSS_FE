@@ -21,6 +21,7 @@ import { SkillsSection } from '@features/dashboard/components/SkillsSection';
 import { ExperienceSection } from '@features/dashboard/components/ExperienceSection';
 import { SettingsSection } from '@features/dashboard/components/SettingsSection';
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
+import * as mappers from '@features/dashboard/utils/developerDashboardMappers';
 
 type SectionId = 'overview' | 'projects' | 'skills' | 'experience' | 'settings';
 
@@ -120,6 +121,40 @@ export function DeveloperDashboardPage() {
       return initialProjects;
     }
   });
+
+  // Estados para datos del servidor
+  // Estados para datos del servidor con persistencia local (estilo Proyectos)
+  const [technicalSkills, setTechnicalSkills] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('umss_skills_tech');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const [softSkills, setSoftSkills] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('umss_skills_soft');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const [experienceRecords, setExperienceRecords] = useState<any[]>(() => {
+    try {
+      const stored = localStorage.getItem('umss_experience');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const [settingsProfile, setSettingsProfile] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('umss_settings_profile');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+  const [settingsHighlights, setSettingsHighlights] = useState<any>(() => {
+    try {
+      const stored = localStorage.getItem('umss_settings_highlights');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
+
   const navigate = useNavigate();
 
   const navItems = baseNavItems.map((item) => ({
@@ -133,7 +168,43 @@ export function DeveloperDashboardPage() {
     if (section === 'projects') {
       setActiveSection('projects');
     }
+    // Carga inicial de datos desde el servidor
+    loadData();
   }, [location.search]);
+
+  const loadData = async () => {
+    try {
+      const { fetchDeveloperDashboard } = await import('@features/dashboard/api/developerDashboard');
+      const data = await fetchDeveloperDashboard();
+      
+      const mappedSkills = mappers.mapHabilidades(data.habilidades || []);
+      setTechnicalSkills(mappedSkills.technical);
+      setSoftSkills(mappedSkills.soft);
+      localStorage.setItem('umss_skills_tech', JSON.stringify(mappedSkills.technical));
+      localStorage.setItem('umss_skills_soft', JSON.stringify(mappedSkills.soft));
+      
+      const mappedExp = mappers.mapExperienciaYFormacion(data.experiencias || [], data.formaciones || []);
+      setExperienceRecords(mappedExp);
+      localStorage.setItem('umss_experience', JSON.stringify(mappedExp));
+
+      const prof = mappers.buildSettingsProfile(data);
+      setSettingsProfile(prof);
+      localStorage.setItem('umss_settings_profile', JSON.stringify(prof));
+
+      const high = mappers.buildVisibilityHighlights(data);
+      setSettingsHighlights(high);
+      localStorage.setItem('umss_settings_highlights', JSON.stringify(high));
+      
+      // Sincronizar Proyectos (identico a habilidades/experiencia)
+      if (data.proyectos && data.proyectos.length > 0) {
+        const mappedProj = mappers.mapProyectosToProjectItems(data.proyectos);
+        setProjects(mappedProj);
+        localStorage.setItem('umss_projects', JSON.stringify(mappedProj));
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
 
   const saveProjects = (items: ProjectItem[]) => {
     localStorage.setItem('umss_projects', JSON.stringify(items));
@@ -180,8 +251,9 @@ export function DeveloperDashboardPage() {
         <DashboardSidebar
           brand="Perfil Dev UMSS"
           subtitle="Panel del desarrollador"
-          profileName="Alex Rivera"
-          profileRole="Desarrollador Full Stack"
+          profileName={settingsProfile?.firstName ? `${settingsProfile.firstName} ${settingsProfile.lastName}` : "Alex Rivera"}
+          profileRole={settingsProfile?.role || "Desarrollador Full Stack"}
+          profileImageUrl={settingsProfile?.avatar}
           profileBadge="perfil activo"
           navItems={navItems}
           collapsed={isSidebarCollapsed}
@@ -199,8 +271,9 @@ export function DeveloperDashboardPage() {
       topbar={
         <DashboardTopbar
           searchPlaceholder="Buscar proyectos, habilidades..."
-          profileName="Alex Rivera"
-          profileRole="Desarrollador Full Stack"
+          profileName={settingsProfile?.firstName ? `${settingsProfile.firstName} ${settingsProfile.lastName}` : "Alex Rivera"}
+          profileRole={settingsProfile?.role || "Desarrollador Full Stack"}
+          profileImageUrl={settingsProfile?.avatar}
           actions={
             <>
               <button
@@ -238,9 +311,26 @@ export function DeveloperDashboardPage() {
           onEditProject={handleEditProject}
         />
       ) : null}
-      {activeSection === 'skills' ? <SkillsSection /> : null}
-      {activeSection === 'experience' ? <ExperienceSection /> : null}
-      {activeSection === 'settings' ? <SettingsSection /> : null}
+      {activeSection === 'skills' ? (
+        <SkillsSection
+          serverTechnical={technicalSkills}
+          serverSoft={softSkills}
+          onDataDirty={() => loadData()}
+        />
+      ) : null}
+      {activeSection === 'experience' ? (
+        <ExperienceSection
+          initialFromServer={experienceRecords}
+          onDataDirty={() => loadData()}
+        />
+      ) : null}
+      {activeSection === 'settings' ? (
+        <SettingsSection
+          serverProfile={settingsProfile}
+          serverHighlights={settingsHighlights}
+          onDataDirty={() => loadData()}
+        />
+      ) : null}
     </DashboardLayout>
   );
 }

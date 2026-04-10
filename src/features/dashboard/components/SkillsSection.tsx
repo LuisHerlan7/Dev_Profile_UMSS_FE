@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Edit3, Plus, Trash2, X } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
+import type { SoftSkillState, TechnicalSkillState } from '@features/dashboard/utils/developerDashboardMappers';
 
 const initialTechnicalSkills = [
   { id: 'tech-1', name: 'React.js', level: 'Avanzado', progress: 84 },
@@ -19,12 +20,39 @@ const initialSoftSkills = [
 
 const levelOptions = ['Principiante', 'Intermedio', 'Avanzado', 'Experto'];
 
-export function SkillsSection() {
+export function SkillsSection({
+  serverTechnical,
+  serverSoft,
+  onDataDirty,
+}: {
+  serverTechnical?: TechnicalSkillState[];
+  serverSoft?: SoftSkillState[];
+  onDataDirty?: () => void;
+}) {
   const [editMode, setEditMode] = useState(false);
-  const [technicalSkills, setTechnicalSkills] = useState(initialTechnicalSkills);
-  const [softSkills, setSoftSkills] = useState(initialSoftSkills);
-  const [draftTechnicalSkills, setDraftTechnicalSkills] = useState(initialTechnicalSkills);
-  const [draftSoftSkills, setDraftSoftSkills] = useState(initialSoftSkills);
+  const [technicalSkills, setTechnicalSkills] = useState<TechnicalSkillState[]>(() =>
+    serverTechnical === undefined ? initialTechnicalSkills : serverTechnical
+  );
+  const [softSkills, setSoftSkills] = useState<SoftSkillState[]>(() =>
+    serverSoft === undefined ? initialSoftSkills : serverSoft
+  );
+  const [draftTechnicalSkills, setDraftTechnicalSkills] = useState<TechnicalSkillState[]>(() =>
+    serverTechnical === undefined ? initialTechnicalSkills : serverTechnical
+  );
+  const [draftSoftSkills, setDraftSoftSkills] = useState<SoftSkillState[]>(() =>
+    serverSoft === undefined ? initialSoftSkills : serverSoft
+  );
+
+  useEffect(() => {
+    if (serverTechnical !== undefined) {
+      setTechnicalSkills(serverTechnical);
+      setDraftTechnicalSkills(serverTechnical);
+    }
+    if (serverSoft !== undefined) {
+      setSoftSkills(serverSoft);
+      setDraftSoftSkills(serverSoft);
+    }
+  }, [serverTechnical, serverSoft]);
   const [newSoftSkill, setNewSoftSkill] = useState('');
   const [editingSoftSkillId, setEditingSoftSkillId] = useState<string | null>(null);
   const [editingSoftSkillName, setEditingSoftSkillName] = useState('');
@@ -54,12 +82,35 @@ export function SkillsSection() {
     setEditMode(false);
   };
 
-  const saveChanges = () => {
-    setTechnicalSkills(draftTechnicalSkills);
-    setSoftSkills(draftSoftSkills);
-    setEditingSoftSkillId(null);
-    setEditingSoftSkillName('');
-    setEditMode(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const { syncSkills } = await import('@features/dashboard/api/developerDashboard');
+      await syncSkills({
+        technical: draftTechnicalSkills.map(t => ({
+          name: t.name,
+          level: t.level,
+          progress: t.progress
+        })),
+        soft: draftSoftSkills.map(s => ({
+          name: s.name
+        }))
+      });
+      
+      setTechnicalSkills(draftTechnicalSkills);
+      setSoftSkills(draftSoftSkills);
+      setEditingSoftSkillId(null);
+      setEditingSoftSkillName('');
+      setEditMode(false);
+      
+      if (onDataDirty) onDataDirty();
+    } catch (e: any) {
+      alert(e.message || 'Error al guardar habilidades');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDraftTechnicalChange = (
@@ -374,7 +425,7 @@ export function SkillsSection() {
                 <button
                   type="button"
                   onClick={handleAddSoftSkill}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-slate-200"
                 >
                   Agregar habilidad
                 </button>
@@ -394,10 +445,13 @@ export function SkillsSection() {
             </button>
             <button
               type="button"
+              disabled={isSaving}
               onClick={saveChanges}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${
+                isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
+              }`}
             >
-              Guardar
+              {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         ) : null}

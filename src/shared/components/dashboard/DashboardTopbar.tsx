@@ -6,6 +6,7 @@ type DashboardTopbarProps = {
   actions?: ReactNode;
   profileName: string;
   profileRole: string;
+  profileImageUrl?: string | null;
 };
 
 export function DashboardTopbar({
@@ -13,6 +14,7 @@ export function DashboardTopbar({
   actions,
   profileName,
   profileRole,
+  profileImageUrl,
 }: DashboardTopbarProps) {
   return (
     <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
@@ -33,12 +35,24 @@ export function DashboardTopbar({
             <p className="text-sm font-semibold text-slate-900">{profileName}</p>
             <p className="text-xs text-slate-500">{profileRole}</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white">
-            {profileName
-              .split(' ')
-              .slice(0, 2)
-              .map((name) => name[0])
-              .join('')}
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-sm">
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt={profileName}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : null}
+            <span className={profileImageUrl ? 'sr-only' : ''}>
+              {profileName
+                .split(' ')
+                .slice(0, 2)
+                .map((name) => name[0])
+                .join('')}
+            </span>
           </div>
         </div>
       </div>

@@ -22,11 +22,13 @@ export function ProjectsSection({
   onOpenProjectForm,
   onToggleVisibility,
   onEditProject,
+  onDataDirty,
 }: {
   projects: ProjectItem[];
   onOpenProjectForm: () => void;
   onToggleVisibility: (projectId: string) => void;
   onEditProject: (projectId: string) => void;
+  onDataDirty?: () => void;
 }) {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);

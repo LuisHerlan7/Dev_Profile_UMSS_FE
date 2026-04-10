@@ -1,7 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { ArrowRight, Lock, Pencil, Trash2, X, Plus } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowRight, Lock, Pencil, Trash2, X, Plus, Upload, ImageIcon } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
+import { updateAvatar, updateProfile } from '@features/dashboard/api/developerDashboard';
+import type {
+  SettingsProfileState,
+  VisibilityHighlightsState,
+} from '@features/dashboard/utils/developerDashboardMappers';
 
 const initialProfile = {
   firstName: 'Alex',
@@ -29,13 +34,25 @@ const initialHighlights = {
   trajectory: ['Senior Developer @ Tech Corp', 'Lead Eng @ Startup X', 'MS Computer Science'],
 };
 
-export function SettingsSection() {
+export function SettingsSection({
+  serverProfile,
+  serverHighlights,
+  onDataDirty,
+}: {
+  serverProfile?: SettingsProfileState;
+  serverHighlights?: VisibilityHighlightsState;
+  onDataDirty?: () => void;
+}) {
   const [profile, setProfile] = useState(initialProfile);
   const [highlights, setHighlights] = useState(initialHighlights);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [showQuickAlert, setShowQuickAlert] = useState(true);
   const [addingSection, setAddingSection] = useState<keyof typeof highlights | null>(null);
   const [newItemText, setNewItemText] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const updateField = (field: keyof typeof profile, value: string) => {
     setProfile((current) => ({ ...current, [field]: value }));
@@ -71,6 +88,58 @@ export function SettingsSection() {
 
   const handleChangePassword = () => {
     setShowPasswordFields(true);
+  };
+
+  useEffect(() => {
+    if (serverProfile) {
+      setProfile((current) => ({ ...current, ...serverProfile }));
+      setAvatarUrl(serverProfile.avatar || null);
+    }
+  }, [serverProfile]);
+
+  const saveChanges = async () => {
+    setIsSaving(true);
+    try {
+      let avatarUpdated = false;
+      let profileUpdated = false;
+
+      // 1. Guardar Avatar si ha cambiado
+      if (avatarFile !== null || (avatarUrl === null && serverProfile?.avatar !== null)) {
+        const fd = new FormData();
+        if (avatarFile) {
+          fd.append('avatar', avatarFile);
+        } else {
+          fd.append('remove_avatar', '1');
+        }
+        
+        const res = await updateAvatar(fd);
+        setAvatarUrl(res.url);
+        setAvatarFile(null);
+        avatarUpdated = true;
+      }
+
+      // 2. Guardar resto del perfil
+      const profilePayload = {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        maternalLastName: profile.maternalLastName,
+        role: profile.role,
+        bio: profile.bio,
+      };
+
+      await updateProfile(profilePayload);
+      profileUpdated = true;
+      
+      if (avatarUpdated || profileUpdated) {
+        if (onDataDirty) onDataDirty();
+      }
+      
+      alert('Configuración guardada correctamente.');
+    } catch (e: any) {
+      alert(e.message || 'Error al guardar configuración.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -112,8 +181,23 @@ export function SettingsSection() {
           <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
             <div className="rounded-[28px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-6 shadow-sm">
               <div className="relative h-56 overflow-hidden rounded-[24px] bg-slate-200">
+                {/* Avatar preview */}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar de perfil"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <ImageIcon className="h-16 w-16 text-slate-400" />
+                  </div>
+                )}
+
+                {/* Pencil button */}
                 <button
                   type="button"
+                  onClick={() => setShowAvatarUpload(true)}
                   className="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] text-white shadow-lg transition hover:bg-[#4338ca]"
                   aria-label="Editar foto de perfil"
                 >
@@ -224,17 +308,37 @@ export function SettingsSection() {
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
+          onClick={() => {
+            if (serverProfile) {
+              setProfile(p => ({ ...p, ...serverProfile }));
+              setAvatarUrl(serverProfile.avatar || null);
+            }
+          }}
           className="inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-[var(--umss-surface)]"
         >
           Cancelar
         </button>
         <button
           type="button"
-          className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+          onClick={saveChanges}
+          disabled={isSaving}
+          className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold text-white shadow-sm transition ${isSaving ? 'bg-slate-300 cursor-not-allowed' : 'bg-[var(--umss-brand)] hover:bg-[#4338CA]'}`}
         >
-          Guardar
+          {isSaving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>
+
+      {showAvatarUpload && (
+        <AvatarUploadTray
+          currentAvatar={avatarUrl}
+          onClose={() => setShowAvatarUpload(false)}
+          onConfirm={(file, url) => {
+            setAvatarFile(file);
+            setAvatarUrl(url);
+            setShowAvatarUpload(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -382,6 +486,133 @@ function TipRow({
         {icon}
       </span>
       <p className="text-sm text-slate-700">{label}</p>
+    </div>
+  );
+}
+
+function AvatarUploadTray({
+  currentAvatar,
+  onClose,
+  onConfirm,
+}: {
+  currentAvatar: string | null;
+  onClose: () => void;
+  onConfirm: (file: File | null, url: string | null) => void;
+}) {
+  const [dragActive, setDragActive] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatar);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida.');
+      return;
+    }
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
+
+  const onDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+      <div className="w-[480px] rounded-[32px] border border-[var(--umss-border)] bg-white p-8 shadow-2xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-slate-900">Actualizar Foto de Perfil</h3>
+          <button onClick={onClose} className="rounded-full p-2 hover:bg-slate-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div
+          onDragEnter={onDrag}
+          onDragLeave={onDrag}
+          onDragOver={onDrag}
+          onDrop={onDrop}
+          className={`relative mb-6 flex aspect-square flex-col items-center justify-center overflow-hidden rounded-[24px] border-2 border-dashed transition-all ${
+            dragActive
+              ? 'border-[var(--umss-brand)] bg-[rgba(80,72,229,0.04)]'
+              : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-[var(--umss-brand)]'
+          }`}
+        >
+          {previewUrl ? (
+            <>
+              <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity hover:opacity-100">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg"
+                >
+                  Cambiar imagen
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center p-6 text-center" onClick={() => fileInputRef.current?.click()}>
+              <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+                <Upload className="h-6 w-6 text-[var(--umss-brand)]" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">Arrastra tu foto aquí</p>
+              <p className="mt-1 text-xs text-slate-500">o haz clic para buscar en tu equipo</p>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          {previewUrl && (
+            <button
+              onClick={() => {
+                setPreviewUrl(null);
+                setSelectedFile(null);
+              }}
+              className="inline-flex h-11 items-center gap-2 rounded-2xl bg-red-50 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </button>
+          )}
+          <div className="ml-auto flex gap-3">
+            <button
+              onClick={onClose}
+              className="h-11 rounded-2xl px-6 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => onConfirm(selectedFile, previewUrl)}
+              className="h-11 rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-lg hover:bg-[#4338ca]"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
