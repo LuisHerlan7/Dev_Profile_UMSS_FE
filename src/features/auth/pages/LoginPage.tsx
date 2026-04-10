@@ -101,7 +101,7 @@ export function LoginPage() {
           placeholder="••••••••"
           autoComplete="current-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
           required
         />
 
