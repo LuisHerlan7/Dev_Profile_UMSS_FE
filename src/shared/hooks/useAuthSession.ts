@@ -11,7 +11,7 @@ import {
 } from '@services/auth';
 
 type UseAuthSessionOptions = {
-  requiredRole?: string;
+  requiredRole?: string | string[];
   redirectTo?: string;
 };
 
@@ -59,8 +59,11 @@ export function useAuthSession({
         setSession(nextSession);
         setError('');
 
-        if (requiredRole && nextSession.user.role !== requiredRole) {
-          navigate(getRedirectPathForRole(nextSession.user.role, nextSession.dashboard), { replace: true });
+        if (requiredRole) {
+          const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+          if (!allowedRoles.includes(nextSession.user.role)) {
+            navigate(getRedirectPathForRole(nextSession.user.role, nextSession.dashboard), { replace: true });
+          }
         }
       } catch (requestError) {
         if (isCancelled) {
