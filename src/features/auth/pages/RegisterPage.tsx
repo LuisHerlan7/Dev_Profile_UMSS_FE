@@ -11,7 +11,6 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'desarrollador' | 'visitante'>('desarrollador');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +46,6 @@ export function RegisterPage() {
       await registerUser({
         name: name.trim(),
         email: email.trim(),
-        role,
         password,
         password_confirmation: passwordConfirmation,
       });
@@ -66,6 +64,9 @@ export function RegisterPage() {
       <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Crear cuenta</h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         Únete a la comunidad de desarrolladores más grande de la UMSS.
+      </p>
+      <p className="mt-2 text-xs text-slate-500">
+        ¿Solo quieres explorar? Puedes visitar la sección Explorar sin crear una cuenta.
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -110,24 +111,13 @@ export function RegisterPage() {
           onChange={(event) => setEmail(event.target.value)}
           required
         />
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">¿Cómo quieres registrarte?</span>
-          <select
-            className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-[#6C63FF]/40 focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/35 transition"
-            value={role}
-            onChange={(event) => setRole(event.target.value as 'desarrollador' | 'visitante')}
-          >
-            <option value="desarrollador">Quiero ser desarrollador</option>
-            <option value="visitante">Quiero ser visitante</option>
-          </select>
-        </label>
         <TextField
           label="Contraseña"
           type="password"
           placeholder="Crea una contraseña segura"
           autoComplete="new-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
           minLength={8}
           required
         />
@@ -137,7 +127,7 @@ export function RegisterPage() {
           placeholder="Repite tu contraseña"
           autoComplete="new-password"
           value={passwordConfirmation}
-          onChange={(event) => setPasswordConfirmation(event.target.value)}
+          onChange={(event) => setPasswordConfirmation(event.target.value.replace(/\s/g, ''))}
           minLength={8}
           required
         />
