@@ -19,6 +19,8 @@ import { ProjectsSection } from '@features/dashboard/components/ProjectsSection'
 import { SkillsSection } from '@features/dashboard/components/SkillsSection';
 import { ExperienceSection, SettingsSection } from '@features/dashboard/components/MoreSections';
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
+import { useAuthSession } from '@shared/hooks/useAuthSession';
+import { resolveRoleLabel } from '@services/auth';
 
 type SectionId = 'overview' | 'projects' | 'skills' | 'experience' | 'settings';
 
@@ -56,11 +58,46 @@ export function DeveloperDashboardPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
+  const { session, isLoading, error } = useAuthSession({
+    requiredRole: 'desarrollador',
+    redirectTo: '/login',
+  });
+
+  const sectionLabels = Object.fromEntries(
+    (session?.dashboard?.sections || []).map((section) => [section.id, section.label])
+  );
 
   const navItems = baseNavItems.map((item) => ({
     ...item,
+    label: sectionLabels[item.id] || item.label,
     active: item.id === activeSection,
   }));
+
+  if (isLoading && !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--umss-surface)] p-6">
+        <div className="w-full max-w-xl rounded-[28px] border border-[var(--umss-border)] bg-white p-6 text-center shadow-[0_18px_40px_-32px_rgba(15,23,42,0.28)]">
+          <p className="text-sm font-semibold text-[var(--umss-brand)]">Cargando dashboard</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Estamos validando tu sesion y preparando tu panel de desarrollador.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--umss-surface)] p-6">
+        <div className="w-full max-w-xl rounded-[28px] border border-red-200 bg-white p-6 text-center shadow-[0_18px_40px_-32px_rgba(15,23,42,0.28)]">
+          <p className="text-sm font-semibold text-red-600">No pudimos cargar tu sesion.</p>
+          <p className="mt-2 text-sm text-slate-600">{error || 'Vuelve a iniciar sesion para continuar.'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const profileRole = session.dashboard?.profile_role_label || resolveRoleLabel(session.user.role);
 
   return (
     <DashboardLayout
@@ -68,10 +105,10 @@ export function DeveloperDashboardPage() {
       sidebar={
         <DashboardSidebar
           brand="Perfil Dev UMSS"
-          subtitle="Panel del desarrollador"
-          profileName="Alex Rivera"
-          profileRole="Desarrollador Full Stack"
-          profileBadge="perfil activo"
+          subtitle={session.dashboard?.title || 'Panel del desarrollador'}
+          profileName={session.user.name}
+          profileRole={profileRole}
+          profileBadge={session.dashboard?.profile_badge || 'perfil activo'}
           navItems={navItems}
           collapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
@@ -88,8 +125,8 @@ export function DeveloperDashboardPage() {
       topbar={
         <DashboardTopbar
           searchPlaceholder="Buscar proyectos, habilidades..."
-          profileName="Alex Rivera"
-          profileRole="Desarrollador Full Stack"
+          profileName={session.user.name}
+          profileRole={profileRole}
           actions={
             <>
               <button
