@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 
 type DashboardTopbarProps = {
@@ -16,6 +16,13 @@ export function DashboardTopbar({
   profileRole,
   profileImageUrl,
 }: DashboardTopbarProps) {
+  const [imgError, setImgError] = useState(false);
+
+  // Cada vez que cambia el URL, reseteamos el error para intentar cargarlo de nuevo
+  useEffect(() => {
+    setImgError(false);
+  }, [profileImageUrl]);
+
   return (
     <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
       <label className="relative block w-full max-w-xl">
@@ -36,22 +43,22 @@ export function DashboardTopbar({
             <p className="text-xs text-slate-500">{profileRole}</p>
           </div>
           <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-sm">
-            {profileImageUrl ? (
+            {profileImageUrl && !imgError ? (
               <img
                 src={profileImageUrl}
                 alt={profileName}
                 className="h-full w-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
+                onError={() => setImgError(true)}
               />
             ) : null}
-            <span className={profileImageUrl ? 'sr-only' : ''}>
+            <span className={profileImageUrl && !imgError ? 'sr-only' : ''}>
               {profileName
                 .split(' ')
+                .filter(Boolean)
                 .slice(0, 2)
                 .map((name) => name[0])
-                .join('')}
+                .join('')
+                .toUpperCase()}
             </span>
           </div>
         </div>

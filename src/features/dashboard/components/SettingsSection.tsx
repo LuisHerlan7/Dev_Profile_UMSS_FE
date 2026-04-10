@@ -38,24 +38,37 @@ export function SettingsSection({
   serverProfile,
   serverHighlights,
   onDataDirty,
+  onLocalUpdate,
+  pendingAvatarFile,
+  setPendingAvatarFile,
 }: {
   serverProfile?: SettingsProfileState;
   serverHighlights?: VisibilityHighlightsState;
   onDataDirty?: () => void;
+  onLocalUpdate?: (updates: Partial<SettingsProfileState>) => void;
+  pendingAvatarFile?: File | null;
+  setPendingAvatarFile?: (file: File | null) => void;
 }) {
-  const [profile, setProfile] = useState(initialProfile);
+  const [profile, setProfile] = useState(serverProfile || initialProfile);
   const [highlights, setHighlights] = useState(initialHighlights);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [showQuickAlert, setShowQuickAlert] = useState(true);
   const [addingSection, setAddingSection] = useState<keyof typeof highlights | null>(null);
   const [newItemText, setNewItemText] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  
+  // Ref para rastrear el avatar original del servidor y detectar cambios reales
+  const originalServerAvatar = useRef<string | null>(serverProfile?.avatar || null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(serverProfile?.avatar || null);
+  
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const updateField = (field: keyof typeof profile, value: string) => {
-    setProfile((current) => ({ ...current, [field]: value }));
+    const newProfile = { ...profile, [field]: value };
+    setProfile(newProfile);
+    if (onLocalUpdate) {
+      onLocalUpdate({ [field]: value });
+    }
   };
 
   const removeHighlight = (section: keyof typeof highlights, index: number) => {
@@ -91,11 +104,19 @@ export function SettingsSection({
   };
 
   useEffect(() => {
-    if (serverProfile) {
-      setProfile((current) => ({ ...current, ...serverProfile }));
-      setAvatarUrl(serverProfile.avatar || null);
+    if (serverProfile && !isSaving) {
+      setProfile((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(serverProfile)) return prev;
+        return { ...prev, ...serverProfile };
+      });
+      
+      // Solo actualizamos avatarUrl si NO hay un archivo pendiente (cambio local)
+      if (!pendingAvatarFile) {
+        setAvatarUrl(serverProfile.avatar || null);
+        originalServerAvatar.current = serverProfile.avatar || null;
+      }
     }
-  }, [serverProfile]);
+  }, [serverProfile, isSaving, pendingAvatarFile]);
 
   const saveChanges = async () => {
     setIsSaving(true);
@@ -104,17 +125,29 @@ export function SettingsSection({
       let profileUpdated = false;
 
       // 1. Guardar Avatar si ha cambiado
-      if (avatarFile !== null || (avatarUrl === null && serverProfile?.avatar !== null)) {
+      // Cambió si hay archivo nuevo O si el actual es null pero el original no lo era
+      const hasRemovedAvatar = avatarUrl === null && originalServerAvatar.current !== null;
+      
+      if (pendingAvatarFile !== null || hasRemovedAvatar) {
         const fd = new FormData();
-        if (avatarFile) {
-          fd.append('avatar', avatarFile);
+        if (pendingAvatarFile) {
+          fd.append('avatar', pendingAvatarFile);
         } else {
           fd.append('remove_avatar', '1');
         }
         
         const res = await updateAvatar(fd);
-        setAvatarUrl(res.url);
-        setAvatarFile(null);
+        const newAvatarUrl = res.url || null;
+        
+        if (onLocalUpdate) {
+          onLocalUpdate({ avatar: newAvatarUrl });
+        }
+        setAvatarUrl(newAvatarUrl);
+        originalServerAvatar.current = newAvatarUrl;
+        
+        if (setPendingAvatarFile) {
+          setPendingAvatarFile(null);
+        }
         avatarUpdated = true;
       }
 
@@ -310,8 +343,10 @@ export function SettingsSection({
           type="button"
           onClick={() => {
             if (serverProfile) {
-              setProfile(p => ({ ...p, ...serverProfile }));
+              setProfile(serverProfile);
               setAvatarUrl(serverProfile.avatar || null);
+              originalServerAvatar.current = serverProfile.avatar || null;
+              if (setPendingAvatarFile) setPendingAvatarFile(null);
             }
           }}
           className="inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-[var(--umss-surface)]"
@@ -333,8 +368,9 @@ export function SettingsSection({
           currentAvatar={avatarUrl}
           onClose={() => setShowAvatarUpload(false)}
           onConfirm={(file, url) => {
-            setAvatarFile(file);
-            setAvatarUrl(url);
+            if (setPendingAvatarFile) setPendingAvatarFile(file);
+            setAvatarUrl(url); // Actualización local inmediata
+            if (onLocalUpdate) onLocalUpdate({ avatar: url }); // Sync Sidebar/Topbar
             setShowAvatarUpload(false);
           }}
         />

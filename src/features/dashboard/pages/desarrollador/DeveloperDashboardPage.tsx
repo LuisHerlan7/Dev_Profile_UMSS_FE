@@ -4,10 +4,12 @@ import {
   Bell,
   BriefcaseBusiness,
   Code2,
+  Eye,
   FolderKanban,
   HelpCircle,
   LayoutDashboard,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import {
   DashboardSidebar,
@@ -155,14 +157,51 @@ export function DeveloperDashboardPage() {
     } catch { return null; }
   });
 
+  const [overviewData, setOverviewData] = useState<{
+    metrics: any[];
+    recentProjects: any[];
+    topSkills: string[];
+    firstName: string;
+    completionPercentage: number;
+  }>(() => {
+    try {
+      const stored = localStorage.getItem('umss_overview_data');
+      return stored ? JSON.parse(stored) : {
+        metrics: [],
+        recentProjects: [],
+        topSkills: [],
+        firstName: '',
+        completionPercentage: 0
+      };
+    } catch {
+      return { metrics: [], recentProjects: [], topSkills: [], firstName: '', completionPercentage: 0 };
+    }
+  });
+
   const navigate = useNavigate();
+
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
   const navItems = baseNavItems.map((item) => ({
     ...item,
     active: item.id === activeSection,
   }));
 
+  const updateSettingsProfile = (updates: Partial<any>) => {
+    setSettingsProfile((prev: any) => {
+      const next = { ...prev, ...updates };
+      localStorage.setItem('umss_settings_profile', JSON.stringify(next));
+      return next;
+    });
+  };
+
   useEffect(() => {
+    // Limpieza de seguridad: Si había datos corruptos con JSX en localStorage, los borramos
+    const stored = localStorage.getItem('umss_overview_data');
+    if (stored && stored.includes('$$typeof')) {
+      localStorage.removeItem('umss_overview_data');
+    }
+
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
     if (section === 'projects') {
@@ -201,6 +240,17 @@ export function DeveloperDashboardPage() {
         setProjects(mappedProj);
         localStorage.setItem('umss_projects', JSON.stringify(mappedProj));
       }
+
+      // Sincronizar Información General (Overview)
+      const overview = {
+        metrics: mappers.buildOverviewMetrics(data),
+        recentProjects: mappers.buildRecentProjects(data.proyectos || []),
+        topSkills: mappers.buildTopSkillBadges(data.habilidades || []),
+        firstName: mappers.welcomeFirstName(data),
+        completionPercentage: mappers.estimateProfileCompletion(data)
+      };
+      setOverviewData(overview);
+      localStorage.setItem('umss_overview_data', JSON.stringify(overview));
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -301,6 +351,11 @@ export function DeveloperDashboardPage() {
           onOpenProjectForm={handleOpenProjectForm}
           onOpenSkills={() => setActiveSection('skills')}
           onOpenSettings={handleOpenSettings}
+          metrics={overviewData.metrics}
+          recentProjects={overviewData.recentProjects}
+          topSkills={overviewData.topSkills}
+          firstName={overviewData.firstName}
+          completionPercentage={overviewData.completionPercentage}
         />
       ) : null}
       {activeSection === 'projects' ? (
@@ -329,6 +384,9 @@ export function DeveloperDashboardPage() {
           serverProfile={settingsProfile}
           serverHighlights={settingsHighlights}
           onDataDirty={() => loadData()}
+          onLocalUpdate={updateSettingsProfile}
+          pendingAvatarFile={pendingAvatarFile}
+          setPendingAvatarFile={setPendingAvatarFile}
         />
       ) : null}
     </DashboardLayout>

@@ -1,5 +1,5 @@
+import { useEffect, useState, type ReactNode } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { cn } from '@shared/utils/cn';
 
 export type DashboardSidebarItem = {
@@ -37,6 +37,35 @@ export function DashboardSidebar({
   onToggleCollapse,
   onItemSelect,
 }: DashboardSidebarProps) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [profileImageUrl]);
+
+  const initials = profileName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || 'U';
+
+  const renderAvatar = () => (
+    <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
+      {profileImageUrl && !imgError ? (
+        <img 
+          src={profileImageUrl} 
+          alt={profileName} 
+          className="h-full w-full object-cover" 
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <span className="text-lg font-semibold">{initials}</span>
+      )}
+    </div>
+  );
+
   return (
     <div
       className={cn(
@@ -56,26 +85,14 @@ export function DashboardSidebar({
             <PanelLeftOpen className="h-4 w-4" />
           </button>
 
-          <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-            {profileImageUrl ? (
-              <img src={profileImageUrl} alt={profileName} className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-lg font-semibold">D</span>
-            )}
-          </div>
+          {renderAvatar()}
         </div>
       ) : (
         <div className="w-full space-y-4">
           <div className="rounded-[28px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] text-white shadow-lg shadow-[rgba(80,72,229,0.28)]">
-                  {profileImageUrl ? (
-                    <img src={profileImageUrl} alt={profileName} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-lg font-semibold">D</span>
-                  )}
-                </div>
+                {renderAvatar()}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold leading-tight text-slate-900">{brand}</p>
                   <p className="mt-1 text-xs leading-snug text-slate-500">{subtitle}</p>

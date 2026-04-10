@@ -184,7 +184,7 @@ export function mapExperienciaYFormacion(
 export type OverviewMetric = {
   label: string;
   value: string;
-  icon: ReactNode;
+  iconId: 'folder' | 'sparkles' | 'briefcase';
   trend: string;
   trendTone: 'success' | 'warning' | 'info';
 };
@@ -198,32 +198,33 @@ export type OverviewRecentProject = {
 };
 
 export function buildOverviewMetrics(
-  payload: DeveloperDashboardPayload,
-  icons: { folder: React.ReactNode; sparkles: React.ReactNode; eye: React.ReactNode }
+  payload: DeveloperDashboardPayload
 ): OverviewMetric[] {
   const nProj = payload.proyectos?.length ?? 0;
   const nSkills = payload.habilidades?.length ?? 0;
+  const nExperience = (payload.experiencias?.length ?? 0) + (payload.formaciones?.length ?? 0);
+  
   return [
     {
       label: 'Total de Proyectos',
       value: String(nProj),
-      icon: icons.folder,
+      iconId: 'folder',
       trend: nProj > 0 ? 'Activo' : 'Sin datos',
       trendTone: nProj > 0 ? 'success' : 'info',
     },
     {
-      label: 'Habilidades registradas',
+      label: 'Habilidades',
       value: String(nSkills),
-      icon: icons.sparkles,
+      iconId: 'sparkles',
       trend: nSkills > 0 ? 'Activo' : 'Sin datos',
       trendTone: nSkills > 0 ? 'success' : 'info',
     },
     {
-      label: 'Visitas al Perfil',
-      value: '—',
-      icon: icons.eye,
-      trend: 'Próximamente',
-      trendTone: 'info',
+      label: 'Trayectoria',
+      value: String(nExperience),
+      iconId: 'briefcase',
+      trend: nExperience > 0 ? 'Verificada' : 'Por completar',
+      trendTone: nExperience > 0 ? 'success' : 'warning',
     },
   ];
 }
