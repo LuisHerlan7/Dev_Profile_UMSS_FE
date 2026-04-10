@@ -45,7 +45,6 @@ type LoginPayload = {
 type RegisterPayload = {
   name: string;
   email: string;
-  role: 'desarrollador' | 'visitante';
   password: string;
   password_confirmation: string;
 };
@@ -215,6 +214,25 @@ export async function registerUser(payload: RegisterPayload) {
   }
 
   return data;
+}
+
+export async function logoutUser(token = getStoredAuthToken()) {
+  if (!token) {
+    clearStoredAuthSession();
+    return;
+  }
+
+  try {
+    await fetch(buildApiUrl('/api/auth/logout'), {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } finally {
+    clearStoredAuthSession();
+  }
 }
 
 export async function fetchDashboardSession(token = getStoredAuthToken()) {
