@@ -31,10 +31,7 @@ const portfolios: Portfolio[] = [
 
 export function VisitanteOfertaPortafolioPage() {
   const navigate = useNavigate();
-  const { session, isLoading, error } = useAuthSession({
-    requiredRole: 'visitante',
-    redirectTo: '/login',
-  });
+  const { session, isLoading, error } = useAuthSession();
   const [query, setQuery] = useState('');
   const [technologyFilter, setTechnologyFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<'all' | 'Senior' | 'Semi-Senior' | 'Junior'>('all');
@@ -71,28 +68,17 @@ export function VisitanteOfertaPortafolioPage() {
     );
   }
 
-  if (!session) {
-    return (
-      <main className="min-h-screen bg-[var(--umss-surface)]">
-        <Navbar />
-        <div className="container-page py-10">
-          <DashboardCard title="No pudimos cargar tu sesion" description={error || 'Vuelve a iniciar sesion para continuar.'}>
-            <p className="text-sm text-slate-600">
-              El explorador de portafolios requiere una sesion activa de visitante.
-            </p>
-          </DashboardCard>
-        </div>
-      </main>
-    );
-  }
-
-  const profileRole = session.dashboard?.profile_role_label || resolveRoleLabel(session.user.role);
-  const profileInitials = session.user.name
+  const profileRole = session?.dashboard?.profile_role_label
+    || (session ? resolveRoleLabel(session.user.role) : 'Visitante');
+  const profileName = session?.user.name || 'Invitado';
+  const profileEmail = session?.user.email || 'explorar@umss.edu';
+  const isGuest = !session;
+  const profileInitials = profileName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
+    .join('') || 'VU';
 
   return (
     <main className="vp-container">
@@ -154,11 +140,13 @@ export function VisitanteOfertaPortafolioPage() {
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-[var(--umss-brand)]">Sesion activa</p>
-                <h2 className="mt-1 text-2xl font-semibold text-slate-900">{session.user.name}</h2>
+                <p className="text-sm font-semibold text-[var(--umss-brand)]">
+                  {isGuest ? 'Explorador invitado' : 'Sesion activa'}
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold text-slate-900">{profileName}</h2>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <DashboardBadge tone="brand">{profileRole}</DashboardBadge>
-                  <DashboardBadge>{session.user.email}</DashboardBadge>
+                  <DashboardBadge>{profileEmail}</DashboardBadge>
                 </div>
               </div>
 
