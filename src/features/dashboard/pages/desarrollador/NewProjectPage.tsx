@@ -193,6 +193,8 @@ export function NewProjectPage() {
                       value={title}
                       onChange={(event) => setTitle(event.target.value)}
                       placeholder="Ej. Sistema de Panel Nexus"
+                      required
+                      maxLength={150}
                       className="w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[var(--umss-brand)] focus:ring-2 focus:ring-[rgba(80,72,229,0.12)]"
                     />
                   </div>
@@ -218,6 +220,7 @@ export function NewProjectPage() {
                       value={shortDescription}
                       onChange={(event) => setShortDescription(event.target.value)}
                       placeholder="Un breve resumen de una línea sobre tu logro"
+                      required
                       className="w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[var(--umss-brand)] focus:ring-2 focus:ring-[rgba(80,72,229,0.12)]"
                     />
                   </div>

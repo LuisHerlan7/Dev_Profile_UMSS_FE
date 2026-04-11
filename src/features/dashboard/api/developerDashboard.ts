@@ -226,3 +226,75 @@ export async function syncSkills(payload: {
 
   return res.json();
 }
+
+export async function updateSocialLinks(payload: {
+  github?: string;
+  linkedin?: string;
+  website?: string;
+  phone?: string;
+}) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/settings/social-links', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Error al actualizar redes sociales');
+  return res.json();
+}
+
+export async function updateEmail(payload: { email: string }) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/settings/email', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Error al actualizar correo');
+  return res.json();
+}
+
+export async function updatePassword(payload: { current_password: string; new_password: string }) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/settings/password', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Error al cambiar contraseña' }));
+    throw new Error(err.message || 'Error al cambiar contraseña');
+  }
+  return res.json();
+}
+
+export async function syncHighlights(payload: {
+  projects: string[];
+  skills: string[];
+  trajectory: string[];
+}) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/settings/highlights', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Error al guardar destacados');
+  return res.json();
+}

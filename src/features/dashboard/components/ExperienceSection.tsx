@@ -381,7 +381,7 @@ export function ExperienceSection({
       </div>
 
       {showAddRecordForm ? (
-        <div className="rounded-[32px] border border-[var(--umss-border)] bg-white p-6 shadow-sm">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="rounded-[32px] border border-[var(--umss-border)] bg-white p-6 shadow-sm">
           <div className="flex flex-wrap gap-3 rounded-[24px] bg-[var(--umss-surface)] p-2">
             {recordTypes.map((type) => (
               <button
@@ -408,18 +408,21 @@ export function ExperienceSection({
                     value={experienceForm.experienceType}
                     onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value }))}
                     placeholder="Ej: SYSTEM ARCHITECTURE, QA REPORT"
+                    required
                   />
                   <FormField
                     label="Empresa"
                     value={experienceForm.company}
                     onChange={(value) => setExperienceForm((current) => ({ ...current, company: value }))}
                     placeholder="Ej: Google, Amazon, Startup local"
+                    required
                   />
                   <FormField
                     label="Cargo"
                     value={experienceForm.position}
                     onChange={(value) => setExperienceForm((current) => ({ ...current, position: value }))}
                     placeholder="Ej: Frontend Developer"
+                    required
                   />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
@@ -428,6 +431,7 @@ export function ExperienceSection({
                       inputType="date"
                       onChange={(value) => setExperienceForm((current) => ({ ...current, startDate: value }))}
                       placeholder="mm/dd/aaaa"
+                      required
                     />
                     <FormField
                       label="Fecha fin"
@@ -451,12 +455,14 @@ export function ExperienceSection({
                     value={certificationForm.name}
                     onChange={(value) => setCertificationForm((current) => ({ ...current, name: value }))}
                     placeholder="Ej: Meta Front-End Developer"
+                    required
                   />
                   <FormField
                     label="Organización emisora"
                     value={certificationForm.issuer}
                     onChange={(value) => setCertificationForm((current) => ({ ...current, issuer: value }))}
                     placeholder="Ej: Coursera, Google, Microsoft"
+                    required
                   />
                   <FormField
                     label="ID de credencial"
@@ -551,15 +557,14 @@ export function ExperienceSection({
               Cancelar
             </button>
             <button
-              type="button"
-              onClick={handleSave}
+              type="submit"
               disabled={isSaving}
               className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'}`}
             >
               {isSaving ? 'Guardando...' : (recordType === 'Experiencia' ? 'Guardar Experiencia' : 'Guardar Certificación')}
             </button>
           </div>
-        </div>
+        </form>
       ) : null}
 
       {showFilterPanel ? (
@@ -723,12 +728,14 @@ function FormField({
   onChange,
   placeholder,
   inputType = 'text',
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   inputType?: string;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hiddenDateRef = useRef<HTMLInputElement>(null);
@@ -763,6 +770,7 @@ function FormField({
           ref={inputRef}
           type="text"
           value={value}
+          required={required}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className={`w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none ${

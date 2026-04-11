@@ -225,6 +225,9 @@ export function DeveloperDashboardPage() {
         <SettingsSection
           serverProfile={settingsProfile?.firstName ? settingsProfile : undefined}
           serverHighlights={visibilityHighlights}
+          availableProjects={projects.map(p => p.title)}
+          availableSkills={[...technicalAndSoft.technical.map(t => t.name), ...technicalAndSoft.soft.map(s => s.name)]}
+          availableExperience={experienceRecords.map(e => e.title)}
           onDataDirty={fetchDashboardData}
           onLocalUpdate={(updates) => {
             if (updates.avatar !== undefined) {

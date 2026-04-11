@@ -353,7 +353,7 @@ export function buildSettingsProfile(payload: DeveloperDashboardPayload): Settin
     email: auth.email,
     password: '**********',
     newPassword: '',
-    avatar: u?.fotografiaUrl ?? null,
+    avatar: (u?.fotografiaUrl as string | undefined) ?? null,
   };
 }
 
@@ -364,7 +364,24 @@ export type VisibilityHighlightsState = {
 };
 
 export function buildVisibilityHighlights(payload: DeveloperDashboardPayload): VisibilityHighlightsState {
-  const v = payload.visibilidad;
+  const u = payload.usuario as Record<string, unknown> | null;
+
+  // Read the highlights_json column saved by syncHighlights
+  const raw = u?.highlights_json;
+  if (raw && typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as { projects?: unknown; skills?: unknown; trajectory?: unknown };
+      const toStringArray = (v: unknown) => Array.isArray(v) ? v.map(String).filter(Boolean) : [];
+      const projects   = toStringArray(parsed.projects);
+      const skills     = toStringArray(parsed.skills);
+      const trajectory = toStringArray(parsed.trajectory);
+      if (projects.length > 0 || skills.length > 0 || trajectory.length > 0) {
+        return { projects, skills, trajectory };
+      }
+    } catch { /* fall through to derived */ }
+  }
+
+  // Fallback: derive from existing data (first time / highlights_json not yet saved)
   const proyectos = payload.proyectos?.slice(0, 3).map((p) => p.nombre_proyecto) ?? [];
   const skills = payload.habilidades
     ?.filter((h) => h.tipo_habilidad === 'tecnica')
@@ -378,14 +395,10 @@ export function buildVisibilityHighlights(payload: DeveloperDashboardPayload): V
     tray.push(`${f.carrera_especialidad} · ${f.institucion}`);
   }
 
-  if (v && typeof v === 'object') {
-    // Si en BD hay flags en falso, podríamos filtrar secciones; por ahora solo enriquecemos listas.
-  }
-
   return {
-    projects: proyectos.length ? proyectos : ['Añade proyectos destacados'],
-    skills: skills.length ? skills : ['Añade habilidades destacadas'],
-    trajectory: tray.length ? tray : ['Añade experiencia o formación'],
+    projects:   proyectos,
+    skills:     skills,
+    trajectory: tray,
   };
 }
 

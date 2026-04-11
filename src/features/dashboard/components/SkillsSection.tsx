@@ -216,7 +216,7 @@ export function SkillsSection({
         }
       />
 
-      <div className="space-y-4">
+      <form id="skills-form" onSubmit={(e) => { e.preventDefault(); saveChanges(); }} className="space-y-4">
         <DashboardCard
           title="Habilidades Técnicas"
           description="Lenguajes, frameworks y herramientas."
@@ -261,6 +261,7 @@ export function SkillsSection({
                           id={`${skill.id}-name`}
                           value={skill.name}
                           onChange={(event) => handleDraftTechnicalChange(skill.id, 'name', event.target.value)}
+                          required
                           className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
                         />
                       </div>
@@ -366,7 +367,8 @@ export function SkillsSection({
                       />
                       <button
                         type="button"
-                        className="rounded-full p-2 text-[var(--umss-brand)] hover:bg-[rgba(80,72,229,0.1)]"
+                        disabled={!editingSoftSkillName.trim()}
+                        className="rounded-full p-2 text-[var(--umss-brand)] hover:bg-[rgba(80,72,229,0.1)] disabled:opacity-50"
                         onClick={handleSaveSoftSkill}
                         aria-label="Guardar habilidad blanda"
                       >
@@ -424,8 +426,9 @@ export function SkillsSection({
                 />
                 <button
                   type="button"
+                  disabled={!newSoftSkill.trim()}
                   onClick={handleAddSoftSkill}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-slate-200"
+                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-slate-200 disabled:opacity-50"
                 >
                   Agregar habilidad
                 </button>
@@ -444,9 +447,9 @@ export function SkillsSection({
               Cancelar
             </button>
             <button
-              type="button"
+              type="submit"
+              form="skills-form"
               disabled={isSaving}
-              onClick={saveChanges}
               className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${
                 isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
               }`}
@@ -455,7 +458,7 @@ export function SkillsSection({
             </button>
           </div>
         ) : null}
-      </div>
+      </form>
     </div>
   );
 }
