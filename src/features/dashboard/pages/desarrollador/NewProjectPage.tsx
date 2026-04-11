@@ -1,12 +1,25 @@
-import { FormEvent, useRef, useState } from 'react';
+import { DragEvent, FormEvent, useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { saveProject } from '@features/dashboard/api/developerDashboard';
 
-const PROJECT_STORAGE_KEY = 'umss_projects';
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const ACCEPTED_TYPES = [
+  'image/png', 'image/jpeg', 'image/webp',
+  'application/pdf',
+  'application/zip', 'application/x-zip-compressed',
+];
+const ACCEPTED_EXTENSIONS = '.png,.jpg,.jpeg,.webp,.pdf,.zip';
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function NewProjectPage() {
   const navigate = useNavigate();
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [label, setLabel] = useState('');
   const [title, setTitle] = useState('');
   const [shortDescription, setShortDescription] = useState('');
@@ -21,6 +34,69 @@ export function NewProjectPage() {
   const [liveUrl, setLiveUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const validateAndSetFile = useCallback((file: File) => {
+    setFileError(null);
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setFileError('Formato no soportado. Usa PNG, JPG, WEBP, PDF o ZIP.');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`El archivo supera el límite de ${formatFileSize(MAX_FILE_SIZE)}.`);
+      return;
+    }
+
+    if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+
+    setUploadedFile(file);
+    if (file.type.startsWith('image/')) {
+      setFilePreviewUrl(URL.createObjectURL(file));
+    } else {
+      setFilePreviewUrl(null);
+    }
+  }, [filePreviewUrl]);
+
+  const handleRemoveFile = () => {
+    if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+    setUploadedFile(null);
+    setFilePreviewUrl(null);
+    setFileError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) validateAndSetFile(file);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) validateAndSetFile(file);
+  };
+
   const handleAddTechnology = () => {
     const tech = techInput.trim();
     if (tech && !technologies.includes(tech)) {
@@ -33,49 +109,48 @@ export function NewProjectPage() {
     setTechnologies((current) => current.filter((item) => item !== tech));
   };
 
-  const saveProjects = (items: unknown[]) => {
-    localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(items));
-  };
-
   const handleCancel = () => {
-    // Limpiar el formulario
-    setLabel('');
-    setTitle('');
-    setShortDescription('');
-    setDetailedDescription('');
-    setRole('Arquitecto Principal / Fullstack');
-    setStatus('Producción');
-    setTechInput('');
-    setTechnologies(['React', 'TypeScript', 'TailwindCSS']);
-    setStartDate('');
-    setEndDate('');
-    setGithubUrl('');
-    setLiveUrl('');
-    setIsPublic(true);
-    
-    // Volver a la página anterior
+    handleRemoveFile();
     navigate(-1);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const mapStatus = (uiStatus: string) => {
+    switch (uiStatus) {
+      case 'Producción': return 'completado';
+      case 'Beta': return 'en_desarrollo';
+      case 'Concepto': return 'pausado';
+      default: return 'completado';
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
+    setIsSubmitting(true);
 
-    const newProject = {
-      id: `project-${Date.now()}`,
-      title: title || 'Proyecto nuevo',
-      subtitle: shortDescription || 'Descripción breve del proyecto',
-      status,
-      tags: technologies,
-      label: label || 'Proyecto',
-      accentClassName: 'from-slate-100 via-slate-200 to-slate-300',
-      themeClassName: 'bg-[rgba(56,189,248,0.12)] text-sky-600 border-sky-200',
-      visible: true,
-    };
+    try {
+      const formData = new FormData();
+      formData.append('nombre_proyecto', title || 'Proyecto nuevo');
+      formData.append('descripcion_proyecto', shortDescription || detailedDescription || 'Sin descripción');
+      if (role) formData.append('rol_desarrollador', role);
+      if (startDate) formData.append('fecha_inicio', startDate);
+      if (endDate) formData.append('fecha_fin', endDate);
+      if (githubUrl) formData.append('enlace_repositorio', githubUrl);
+      if (liveUrl) formData.append('enlace_proyecto_activo', liveUrl);
+      formData.append('estado_proyecto', mapStatus(status));
 
-    const stored = localStorage.getItem(PROJECT_STORAGE_KEY);
-    const existingProjects = stored ? (JSON.parse(stored) as unknown[]) : [];
-    saveProjects([newProject, ...existingProjects]);
-    navigate('/dashboard?section=projects');
+      if (uploadedFile) {
+        formData.append('archivo', uploadedFile);
+      }
+
+      await saveProject(formData);
+      navigate('/dashboard?section=projects');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error al crear el proyecto.';
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,6 +176,12 @@ export function NewProjectPage() {
                 </p>
               </div>
             </div>
+
+            {submitError && (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {submitError}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-6 rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-6">
@@ -197,6 +278,7 @@ export function NewProjectPage() {
                       <input
                         value={techInput}
                         onChange={(event) => setTechInput(event.target.value)}
+                        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); handleAddTechnology(); } }}
                         placeholder="Escribe una tecnología"
                         className="w-full bg-transparent text-sm text-slate-700 outline-none"
                       />
@@ -235,18 +317,92 @@ export function NewProjectPage() {
 
               <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-6">
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900">Galería y Multimedia</h2>
-                <div className="mt-6 rounded-[24px] border-2 border-dashed border-[var(--umss-border)] bg-white p-10 text-center text-slate-500">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-3xl bg-[var(--umss-brand)]/10 text-[var(--umss-brand)] shadow-sm">
-                    <Plus className="h-5 w-5" />
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ACCEPTED_EXTENSIONS}
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+
+                {!uploadedFile ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click(); }}
+                    className={`mt-6 cursor-pointer rounded-[24px] border-2 border-dashed p-10 text-center transition-colors ${
+                      isDragging
+                        ? 'border-[var(--umss-brand)] bg-[rgba(80,72,229,0.06)]'
+                        : 'border-[var(--umss-border)] bg-white hover:border-[var(--umss-brand)]/40 hover:bg-[rgba(80,72,229,0.03)]'
+                    }`}
+                  >
+                    <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-3xl shadow-sm transition-colors ${
+                      isDragging
+                        ? 'bg-[var(--umss-brand)] text-white'
+                        : 'bg-[rgba(80,72,229,0.1)] text-[var(--umss-brand)]'
+                    }`}>
+                      <Upload className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {isDragging ? 'Suelta el archivo aquí' : 'Arrastra tu archivo aquí, o haz clic para explorar'}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      PNG, JPG, WEBP, PDF o ZIP — Máx. {formatFileSize(MAX_FILE_SIZE)}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">Arrastra las capturas de pantalla de tu proyecto aquí</p>
-                  <p className="mt-2 text-sm text-slate-500">PNG, JPG o EBP (Máx. 10MB por archivo)</p>
-                </div>
+                ) : (
+                  <div className="mt-6 rounded-[24px] border border-[var(--umss-border)] bg-white p-4">
+                    <div className="flex items-center gap-4">
+                      {filePreviewUrl ? (
+                        <img
+                          src={filePreviewUrl}
+                          alt="Vista previa"
+                          className="h-16 w-16 flex-shrink-0 rounded-2xl border border-[var(--umss-border)] object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-[rgba(80,72,229,0.1)]">
+                          {uploadedFile.type === 'application/pdf' ? (
+                            <FileText className="h-7 w-7 text-[var(--umss-brand)]" />
+                          ) : (
+                            <ImageIcon className="h-7 w-7 text-[var(--umss-brand)]" />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900">{uploadedFile.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">{formatFileSize(uploadedFile.size)}</p>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--umss-surface)]">
+                          <div className="h-full rounded-full bg-[var(--umss-brand)] transition-all duration-500" style={{ width: '100%' }} />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--umss-border)] bg-white text-slate-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-500"
+                        aria-label="Eliminar archivo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {fileError && (
+                  <p className="mt-3 text-xs font-medium text-red-500">{fileError}</p>
+                )}
 
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-900">Repositorio de GitHub</label>
                     <input
+                      type="url"
                       value={githubUrl}
                       onChange={(event) => setGithubUrl(event.target.value)}
                       placeholder="https://github.com/..."
@@ -256,6 +412,7 @@ export function NewProjectPage() {
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-900">Enlace a demo en vivo</label>
                     <input
+                      type="url"
                       value={liveUrl}
                       onChange={(event) => setLiveUrl(event.target.value)}
                       placeholder="https://proyecto.dev/..."
@@ -289,15 +446,24 @@ export function NewProjectPage() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="h-11 rounded-2xl border border-[var(--umss-border)] bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-[var(--umss-surface)]"
+                  disabled={isSubmitting}
+                  className="h-11 rounded-2xl border border-[var(--umss-border)] bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-[var(--umss-surface)] disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="h-11 rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+                  disabled={isSubmitting}
+                  className="h-11 inline-flex items-center gap-2 rounded-2xl bg-[var(--umss-brand)] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA] disabled:opacity-60"
                 >
-                  Publicar Proyecto
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Guardando…
+                    </>
+                  ) : (
+                    'Publicar Proyecto'
+                  )}
                 </button>
               </div>
             </form>

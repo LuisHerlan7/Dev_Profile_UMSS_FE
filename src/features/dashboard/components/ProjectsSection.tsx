@@ -75,14 +75,14 @@ export function ProjectsSection({
             </Button>
             <Button
               onClick={() => setIsEditMode(!isEditMode)}
-              className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black border border-slate-200 shadow-md transition hover:bg-slate-50"
+              className={`inline-flex h-11 items-center gap-2 rounded-2xl border border-black px-4 text-sm font-semibold shadow-md transition ${isEditMode ? 'bg-slate-200 text-black' : 'bg-white text-black hover:bg-slate-50'}`}
             >
               <Edit className="h-4 w-4 text-black" />
               <span className="text-black">Editar</span>
             </Button>
             <Button
               onClick={() => setIsFilterMode(!isFilterMode)}
-              className="inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-4 text-sm font-semibold text-black border border-slate-200 shadow-md transition hover:bg-slate-50"
+              className={`inline-flex h-11 items-center gap-2 rounded-2xl border border-black px-4 text-sm font-semibold shadow-md transition ${isFilterMode ? 'bg-slate-200 text-black' : 'bg-white text-black hover:bg-slate-50'}`}
             >
               <Filter className="h-4 w-4 text-black" />
               <span className="text-black">Filtrar</span>
