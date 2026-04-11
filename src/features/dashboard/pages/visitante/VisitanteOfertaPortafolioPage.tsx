@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
-
-
+import { fetchPublicPortfolios } from '../../api/developerDashboard';
 
 type Portfolio = {
   id: number;
@@ -12,41 +11,55 @@ type Portfolio = {
   level: 'Senior' | 'Semi-Senior' | 'Junior';
   type: 'Full Stack' | 'Frontend' | 'Backend' | 'Data';
   tags: string[];
+  avatarUrl?: string;
 };
-
-const portfolios: Portfolio[] = [
-  { id: 1, name: 'Alejandro Vargas', title: 'Arquitecto Full Stack', level: 'Senior', type: 'Full Stack', tags: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'] },
-  { id: 2, name: 'Mariana Rios', title: 'Diseñadora UI/UX y Dev Frontend', level: 'Semi-Senior', type: 'Frontend', tags: ['Figma', 'Vue.js', 'Tailwind', 'Next.js'] },
-  { id: 3, name: 'Carlos Mendez', title: 'Especialista Backend', level: 'Junior', type: 'Backend', tags: ['Python', 'Django', 'PostgreSQL', 'Docker'] },
-  { id: 4, name: 'Sofía Blanco', title: 'Ingeniera de Datos', level: 'Senior', type: 'Data', tags: ['PySpark', 'AWS', 'SQL', 'Airflow'] },
-  { id: 5, name: 'Mateo Flores', title: 'Desarrollador Móvil', level: 'Semi-Senior', type: 'Frontend', tags: ['Flutter', 'Dart', 'Firebase', 'API'] },
-  { id: 6, name: 'Valentina Gomez', title: 'Ingeniera DevOps', level: 'Senior', type: 'Backend', tags: ['Kubernetes', 'Docker', 'Terraform', 'CI/CD'] },
-  { id: 7, name: 'Julián Salazar', title: 'Especialista en Ciberseguridad', level: 'Senior', type: 'Backend', tags: ['Rust', 'Linux', 'Go', 'Pentesting'] },
-  { id: 8, name: 'Lucía Fernández', title: 'Investigadora de IA / ML', level: 'Semi-Senior', type: 'Data', tags: ['PyTorch', 'Scikit-learn', 'OpenCV', 'Data Science'] },
-];
 
 export function VisitanteOfertaPortafolioPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [technologyFilter, setTechnologyFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<'all' | 'Senior' | 'Semi-Senior' | 'Junior'>('all');
   const [profileFilter, setProfileFilter] = useState<'all' | 'Full Stack' | 'Frontend' | 'Backend' | 'Data'>('all');
 
-  const technologyOptions = ['React', 'Node.js', 'TypeScript', 'PostgreSQL', 'Figma', 'Vue.js', 'Tailwind', 'Next.js', 'Python', 'Django', 'Docker', 'AWS'];
+  useEffect(() => {
+    async function load() {
+      try {
+        setIsLoading(true);
+        const data = await fetchPublicPortfolios();
+        setPortfolios(data);
+      } catch (err) {
+        console.error('Error al cargar portafolios', err);
+        setError('No se pudieron cargar los portafolios. Por favor, intenta de nuevo más tarde.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const technologyOptions = useMemo(() => {
+    const allTags = new Set<string>();
+    portfolios.forEach(p => p.tags.forEach(t => allTags.add(t)));
+    return Array.from(allTags).sort();
+  }, [portfolios]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-      return portfolios.filter((item) => {
-        const levelMatch = levelFilter === 'all' || item.level === levelFilter;
-        const technologyMatch = technologyFilter === 'all' || item.tags.some((tag) => tag === technologyFilter);
-        const profileMatch = profileFilter === 'all' || item.type === profileFilter;
-        const textMatch =
-          item.name.toLowerCase().includes(q) ||
-          item.title.toLowerCase().includes(q) ||
-          item.tags.some((tag) => tag.toLowerCase().includes(q));
-        return levelMatch && technologyMatch && profileMatch && (q.length === 0 || textMatch);
-      });
-  }, [query, levelFilter, technologyFilter, profileFilter]);
+    return portfolios.filter((item) => {
+      const levelMatch = levelFilter === 'all' || item.level === levelFilter;
+      const technologyMatch = technologyFilter === 'all' || item.tags.some((tag) => tag === technologyFilter);
+      const profileMatch = profileFilter === 'all' || item.type === profileFilter;
+      const textMatch =
+        item.name.toLowerCase().includes(q) ||
+        item.title.toLowerCase().includes(q) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(q));
+      return levelMatch && technologyMatch && profileMatch && (q.length === 0 || textMatch);
+    });
+  }, [query, levelFilter, technologyFilter, profileFilter, portfolios]);
   return (
     <main className="vp-container">
       <style>{`
@@ -77,7 +90,7 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); transition: transform .2s ease, box-shadow .2s ease; }
         .vp-card:hover { transform: scale(1.03); box-shadow: 0 8px 20px rgba(15,23,42,0.18); }
         .vp-card-top { display: flex; align-items: center; gap: 12px; }
-        .vp-avatar { width: 46px; height: 46px; border-radius: 50%; background: #e0e7ff; display: grid; place-items: center; color: #3730a3; font-weight: 700; }
+        .vp-avatar { width: 46px; height: 46px; border-radius: 50%; background: #e0e7ff; display: grid; place-items: center; color: #3730a3; font-weight: 700; overflow: hidden; }
         .vp-name { margin: 0; font-size: 1.05rem; font-weight: 700; }
         .vp-role { margin: 2px 0 8px; color: #64748b; font-size: 0.95rem; }
 
@@ -160,10 +173,29 @@ export function VisitanteOfertaPortafolioPage() {
 
       <FadeInSection>
         <section className="vp-grid">
-          {filtered.map((portfolio) => (
+          {isLoading && <p className="col-span-full py-12 text-center text-slate-500">Cargando portafolios...</p>}
+          {!isLoading && error && <p className="col-span-full py-12 text-center text-red-500">{error}</p>}
+          
+          {!isLoading && !error && filtered.map((portfolio) => (
             <article key={portfolio.id} className="vp-card">
               <div className="vp-card-top">
-                <span className="vp-avatar">{portfolio.name.split(' ').map((p) => p[0]).join('').slice(0, 2)}</span>
+                <div className="vp-avatar">
+                  {portfolio.avatarUrl ? (
+                    <img 
+                      src={portfolio.avatarUrl} 
+                      alt={portfolio.name} 
+                      className="h-full w-full object-cover rounded-full"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const span = (e.target as HTMLImageElement).parentElement?.querySelector('.avatar-initials');
+                        if (span) (span as HTMLElement).style.display = 'grid';
+                      }}
+                    />
+                  ) : null}
+                  <span className="avatar-initials" style={{ display: portfolio.avatarUrl ? 'none' : 'grid' }}>
+                    {portfolio.name.split(' ').map((p) => p[0]).join('').slice(0, 2)}
+                  </span>
+                </div>
                 <div>
                   <p className="vp-name">{portfolio.name}</p>
                   <p className="vp-role">{portfolio.title}</p>
@@ -188,7 +220,11 @@ export function VisitanteOfertaPortafolioPage() {
             </article>
           ))}
 
-          {filtered.length === 0 && <p>No se encontraron resultados.</p>}
+          {!isLoading && !error && filtered.length === 0 && (
+            <p className="col-span-full py-12 text-center text-slate-500">
+              No se encontraron portafolios que coincidan con tu búsqueda.
+            </p>
+          )}
         </section>
       </FadeInSection>
 

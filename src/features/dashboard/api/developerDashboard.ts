@@ -298,3 +298,44 @@ export async function syncHighlights(payload: {
   if (!res.ok) throw new Error('Error al guardar destacados');
   return res.json();
 }
+
+/**
+ * Rutas Públicas
+ */
+export async function fetchPublicPortfolios() {
+  const res = await fetch('/api/portafolios', {
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Error al cargar los portafolios.');
+  }
+
+  return res.json() as Promise<any[]>;
+}
+
+export async function fetchPublicPortfolioDetail(id: string | number) {
+  const res = await fetch(`/api/portafolios/${id}`, {
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Perfil no encontrado o es privado.');
+    const text = await res.text();
+    throw new Error(text || 'Error al cargar el detalle del portafolio.');
+  }
+
+  return res.json() as Promise<{
+    profile: any;
+    social: Record<string, string>;
+    skills: any[];
+    projects: any[];
+    timeline: any[];
+    config: any;
+  }>;
+}
