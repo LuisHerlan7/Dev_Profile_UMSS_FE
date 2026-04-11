@@ -614,11 +614,34 @@ export function ExperienceSection({
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-3">
-        {records.map((entry) => {
+        {records
+          .filter((entry) => {
+            // Filtro por texto
+            const q = searchQuery.toLowerCase();
+            const matchesSearch =
+              !q ||
+              entry.title.toLowerCase().includes(q) ||
+              entry.description.toLowerCase().includes(q) ||
+              entry.badge.toLowerCase().includes(q) ||
+              entry.footer.toLowerCase().includes(q) ||
+              entry.recordType.toLowerCase().includes(q);
+
+            // Filtro por categoría
+            const matchesFilter =
+              activeFilter === 'Todos' ||
+              (activeFilter === 'Documentos' && entry.recordType === 'Experiencia') ||
+              (activeFilter === 'Certificaciones' && entry.recordType === 'Certificación') ||
+              (activeFilter === 'Codigo' && entry.badge.toLowerCase().includes('code')) ||
+              (activeFilter === 'Reportes' && (entry.badge.toLowerCase().includes('report') || entry.badge.toLowerCase().includes('qa')));
+
+            return matchesSearch && matchesFilter;
+          })
+          .map((entry) => {
           const Icon = entry.icon;
           return (
             <div
               key={entry.id}
+              id={`experience-${entry.id}`}
               onClick={(event) => {
                 if (isEditMode && !(event.target as HTMLElement).closest('button')) {
                   handleSelectRecord(entry);

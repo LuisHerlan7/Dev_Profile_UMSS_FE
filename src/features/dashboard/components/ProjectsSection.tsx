@@ -15,6 +15,8 @@ export type ProjectItem = {
   accentClassName: string;
   themeClassName: string;
   visible: boolean;
+  liveUrl?: string | null;
+  repoUrl?: string | null;
 };
 
 export function ProjectsSection({
@@ -151,6 +153,7 @@ export function ProjectsSection({
         {filteredProjects.map((project) => (
           <div key={project.id} className="space-y-3">
             <article
+              id={`project-card-${project.id}`}
               className={`group overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-40px_rgba(15,23,42,0.22)] ${
                 isEditMode ? 'cursor-pointer' : ''
               }`}
@@ -186,13 +189,21 @@ export function ProjectsSection({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
-                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-gradient-to-r from-slate-50 to-slate-100 px-6 text-sm font-semibold text-slate-700 transition hover:from-slate-100 hover:to-slate-200 hover:border-slate-300 hover:shadow-sm"
+                    disabled={!project.liveUrl}
+                    onClick={() => project.liveUrl && window.open(project.liveUrl, '_blank', 'noopener,noreferrer')}
+                    className={`inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-gradient-to-r from-slate-50 to-slate-100 px-6 text-sm font-semibold text-slate-700 transition hover:from-slate-100 hover:to-slate-200 hover:border-slate-300 hover:shadow-sm ${
+                      !project.liveUrl ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
                   >
                     Ver Proyecto
                   </button>
                   <button
                     type="button"
-                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg"
+                    disabled={!project.repoUrl}
+                    onClick={() => project.repoUrl && window.open(project.repoUrl, '_blank', 'noopener,noreferrer')}
+                    className={`inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg ${
+                      !project.repoUrl ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
                   >
                     Ver Código
                   </button>

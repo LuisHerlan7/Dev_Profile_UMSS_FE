@@ -364,7 +364,7 @@ export function SettingsSection({
           </div>
         </DashboardCard>
 
-        <DashboardCard title="Configuración de Visibilidad">
+        <DashboardCard id="settings-visibility-card" title="Configuración de Visibilidad">
           <div className="space-y-4">
             {(['projects', 'skills', 'trajectory'] as const).map((section) => (
               <VisibilitySection
@@ -386,7 +386,7 @@ export function SettingsSection({
           </div>
         </DashboardCard>
 
-        <DashboardCard title="Redes Sociales & Enlaces">
+        <DashboardCard id="settings-social-card" title="Redes Sociales & Enlaces">
           <div className="grid gap-4 xl:grid-cols-2">
             <FormField label="GitHub" value={profile.github} onChange={(value) => updateField('github', value)} />
             <FormField label="LinkedIn" value={profile.linkedin} onChange={(value) => updateField('linkedin', value)} />
@@ -395,7 +395,7 @@ export function SettingsSection({
           </div>
         </DashboardCard>
 
-        <DashboardCard title="Correo y Contraseña">
+        <DashboardCard id="settings-email-card" title="Correo y Contraseña">
           <div className="space-y-4">
             {/* E-mail actual - siempre solo lectura */}
             <div>

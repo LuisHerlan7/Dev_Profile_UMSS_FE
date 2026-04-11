@@ -70,6 +70,8 @@ export function mapProyectosToProjectItems(rows: ProyectoRow[]): ProjectItem[] {
       accentClassName: preset.accentClassName,
       themeClassName: preset.themeClassName,
       visible: (p.visibilidad ?? 'publico') === 'publico',
+      liveUrl: p.enlace_proyecto_activo || null,
+      repoUrl: p.enlace_repositorio || null,
     };
   });
 }

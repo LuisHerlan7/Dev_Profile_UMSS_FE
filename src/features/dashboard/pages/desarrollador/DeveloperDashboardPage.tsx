@@ -14,7 +14,7 @@ import {
   type DashboardSidebarItem,
 } from '@shared/components/dashboard/DashboardSidebar';
 import { DashboardLayout } from '@shared/components/dashboard/DashboardLayout';
-import { DashboardTopbar } from '@shared/components/dashboard/DashboardTopbar';
+import { DashboardTopbar, type SearchResultItem } from '@shared/components/dashboard/DashboardTopbar';
 import { OverviewSection } from '@features/dashboard/components/OverviewSection';
 import { ProjectsSection, type ProjectItem } from '@features/dashboard/components/ProjectsSection';
 import { SkillsSection } from '@features/dashboard/components/SkillsSection';
@@ -136,6 +136,67 @@ export function DeveloperDashboardPage() {
   const firstName = dashboardData ? welcomeFirstName(dashboardData) : 'desarrollador';
   const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias ?? [], dashboardData.formaciones ?? []) : [];
 
+  // Construir índice global de búsqueda
+  const searchIndex: SearchResultItem[] = [
+    // Proyectos
+    ...projects.map((p) => ({
+      id: `project-${p.id}`,
+      label: p.title,
+      sublabel: p.subtitle || p.tags.join(', '),
+      section: 'projects',
+      sectionLabel: 'Proyectos',
+      elementId: `project-card-${p.id}`,
+    })),
+    // Habilidades técnicas
+    ...technicalAndSoft.technical.map((s) => ({
+      id: `skill-tech-${s.id}`,
+      label: s.name,
+      sublabel: s.level,
+      section: 'skills',
+      sectionLabel: 'Habilidades',
+      elementId: `skill-${s.id}`,
+    })),
+    // Habilidades blandas
+    ...technicalAndSoft.soft.map((s) => ({
+      id: `skill-soft-${s.id}`,
+      label: s.name,
+      sublabel: 'Habilidad blanda',
+      section: 'skills',
+      sectionLabel: 'Habilidades',
+      elementId: `skill-${s.id}`,
+    })),
+    // Experiencias / Certificaciones
+    ...experienceRecords.map((e) => ({
+      id: `exp-${e.id}`,
+      label: e.title,
+      sublabel: e.recordType,
+      section: 'experience',
+      sectionLabel: 'Experiencia',
+      elementId: `experience-${e.id}`,
+    })),
+    // Secciones de configuración
+    { id: 'settings-visibility', label: 'Configuración de Visibilidad', sublabel: 'Highlights', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-visibility-card' },
+    { id: 'settings-social', label: 'Redes Sociales & Enlaces', sublabel: 'GitHub, LinkedIn, Web', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-social-card' },
+    { id: 'settings-email', label: 'Correo y Contraseña', sublabel: 'Email y seguridad', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-email-card' },
+  ];
+
+  const handleGlobalNavigate = (section: string, elementId?: string) => {
+    setActiveSection(section as SectionId);
+    if (elementId) {
+      // Esperar al render de la sección antes hacer scroll
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const el = document.getElementById(elementId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ring-2', 'ring-[var(--umss-brand)]', 'ring-offset-2');
+            setTimeout(() => el.classList.remove('ring-2', 'ring-[var(--umss-brand)]', 'ring-offset-2'), 1800);
+          }
+        }, 120);
+      });
+    }
+  };
+
   return (
     <DashboardLayout
       sidebarCollapsed={isSidebarCollapsed}
@@ -166,6 +227,8 @@ export function DeveloperDashboardPage() {
           profileName={profileName}
           profileRole={profileRole}
           profileImageUrl={profileAvatar}
+          searchIndex={searchIndex}
+          onNavigate={handleGlobalNavigate}
           actions={
             <>
               <button

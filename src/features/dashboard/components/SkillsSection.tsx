@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Edit3, Plus, Trash2, X } from 'lucide-react';
+import { Check, Edit3, Plus, Search, Trash2, X } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
 import type { SoftSkillState, TechnicalSkillState } from '@features/dashboard/utils/developerDashboardMappers';
@@ -56,6 +56,7 @@ export function SkillsSection({
   const [newSoftSkill, setNewSoftSkill] = useState('');
   const [editingSoftSkillId, setEditingSoftSkillId] = useState<string | null>(null);
   const [editingSoftSkillName, setEditingSoftSkillName] = useState('');
+  const [skillSearch, setSkillSearch] = useState('');
 
   const getLevelForProgress = (progress: number) => {
     if (progress <= 25) return 'Principiante';
@@ -193,6 +194,14 @@ export function SkillsSection({
   const activeTechnicalSkills = editMode ? draftTechnicalSkills : technicalSkills;
   const activeSoftSkills = editMode ? draftSoftSkills : softSkills;
 
+  const q = skillSearch.toLowerCase();
+  const filteredTechnicalSkills = activeTechnicalSkills.filter(
+    (s) => !q || s.name.toLowerCase().includes(q) || s.level.toLowerCase().includes(q)
+  );
+  const filteredSoftSkills = activeSoftSkills.filter(
+    (s) => !q || s.name.toLowerCase().includes(q)
+  );
+
   return (
     <div className="space-y-6">
       <SectionHeading
@@ -200,19 +209,33 @@ export function SkillsSection({
         title="Habilidades y trayectoria"
         description="Lenguajes, frameworks, herramientas y experiencia resumidos como en el editor del mockup."
         actions={
-          !editMode ? (
-            <button
-              type="button"
-              onClick={startEdit}
-              className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338ca]"
-            >
-              Editar
-            </button>
-          ) : (
-            <span className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-lavender)] px-4 text-sm font-semibold text-[var(--umss-brand)]">
-              Modo edición
-            </span>
-          )
+          <div className="flex items-center gap-3">
+            {!editMode && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={skillSearch}
+                  onChange={(e) => setSkillSearch(e.target.value)}
+                  placeholder="Buscar habilidades..."
+                  className="h-10 w-48 rounded-2xl border border-[var(--umss-border)] bg-white pl-9 pr-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
+                />
+              </div>
+            )}
+            {!editMode ? (
+              <button
+                type="button"
+                onClick={startEdit}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338ca]"
+              >
+                Editar
+              </button>
+            ) : (
+              <span className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--umss-lavender)] px-4 text-sm font-semibold text-[var(--umss-brand)]">
+                Modo edición
+              </span>
+            )}
+          </div>
         }
       />
 
@@ -234,9 +257,10 @@ export function SkillsSection({
           }
         >
           <div className="grid gap-4 md:grid-cols-2">
-            {activeTechnicalSkills.map((skill) => (
+            {filteredTechnicalSkills.map((skill) => (
               <div
                 key={skill.id}
+                id={`skill-${skill.id}`}
                 className="relative rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4"
               >
                 {editMode ? (
@@ -353,9 +377,10 @@ export function SkillsSection({
         >
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
-              {activeSoftSkills.map((skill) => (
+              {filteredSoftSkills.map((skill) => (
                 <div
                   key={skill.id}
+                  id={`skill-${skill.id}`}
                   className="flex items-center gap-2 rounded-full border border-[var(--umss-border)] bg-[var(--umss-surface)] px-3 py-2"
                 >
                   {editMode && editingSoftSkillId === skill.id ? (
