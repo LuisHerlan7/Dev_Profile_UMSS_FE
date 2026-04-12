@@ -1,16 +1,16 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Github, Linkedin } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
+import { getRedirectPathForRole, readStoredAuthSession, registerUser } from '@services/auth';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'desarrollador' | 'visitante'>('desarrollador');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,9 +18,18 @@ export function RegisterPage() {
   const [success, setSuccess] = useState('');
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
-  const registerEndpoint = `${apiBase || ''}/api/auth/register`;
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
   const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
+
+  useEffect(() => {
+    const storedSession = readStoredAuthSession();
+
+    if (!storedSession?.user) {
+      return;
+    }
+
+    navigate(getRedirectPathForRole(storedSession.user.role, storedSession.dashboard), { replace: true });
+  }, [navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,36 +43,13 @@ export function RegisterPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch(registerEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          role,
-          password,
-          password_confirmation: passwordConfirmation,
-        }),
+      await registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: passwordConfirmation,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const firstValidationError = data?.errors
-          ? Object.values(data.errors)[0]
-          : null;
-        const validationMessage = Array.isArray(firstValidationError) ? firstValidationError[0] : null;
-        throw new Error(validationMessage || data?.message || 'No se pudo registrar la cuenta.');
-      }
-
-      if (data?.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
-
-      setSuccess('Cuenta creada correctamente. Ya puedes iniciar sesión.');
+      setSuccess('Cuenta creada correctamente. Ahora puedes iniciar sesion con tu rol asignado.');
       setTimeout(() => navigate('/login'), 800);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'Ocurrió un error al registrar.';
@@ -78,6 +64,9 @@ export function RegisterPage() {
       <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Crear cuenta</h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         Únete a la comunidad de desarrolladores más grande de la UMSS.
+      </p>
+      <p className="mt-2 text-xs text-slate-500">
+        ¿Solo quieres explorar? Puedes visitar la sección Explorar sin crear una cuenta.
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -122,24 +111,13 @@ export function RegisterPage() {
           onChange={(event) => setEmail(event.target.value)}
           required
         />
-        <label className="block">
-          <span className="text-sm font-medium text-slate-700">¿Cómo quieres registrarte?</span>
-          <select
-            className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-[#6C63FF]/40 focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/35 transition"
-            value={role}
-            onChange={(event) => setRole(event.target.value as 'desarrollador' | 'visitante')}
-          >
-            <option value="desarrollador">Quiero ser desarrollador</option>
-            <option value="visitante">Quiero ser visitante</option>
-          </select>
-        </label>
         <TextField
           label="Contraseña"
           type="password"
           placeholder="Crea una contraseña segura"
           autoComplete="new-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
           minLength={8}
           required
         />
@@ -149,7 +127,7 @@ export function RegisterPage() {
           placeholder="Repite tu contraseña"
           autoComplete="new-password"
           value={passwordConfirmation}
-          onChange={(event) => setPasswordConfirmation(event.target.value)}
+          onChange={(event) => setPasswordConfirmation(event.target.value.replace(/\s/g, ''))}
           minLength={8}
           required
         />

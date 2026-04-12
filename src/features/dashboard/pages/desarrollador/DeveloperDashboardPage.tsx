@@ -4,6 +4,7 @@ import {
   Bell,
   BriefcaseBusiness,
   Code2,
+  FileText,
   FolderKanban,
   HelpCircle,
   LayoutDashboard,
@@ -21,10 +22,10 @@ import { SkillsSection } from '@features/dashboard/components/SkillsSection';
 import { ExperienceSection } from '@features/dashboard/components/ExperienceSection';
 import { SettingsSection } from '@features/dashboard/components/SettingsSection';
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
-import {
-  fetchDeveloperDashboard,
-  type DeveloperDashboardPayload,
-} from '@features/dashboard/api/developerDashboard';
+import { EvidenceSection } from '@features/dashboard/components/EvidenceSection';
+import { useAuthSession } from '@shared/hooks/useAuthSession';
+import { logoutUser } from '@services/auth';
+import { fetchDeveloperDashboard } from '@services/dashboard';
 import {
   buildOverviewMetrics,
   buildRecentProjects,
@@ -39,7 +40,7 @@ import {
   welcomeFirstName,
 } from '@features/dashboard/utils/developerDashboardMappers';
 
-type SectionId = 'overview' | 'projects' | 'skills' | 'experience' | 'settings';
+type SectionId = 'overview' | 'projects' | 'evidence' | 'skills' | 'experience' | 'settings';
 
 const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }> = [
   {
@@ -51,6 +52,11 @@ const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId
     id: 'projects',
     label: 'Proyectos',
     icon: <FolderKanban className="h-4 w-4" />,
+  },
+  {
+    id: 'evidence',
+    label: 'Evidencias',
+    icon: <FileText className="h-4 w-4" />,
   },
   {
     id: 'skills',
@@ -75,36 +81,54 @@ export function DeveloperDashboardPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
-  const [dashboardData, setDashboardData] = useState<DeveloperDashboardPayload | null>(null);
+  
+  // Usar el nuevo sistema de sesión de dev para estabilidad en redirecciones
+  const { session, isLoading: isSessionLoading } = useAuthSession({
+    requiredRole: 'desarrollador',
+    redirectTo: '/login',
+  });
+
+  const [dashboardData, setDashboardData] = useState<any | null>(null);
+  const [dashboardError, setDashboardError] = useState('');
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 
-  const navItems = baseNavItems.map((item) => ({
-    ...item,
-    active: item.id === activeSection,
-  }));
+  const fetchDashboardData = useCallback(async () => {
+    if (!session?.token) return;
+    try {
+      // Usar el nuevo servicio de fetch con el token de sesión
+      const data = await fetchDeveloperDashboard(session.token);
+      setDashboardData(data);
+      setDashboardError('');
+      // Mapear proyectos usando la lógica local existente
+      if (data.proyectos || data.projects) {
+          const rawProyects = data.proyectos || data.projects;
+          setProjects(mapProyectosToProjectItems(rawProyects));
+      }
+    } catch (requestError) {
+      console.error('Error al cargar dashboard', requestError);
+      setDashboardError(requestError instanceof Error ? requestError.message : 'No se pudo cargar el dashboard.');
+    }
+  }, [session?.token]);
 
+  useEffect(() => {
+    if (session?.token) {
+      fetchDashboardData();
+    }
+  }, [session?.token, fetchDashboardData]);
+
+  // Manejar sección desde la URL (Feature local)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const section = params.get('section');
-    if (section === 'projects') {
-      setActiveSection('projects');
+    if (section && ['overview', 'projects', 'evidence', 'skills', 'experience', 'settings'].includes(section)) {
+      setActiveSection(section as SectionId);
     }
   }, [location.search]);
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const payload = await fetchDeveloperDashboard();
-      setDashboardData(payload);
-      setProjects(mapProyectosToProjectItems(payload.proyectos ?? []));
-    } catch (error) {
-      console.error('Error al cargar dashboard', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  const refreshDashboard = async () => {
+    await fetchDashboardData();
+  };
 
   const handleOpenProjectForm = () => {
     setActiveSection('projects');
@@ -123,67 +147,51 @@ export function DeveloperDashboardPage() {
     navigate(`/editar-proyecto/${projectId}`);
   };
 
-  const technicalAndSoft = mapHabilidades(dashboardData?.habilidades ?? []);
-  const profileName = dashboardData?.auth_user.name ?? 'Desarrollador';
+  // Mapeos locales existentes para mantener la UI funcional
+  const technicalAndSoft = mapHabilidades(dashboardData?.habilidades ?? dashboardData?.skills?.technical ?? []);
+  const profileName = session?.user?.name ?? dashboardData?.auth_user?.name ?? 'Desarrollador';
   const profileRole = dashboardData ? sidebarHeadline(dashboardData) : 'Desarrollador';
   const profileAvatar = (dashboardData?.usuario?.fotografiaUrl as string | undefined) ?? null;
   const overviewMetrics = dashboardData ? buildOverviewMetrics(dashboardData) : [];
-  const recentProjects = dashboardData ? buildRecentProjects(dashboardData.proyectos ?? []) : [];
-  const topSkills = dashboardData ? buildTopSkillBadges(dashboardData.habilidades ?? []) : [];
+  const recentProjects = dashboardData ? buildRecentProjects(dashboardData.proyectos || dashboardData.recent_projects || []) : [];
+  const topSkills = dashboardData ? buildTopSkillBadges(dashboardData.habilidades || dashboardData.skills?.technical || []) : [];
   const settingsProfile = dashboardData ? buildSettingsProfile(dashboardData) : undefined;
   const visibilityHighlights = dashboardData ? buildVisibilityHighlights(dashboardData) : undefined;
   const completionPercentage = dashboardData ? estimateProfileCompletion(dashboardData) : 0;
-  const firstName = dashboardData ? welcomeFirstName(dashboardData) : 'desarrollador';
-  const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias ?? [], dashboardData.formaciones ?? []) : [];
+  const firstName = dashboardData ? welcomeFirstName(dashboardData) : (session?.user?.name?.split(' ')[0] || 'desarrollador');
+  const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias || dashboardData.experience || [], dashboardData.formaciones || []) : [];
 
-  // Construir índice global de búsqueda
+  // Mantener el índice de búsqueda global (Feature local)
   const searchIndex: SearchResultItem[] = [
-    // Proyectos
     ...projects.map((p) => ({
       id: `project-${p.id}`,
       label: p.title,
       sublabel: p.subtitle || p.tags.join(', '),
-      section: 'projects',
+      section: 'projects' as const,
       sectionLabel: 'Proyectos',
       elementId: `project-card-${p.id}`,
     })),
-    // Habilidades técnicas
     ...technicalAndSoft.technical.map((s) => ({
       id: `skill-tech-${s.id}`,
       label: s.name,
       sublabel: s.level,
-      section: 'skills',
+      section: 'skills' as const,
       sectionLabel: 'Habilidades',
       elementId: `skill-${s.id}`,
     })),
-    // Habilidades blandas
-    ...technicalAndSoft.soft.map((s) => ({
-      id: `skill-soft-${s.id}`,
-      label: s.name,
-      sublabel: 'Habilidad blanda',
-      section: 'skills',
-      sectionLabel: 'Habilidades',
-      elementId: `skill-${s.id}`,
-    })),
-    // Experiencias / Certificaciones
     ...experienceRecords.map((e) => ({
       id: `exp-${e.id}`,
       label: e.title,
       sublabel: e.recordType,
-      section: 'experience',
+      section: 'experience' as const,
       sectionLabel: 'Experiencia',
       elementId: `experience-${e.id}`,
     })),
-    // Secciones de configuración
-    { id: 'settings-visibility', label: 'Configuración de Visibilidad', sublabel: 'Highlights', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-visibility-card' },
-    { id: 'settings-social', label: 'Redes Sociales & Enlaces', sublabel: 'GitHub, LinkedIn, Web', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-social-card' },
-    { id: 'settings-email', label: 'Correo y Contraseña', sublabel: 'Email y seguridad', section: 'settings', sectionLabel: 'Configuración', elementId: 'settings-email-card' },
   ];
 
   const handleGlobalNavigate = (section: string, elementId?: string) => {
     setActiveSection(section as SectionId);
     if (elementId) {
-      // Esperar al render de la sección antes hacer scroll
       requestAnimationFrame(() => {
         setTimeout(() => {
           const el = document.getElementById(elementId);
@@ -197,17 +205,40 @@ export function DeveloperDashboardPage() {
     }
   };
 
+  const sectionLabels = Object.fromEntries(
+    (session?.dashboard?.sections || []).map((section: any) => [section.id, section.label])
+  );
+
+  const navItems = baseNavItems.map((item) => ({
+    ...item,
+    label: sectionLabels[item.id] || item.label,
+    active: item.id === activeSection,
+  }));
+
+  if (isSessionLoading && !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--umss-surface)] p-6">
+        <div className="w-full max-w-xl rounded-[28px] border border-[var(--umss-border)] bg-white p-6 text-center shadow-[0_18px_40_rgba(15,23,42,0.28)]">
+          <p className="text-sm font-semibold text-[var(--umss-brand)]">Cargando dashboard</p>
+          <p className="mt-2 text-sm text-slate-600">Preparando tu panel de desarrollador...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) return null;
+
   return (
     <DashboardLayout
       sidebarCollapsed={isSidebarCollapsed}
       sidebar={
         <DashboardSidebar
           brand="Perfil Dev UMSS"
-          subtitle="Panel del desarrollador"
+          subtitle={session.dashboard?.title || "Panel del desarrollador"}
           profileName={profileName}
           profileRole={profileRole}
           profileImageUrl={profileAvatar}
-          profileBadge="perfil activo"
+          profileBadge={session.dashboard?.profile_badge || "perfil activo"}
           navItems={navItems}
           collapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
@@ -229,6 +260,10 @@ export function DeveloperDashboardPage() {
           profileImageUrl={profileAvatar}
           searchIndex={searchIndex}
           onNavigate={handleGlobalNavigate}
+          onLogout={async () => {
+            await logoutUser();
+            window.location.assign('/login');
+          }}
           actions={
             <>
               <button
@@ -250,41 +285,61 @@ export function DeveloperDashboardPage() {
         />
       }
     >
-      {activeSection === 'overview' ? (
+      {dashboardError && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {dashboardError}
+        </div>
+      )}
+      
+      {activeSection === 'overview' && (
         <OverviewSection
+          profileName={firstName}
+          completion={dashboardData?.profile?.completion ?? completionPercentage}
+          nextStep={dashboardData?.profile?.next_step ?? 'Completa tu perfil para destacar mas.'}
+          metrics={dashboardData?.metrics ?? { projects: projects.length, skills: topSkills.length, profile_views: 0 }}
+          recentProjects={recentProjects}
+          skillBadges={topSkills.map(s => s.name)}
           onOpenProjects={() => setActiveSection('projects')}
           onOpenProjectForm={handleOpenProjectForm}
           onOpenSkills={() => setActiveSection('skills')}
           onOpenSettings={() => setActiveSection('settings')}
-          metrics={overviewMetrics}
-          recentProjects={recentProjects}
-          topSkills={topSkills}
-          firstName={firstName}
-          completionPercentage={completionPercentage}
         />
-      ) : null}
-      {activeSection === 'projects' ? (
+      )}
+
+      {activeSection === 'projects' && (
         <ProjectsSection
           projects={projects}
           onOpenProjectForm={handleOpenProjectForm}
           onToggleVisibility={handleToggleVisibility}
           onEditProject={handleEditProject}
+          onProjectCreated={refreshDashboard}
         />
-      ) : null}
-      {activeSection === 'skills' ? (
+      )}
+
+      {activeSection === 'evidence' && (
+        <EvidenceSection
+          evidences={dashboardData?.evidences ?? []}
+          projects={projects.map((project) => ({ id: project.id, title: project.title }))}
+          onEvidenceUploaded={refreshDashboard}
+        />
+      )}
+
+      {activeSection === 'skills' && (
         <SkillsSection
           serverTechnical={technicalAndSoft.technical.length > 0 ? technicalAndSoft.technical : undefined}
           serverSoft={technicalAndSoft.soft.length > 0 ? technicalAndSoft.soft : undefined}
           onDataDirty={fetchDashboardData}
         />
-      ) : null}
-      {activeSection === 'experience' ? (
+      )}
+
+      {activeSection === 'experience' && (
         <ExperienceSection
           initialFromServer={experienceRecords.length > 0 ? experienceRecords : undefined}
           onDataDirty={fetchDashboardData}
         />
-      ) : null}
-      {activeSection === 'settings' ? (
+      )}
+
+      {activeSection === 'settings' && (
         <SettingsSection
           serverProfile={settingsProfile?.firstName ? settingsProfile : undefined}
           serverHighlights={visibilityHighlights}
@@ -294,7 +349,7 @@ export function DeveloperDashboardPage() {
           onDataDirty={fetchDashboardData}
           onLocalUpdate={(updates) => {
             if (updates.avatar !== undefined) {
-              setDashboardData((prev) => prev ? {
+              setDashboardData((prev: any) => prev ? {
                 ...prev,
                 usuario: { ...(prev.usuario || {}), fotografiaUrl: updates.avatar }
               } : prev);
@@ -303,7 +358,7 @@ export function DeveloperDashboardPage() {
           pendingAvatarFile={pendingAvatarFile}
           setPendingAvatarFile={setPendingAvatarFile}
         />
-      ) : null}
+      )}
     </DashboardLayout>
   );
 }

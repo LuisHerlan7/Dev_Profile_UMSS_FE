@@ -8,6 +8,7 @@ import {
   Plus,
   Sparkles,
   UserRoundCog,
+  Trophy,
 } from 'lucide-react';
 import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
@@ -228,6 +229,20 @@ export function OverviewSection({
               ) : (
                 <p className="text-sm text-slate-400">Sin habilidades destacadas.</p>
               )}
+            </div>
+          </DashboardCard>
+
+          <DashboardCard title="Ultimo logro" description="Actividad destacada de este mes.">
+            <div className="flex items-start gap-4 rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(245,158,11,0.12)] text-[var(--umss-warning)]">
+                <Trophy className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Colaborador Open Source</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">
+                  Fusionaste 5 PRs en librerias importantes este mes.
+                </p>
+              </div>
             </div>
           </DashboardCard>
         </div>

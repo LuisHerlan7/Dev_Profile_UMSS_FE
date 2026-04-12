@@ -18,6 +18,7 @@ type DashboardTopbarProps = {
   profileImageUrl?: string | null;
   searchIndex?: SearchResultItem[];
   onNavigate?: (section: string, elementId?: string) => void;
+  onLogout?: () => void;
 };
 
 export function DashboardTopbar({
@@ -28,19 +29,25 @@ export function DashboardTopbar({
   profileImageUrl,
   searchIndex = [],
   onNavigate,
+  onLogout,
 }: DashboardTopbarProps) {
   const [imgError, setImgError] = useState(false);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { setImgError(false); }, [profileImageUrl]);
 
-  // Close dropdown when clicking outside
+  // Handle outside clicks for search and profile menu
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -63,7 +70,6 @@ export function DashboardTopbar({
     if (onNavigate) onNavigate(item.section, item.elementId);
   };
 
-  // Group results by section
   const grouped = results.reduce<Record<string, SearchResultItem[]>>((acc, item) => {
     if (!acc[item.sectionLabel]) acc[item.sectionLabel] = [];
     acc[item.sectionLabel].push(item);
@@ -72,7 +78,7 @@ export function DashboardTopbar({
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-      {/* Global search with dropdown */}
+      {/* Global search with dropdown (Local Feature) */}
       <div ref={containerRef} className="relative block w-full max-w-xl">
         <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
@@ -94,7 +100,6 @@ export function DashboardTopbar({
           </button>
         )}
 
-        {/* Dropdown overlay */}
         {open && results.length > 0 && (
           <div className="absolute top-[calc(100%+12px)] left-0 z-[65] w-full overflow-hidden rounded-[24px] border border-[var(--umss-border)] bg-white/95 shadow-[0_32px_80px_-20px_rgba(15,23,42,0.3)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
             {Object.entries(grouped).map(([sectionLabel, items]) => (
@@ -129,41 +134,59 @@ export function DashboardTopbar({
             </div>
           </div>
         )}
-
-        {open && q.length > 0 && results.length === 0 && (
-          <div className="absolute top-[calc(100%+8px)] left-0 z-50 w-full rounded-[20px] border border-[var(--umss-border)] bg-white px-4 py-6 text-center shadow-[0_24px_60px_-20px_rgba(15,23,42,0.22)]">
-            <p className="text-sm text-slate-500">Sin resultados para «{query}»</p>
-          </div>
-        )}
       </div>
 
       <div className="flex items-center justify-between gap-3 sm:justify-end">
         <div className="flex items-center gap-2">{actions}</div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 shadow-sm">
-          <div className="hidden text-right sm:block">
-            <p className="text-sm font-semibold text-slate-900">{profileName}</p>
-            <p className="text-xs text-slate-500">{profileRole}</p>
-          </div>
-          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-sm">
-            {profileImageUrl && !imgError ? (
-              <img
-                src={profileImageUrl}
-                alt={profileName}
-                className="h-full w-full object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : null}
-            <span className={profileImageUrl && !imgError ? 'sr-only' : ''}>
-              {profileName
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((name) => name[0])
-                .join('')
-                .toUpperCase()}
-            </span>
-          </div>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((value) => !value)}
+            className="flex items-center gap-3 rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 shadow-sm transition hover:border-[rgba(80,72,229,0.25)]"
+          >
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-semibold text-slate-900">{profileName}</p>
+              <p className="text-xs text-slate-500">{profileRole}</p>
+            </div>
+            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-sm">
+              {profileImageUrl && !imgError ? (
+                <img
+                  src={profileImageUrl}
+                  alt={profileName}
+                  className="h-full w-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              ) : null}
+              <span className={profileImageUrl && !imgError ? 'sr-only' : ''}>
+                {profileName
+                  .split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((name) => name[0])
+                  .join('')
+                  .toUpperCase()}
+              </span>
+            </div>
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 z-50 mt-2 w-48 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onLogout?.();
+                }}
+                className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

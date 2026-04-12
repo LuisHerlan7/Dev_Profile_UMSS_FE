@@ -109,6 +109,16 @@ export function DashboardSidebar({
                 <PanelLeftClose className="h-4 w-4" />
               </button>
             </div>
+
+            <div className="mt-4 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm">
+              <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
+              <p className="mt-1 text-xs text-slate-500">{profileRole}</p>
+              {profileBadge ? (
+                <span className="mt-3 inline-flex rounded-full bg-[var(--umss-lavender)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--umss-brand)]">
+                  {profileBadge}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
       )}
