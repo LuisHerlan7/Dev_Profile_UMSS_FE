@@ -26,6 +26,7 @@ export function OverviewSection({
   topSkills = [],
   firstName = 'desarrollador',
   completionPercentage = 0,
+  nextStep = 'Completa tu perfil para destacar más.',
 }: {
   onOpenProjects: () => void;
   onOpenProjectForm: () => void;
@@ -36,6 +37,7 @@ export function OverviewSection({
   topSkills?: string[];
   firstName?: string;
   completionPercentage?: number;
+  nextStep?: string;
 }) {
   const renderIcon = (iconId: string) => {
     switch (iconId) {
@@ -96,8 +98,8 @@ export function OverviewSection({
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-900">Perfil completado</p>
-                <p className="text-sm text-slate-500">
-                  Completa tu perfil para llegar a mas reclutadores.
+                <p className="text-sm text-slate-600 font-medium">
+                  {nextStep}
                 </p>
               </div>
             </div>
@@ -129,7 +131,7 @@ export function OverviewSection({
       </DashboardCard>
 
       <section className="grid gap-4 xl:grid-cols-3">
-        {metrics.map((metric) => (
+        {Array.isArray(metrics) && metrics.map((metric) => (
           <DashboardMetricCard
             key={metric.label}
             icon={renderIcon(metric.iconId)}

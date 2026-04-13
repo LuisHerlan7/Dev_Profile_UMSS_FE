@@ -167,6 +167,22 @@ export async function saveProject(formData: FormData) {
   return fetchWithFormData('/api/developer/proyecto', 'POST', formData);
 }
 
+export async function fetchProjectDetails(id: string | number) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch(`/api/developer/proyecto/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error('Error al obtener detalles del proyecto');
+  return res.json();
+}
+
+export async function updateProject(id: string | number, formData: FormData) {
+  return fetchWithFormData(`/api/developer/proyecto/${id}`, 'POST', formData);
+}
+
 export async function deleteProject(id: string | number) {
   const token = localStorage.getItem('auth_token');
   const res = await fetch(`/api/developer/proyecto/${id}`, {

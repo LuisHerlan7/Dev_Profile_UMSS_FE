@@ -34,7 +34,7 @@ export function AuthCallbackPage() {
         }
 
         persistAuthSession(session);
-        navigate(getRedirectPathForRole(session.user.role, session.dashboard), { replace: true });
+        navigate('/dashboard', { replace: true });
       } catch (requestError) {
         clearStoredAuthSession();
 

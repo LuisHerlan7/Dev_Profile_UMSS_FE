@@ -199,11 +199,8 @@ export function ProjectsSection({
                   </button>
                   <button
                     type="button"
-                    disabled={!project.repoUrl}
-                    onClick={() => project.repoUrl && window.open(project.repoUrl, '_blank', 'noopener,noreferrer')}
-                    className={`inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg ${
-                      !project.repoUrl ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
-                    }`}
+                    onClick={() => navigate(`/proyecto/${project.id}`)}
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg cursor-pointer"
                   >
                     Ver Código
                   </button>

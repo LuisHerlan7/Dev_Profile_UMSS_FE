@@ -92,3 +92,33 @@ export async function uploadProjectEvidence(projectId: string, files: File[], to
 
   return response.json();
 }
+
+export async function updateEvidence(evidenceId: string, data: any, token = getStoredAuthToken()) {
+  if (!token) {
+    throw new Error('No existe una sesion activa.');
+  }
+
+  const response = await fetch(buildApiUrl(`/api/developer/evidencias/${evidenceId}`), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const raw = await response.text();
+    let message = raw;
+    try {
+      const parsed = JSON.parse(raw) as { message?: string };
+      message = parsed.message || raw;
+    } catch {
+      // ignore
+    }
+    throw new Error(message || 'No se pudo actualizar la evidencia.');
+  }
+
+  return response.json();
+}

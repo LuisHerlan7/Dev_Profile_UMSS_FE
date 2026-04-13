@@ -172,7 +172,7 @@ export function getRedirectPathForRole(role?: string, dashboard?: DashboardPaylo
     return dashboard.route;
   }
 
-  if (role === 'desarrollador') return '/desarrollador';
+  if (role === 'desarrollador') return '/dashboard';
   if (role === 'admin' || role === 'administrador') return '/admin';
 
   return '/visitante';

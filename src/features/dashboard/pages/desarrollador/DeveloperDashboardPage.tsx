@@ -293,12 +293,12 @@ export function DeveloperDashboardPage() {
       
       {activeSection === 'overview' && (
         <OverviewSection
-          profileName={firstName}
-          completion={dashboardData?.profile?.completion ?? completionPercentage}
+          firstName={firstName}
+          completionPercentage={dashboardData?.profile?.completion ?? completionPercentage}
           nextStep={dashboardData?.profile?.next_step ?? 'Completa tu perfil para destacar mas.'}
-          metrics={dashboardData?.metrics ?? { projects: projects.length, skills: topSkills.length, profile_views: 0 }}
+          metrics={overviewMetrics}
           recentProjects={recentProjects}
-          skillBadges={topSkills.map(s => s.name)}
+          topSkills={topSkills}
           onOpenProjects={() => setActiveSection('projects')}
           onOpenProjectForm={handleOpenProjectForm}
           onOpenSkills={() => setActiveSection('skills')}
