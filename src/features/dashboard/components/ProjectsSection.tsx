@@ -1,411 +1,250 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import {
-  ArrowUpRight,
-  Link2,
-  PencilLine,
-  Plus,
-  Search,
-  SlidersHorizontal,
-  UploadCloud,
-} from 'lucide-react';
-import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
-import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@shared/components/ui/Button';
-import { createProject } from '@services/projects';
+import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { SectionHeading } from './SectionHeading';
+import { Plus, Edit, Filter, Search } from 'lucide-react';
 
-type ManagedProject = {
+export type ProjectItem = {
   id: string;
   title: string;
-  category: string;
-  summary: string;
-  role: string;
-  tags: string[];
+  subtitle: string;
   status: string;
-  evidence_summary: {
-    total: number;
-    pending: number;
-    verified: number;
-    rejected: number;
-  };
+  tags: string[];
+  label: string;
+  accentClassName: string;
+  themeClassName: string;
+  visible: boolean;
+  liveUrl?: string | null;
+  repoUrl?: string | null;
 };
 
-type ProjectsSectionProps = {
-  projects: ManagedProject[];
-  onAddProject: () => void;
-  onProjectCreated?: () => void;
-};
+export function ProjectsSection({
+  projects,
+  onOpenProjectForm,
+  onToggleVisibility,
+  onEditProject,
+  onDataDirty,
+}: {
+  projects: ProjectItem[];
+  onOpenProjectForm: () => void;
+  onToggleVisibility: (projectId: string) => void;
+  onEditProject: (projectId: string) => void;
+  onDataDirty?: () => void;
+}) {
+  const navigate = useNavigate();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isFilterMode, setIsFilterMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-export function ProjectsSection({ projects, onAddProject, onProjectCreated }: ProjectsSectionProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-  const [formState, setFormState] = useState({
-    name: '',
-    description: '',
-    role: '',
-    repoUrl: '',
-    liveUrl: '',
-    visibility: 'publico',
-    technologies: '',
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch =
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesFilters =
+      selectedFilters.length === 0 ||
+      selectedFilters.includes(project.status) ||
+      selectedFilters.some((filter) => project.tags.includes(filter));
+
+    return matchesSearch && matchesFilters;
   });
-  const [files, setFiles] = useState<File[]>([]);
 
-  const techList = useMemo(
-    () =>
-      formState.technologies
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [formState.technologies]
-  );
+  const uniqueStatuses = Array.from(new Set(projects.map((p) => p.status)));
+  const uniqueTags = Array.from(new Set(projects.flatMap((p) => p.tags)));
 
-  const handleSubmit = async () => {
-    setFormError('');
-    setFormSuccess('');
-
-    if (!formState.name.trim() || !formState.description.trim()) {
-      setFormError('Completa el nombre y la descripcion del proyecto.');
-      return;
-    }
-
-    if (files.length === 0) {
-      setFormError('Adjunta al menos una evidencia (imagen, video o PDF).');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await createProject({
-        name: formState.name.trim(),
-        description: formState.description.trim(),
-        role: formState.role.trim() || undefined,
-        repo_url: formState.repoUrl.trim() || undefined,
-        live_url: formState.liveUrl.trim() || undefined,
-        visibility: formState.visibility === 'privado' ? 'privado' : 'publico',
-        technologies: techList,
-        evidences: files,
-      });
-      setFormSuccess('Proyecto enviado. Quedara en revisión hasta validar evidencias.');
-      setFormState({
-        name: '',
-        description: '',
-        role: '',
-        repoUrl: '',
-        liveUrl: '',
-        visibility: 'publico',
-        technologies: '',
-      });
-      setFiles([]);
-      onProjectCreated?.();
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'No se pudo crear el proyecto.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const toggleFilter = (filter: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+    );
   };
-
   return (
     <div className="space-y-6">
       <SectionHeading
-        eyebrow="Gestion de proyectos"
-        title="Gestion de Proyectos"
-        description="Crea, gestiona y organiza tu portafolio de ingenieria de software. Muestra tu mejor trabajo a la comunidad UMSS."
+        eyebrow="Gestión de portafolio"
+        title="Subir Proyecto"
+        description="Comparte tus creaciones más recientes con la comunidad universitaria. Completa los detalles técnicos y visuales para destacar tu trabajo."
         actions={
-          <Button
-            className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
-            onClick={onAddProject}
-          >
-            <Plus className="h-4 w-4" />
-            Agregar nuevo proyecto
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={onOpenProjectForm}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-[#4F46E5] px-6 text-sm font-semibold text-white shadow-lg shadow-[#4F46E5]/20 transition hover:bg-[#4338CA]"
+            >
+              <Plus className="h-4 w-4" />
+              Subir
+            </Button>
+            <Button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
+                isEditMode
+                  ? 'border-slate-400 bg-slate-100 text-black'
+                  : 'border-slate-200 bg-white text-black hover:bg-slate-50'
+              }`}
+            >
+              <Edit className="h-4 w-4 text-black" />
+              <span className="text-black">Editar</span>
+            </Button>
+            <Button
+              onClick={() => setIsFilterMode(!isFilterMode)}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold transition ${
+                isFilterMode
+                  ? 'border-slate-400 bg-slate-100 text-black'
+                  : 'border-slate-200 bg-white text-black hover:bg-slate-50'
+              }`}
+            >
+              <Filter className="h-4 w-4 text-black" />
+              <span className="text-black">Filtrar</span>
+            </Button>
+          </div>
         }
       />
 
-      <DashboardCard
-        title="Subir Proyecto"
-        description="Completa los detalles y adjunta evidencias (imagenes, videos o documentos PDF)."
-      >
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-slate-600">
-                Nombre del proyecto
-                <input
-                  value={formState.name}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="Ej: Sistema de Gestion Academica"
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                />
-              </label>
-              <label className="text-sm text-slate-600">
-                Rol en el proyecto
-                <input
-                  value={formState.role}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, role: event.target.value }))}
-                  placeholder="Fullstack Developer"
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                />
-              </label>
-            </div>
-
-            <label className="text-sm text-slate-600">
-              Descripcion
-              <textarea
-                value={formState.description}
-                onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
-                placeholder="Describe el objetivo, funcionalidades y aporte en el proyecto."
-                rows={4}
-                className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-              />
-            </label>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-slate-600">
-                URL del repositorio
-                <input
-                  value={formState.repoUrl}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, repoUrl: event.target.value }))}
-                  placeholder="https://github.com/usuario/proyecto"
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                />
-              </label>
-              <label className="text-sm text-slate-600">
-                URL demo (opcional)
-                <input
-                  value={formState.liveUrl}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, liveUrl: event.target.value }))}
-                  placeholder="https://mi-proyecto.com"
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                />
-              </label>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-slate-600">
-                Tecnologias principales
-                <input
-                  value={formState.technologies}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, technologies: event.target.value }))}
-                  placeholder="React, Laravel, PostgreSQL"
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                />
-              </label>
-              <label className="text-sm text-slate-600">
-                Privacidad
-                <select
-                  value={formState.visibility}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, visibility: event.target.value }))}
-                  className="mt-2 h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm text-slate-900 outline-none focus:border-[rgba(80,72,229,0.35)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
-                >
-                  <option value="publico">Publico</option>
-                  <option value="privado">Privado</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-dashed border-[rgba(80,72,229,0.3)] bg-[rgba(240,240,255,0.4)] p-5 text-center sm:text-left">
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-              <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-white text-[var(--umss-brand)] shadow-sm">
-                <UploadCloud className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Adjunta evidencias del proyecto</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Imagenes, videos o documentos PDF. Tamaño maximo 50MB por archivo.
-                </p>
-              </div>
-            </div>
-            <input
-              type="file"
-              multiple
-              accept="image/*,video/*,application/pdf"
-              onChange={(event) => setFiles(Array.from(event.target.files || []))}
-              className="mt-4 w-full text-sm text-slate-500 file:mr-4 file:rounded-2xl file:border-0 file:bg-[var(--umss-brand)] file:px-5 file:py-2.5 file:text-sm file:font-semibold file:text-white"
-            />
-            {files.length > 0 ? (
-              <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                {files.slice(0, 4).map((file) => (
-                  <div key={file.name} className="rounded-2xl bg-white/80 px-3 py-2">
-                    {file.name}
-                  </div>
-                ))}
-                {files.length > 4 ? (
-                  <div className="rounded-2xl bg-white/70 px-3 py-2 text-slate-400">
-                    +{files.length - 4} archivos mas
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-slate-500">
-                Sube al menos una evidencia para validar tu proyecto.
-              </p>
-            )}
-
-            <div className="mt-5 flex flex-col gap-2">
-              <Button
-                type="button"
-                className="h-10 rounded-2xl text-sm font-semibold"
-                disabled={isSubmitting}
-                onClick={handleSubmit}
-              >
-                {isSubmitting ? 'Enviando...' : 'Subir proyecto'}
-              </Button>
-              {formError ? <p className="text-xs text-rose-600">{formError}</p> : null}
-              {formSuccess ? <p className="text-xs text-emerald-600">{formSuccess}</p> : null}
-            </div>
-          </div>
-        </div>
-      </DashboardCard>
-
-      <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <DashboardCard title="Filtros" description="Categorias del portafolio.">
-            <div className="space-y-2">
-              <SidebarFilterButton active>Todos los Proyectos</SidebarFilterButton>
-              <SidebarFilterButton>Apps Web</SidebarFilterButton>
-              <SidebarFilterButton>Movil</SidebarFilterButton>
-              <SidebarFilterButton>IA / ML</SidebarFilterButton>
-            </div>
-          </DashboardCard>
-
-          <div className="rounded-[28px] border border-[rgba(80,72,229,0.12)] bg-[rgba(240,240,255,0.9)] p-4 shadow-[0_18px_40px_-34px_rgba(80,72,229,0.35)]">
-            <p className="text-sm font-semibold text-[var(--umss-brand)]">Fortalezas del Portafolio</p>
-            <div className="mt-3 h-1.5 w-20 rounded-full bg-[var(--umss-brand)]" />
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Agrega una URL de demo y 2 etiquetas tecnologicas mas para alcanzar el 100%
-              de completitud del perfil.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <label className="relative block flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {isFilterMode && (
+        <div className="rounded-[24px] border border-[var(--umss-border)] bg-white p-6 shadow-sm">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                type="search"
-                placeholder="Buscar por nombre, rol o stack tecnologico..."
-                className="h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-white pr-4 pl-11 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgba(80,72,229,0.3)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
+                type="text"
+                placeholder="Buscar proyectos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] pl-10 pr-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[var(--umss-brand)] focus:ring-2 focus:ring-[rgba(80,72,229,0.12)]"
               />
-            </label>
-
-            <button
-              type="button"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--umss-border)] bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Ordenar
-            </button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-900">Filtros rápidos</p>
+              <div className="flex flex-wrap gap-2">
+                {uniqueStatuses.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => toggleFilter(status)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${
+                      selectedFilters.includes(status)
+                        ? 'bg-[var(--umss-brand)] text-white'
+                        : 'bg-[var(--umss-surface)] text-slate-700'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+                {uniqueTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => toggleFilter(tag)}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      selectedFilters.includes(tag)
+                        ? 'bg-[var(--umss-brand)] text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+        </div>
+      )}
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {projects.length === 0 ? (
-              <div className="col-span-full rounded-[28px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.45)] p-6 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-white text-[var(--umss-brand)] shadow-sm">
-                  <Plus className="h-6 w-6" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filteredProjects.map((project) => (
+          <div key={project.id} className="space-y-3">
+            <article
+              id={`project-card-${project.id}`}
+              className={`group overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_-40px_rgba(15,23,42,0.22)] ${
+                isEditMode ? 'cursor-pointer' : ''
+              }`}
+              onClick={isEditMode ? () => onEditProject(project.id) : undefined}
+            >
+              <div className={`relative h-44 bg-gradient-to-br ${project.accentClassName}`}>
+                <div className="absolute inset-x-4 top-4 flex items-center justify-between">
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${project.themeClassName}`}
+                  >
+                    {project.status}
+                  </span>
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 shadow-sm">
+                    {project.label}
+                  </span>
                 </div>
-                <p className="mt-5 text-lg font-semibold text-slate-900">Aún no hay proyectos</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Crea tu primer proyecto para comenzar a construir tu portafolio.
-                </p>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <div>
+                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">{project.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{project.subtitle}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {project.tags.map((tag) => (
+                    <DashboardBadge key={tag} className="rounded-full px-3 py-1 text-xs font-semibold">
+                      {tag}
+                    </DashboardBadge>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={!project.liveUrl}
+                    onClick={() => project.liveUrl && window.open(project.liveUrl, '_blank', 'noopener,noreferrer')}
+                    className={`inline-flex h-12 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-gradient-to-r from-slate-50 to-slate-100 px-6 text-sm font-semibold text-slate-700 transition hover:from-slate-100 hover:to-slate-200 hover:border-slate-300 hover:shadow-sm ${
+                      !project.liveUrl ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                  >
+                    Ver Proyecto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/proyecto/${project.id}`)}
+                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-transparent bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#4338CA] px-6 text-sm font-semibold text-white transition hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#312E81] hover:shadow-lg cursor-pointer"
+                  >
+                    Ver Código
+                  </button>
+                </div>
+              </div>
+            </article>
+            {isEditMode && (
+              <div className="flex items-center justify-between rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3">
+                <span className="text-sm font-semibold text-slate-900">Visible</span>
                 <button
                   type="button"
-                  onClick={onAddProject}
-                  className="mt-4 text-sm font-semibold text-[var(--umss-brand)]"
+                  onClick={() => onToggleVisibility(project.id)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                    project.visible ? 'bg-[var(--umss-brand)]' : 'bg-slate-300'
+                  }`}
                 >
-                  Agregar proyecto
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                      project.visible ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
                 </button>
               </div>
-            ) : (
-              projects.map((project) => (
-                <article
-                  key={project.id}
-                  className="overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_18px_40px_-34px_rgba(15,23,42,0.22)]"
-                >
-                  <div className="relative h-44 bg-gradient-to-br from-slate-100 via-white to-indigo-100">
-                    <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between">
-                      <div className="flex flex-wrap gap-2">
-                        <DashboardBadge tone="brand">{project.category}</DashboardBadge>
-                        <ProjectStatusBadge status={project.status} />
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-500">
-                        <Link2 className="h-4 w-4" />
-                        <PencilLine className="h-4 w-4" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 p-5">
-                    <div>
-                      <h3 className="text-xl font-semibold tracking-tight text-slate-900">
-                        {project.title}
-                      </h3>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                        {project.summary}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-[var(--umss-surface)] px-3 py-2 text-sm text-slate-600">
-                      {project.role}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <DashboardBadge key={tag}>{tag}</DashboardBadge>
-                      ))}
-                    </div>
-
-                    <div className="rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] px-3 py-2 text-xs text-slate-600">
-                      Evidencias: {project.evidence_summary.total} · Verificadas {project.evidence_summary.verified} ·
-                      En revisión {project.evidence_summary.pending} · Rechazadas {project.evidence_summary.rejected}
-                    </div>
-                  </div>
-                </article>
-              ))
             )}
           </div>
-        </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={onOpenProjectForm}
+          className="flex min-h-[340px] flex-col items-center justify-center gap-4 overflow-hidden rounded-[28px] border border-dashed border-[rgba(80,72,229,0.22)] bg-[rgba(240,240,255,0.5)] p-8 text-center transition duration-300 hover:border-[var(--umss-brand)] hover:bg-[rgba(240,240,255,0.75)] hover:-translate-y-1"
+        >
+          <span className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-[var(--umss-brand)] shadow-sm transition group-hover:scale-105">
+            <Plus className="h-6 w-6" />
+          </span>
+          <div>
+            <p className="text-xl font-semibold text-slate-900">Agregar Nuevo Proyecto</p>
+            <p className="mt-2 max-w-[260px] text-sm leading-6 text-slate-500">
+              Comparte tu última creación con la comunidad y aumenta tu portafolio profesional.
+            </p>
+          </div>
+        </button>
       </div>
     </div>
   );
 }
 
-function ProjectStatusBadge({ status }: { status: string }) {
-  if (status === 'verificado') {
-    return <DashboardBadge tone="success">Verificado</DashboardBadge>;
-  }
-
-  if (status === 'rechazado') {
-    return (
-      <DashboardBadge className="border border-rose-200 bg-rose-50 text-rose-600">
-        Rechazado
-      </DashboardBadge>
-    );
-  }
-
-  return <DashboardBadge tone="warning">En revisión</DashboardBadge>;
-}
-
-function SidebarFilterButton({
-  children,
-  active = false,
-}: {
-  children: ReactNode;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm transition ${
-        active
-          ? 'bg-[var(--umss-lavender)] font-semibold text-[var(--umss-brand)]'
-          : 'bg-white text-slate-600 hover:bg-[var(--umss-surface)]'
-      }`}
-    >
-      <span>{children}</span>
-      <ArrowUpRight className="h-4 w-4" />
-    </button>
-  );
-}

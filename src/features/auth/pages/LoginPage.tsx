@@ -26,11 +26,9 @@ export function LoginPage() {
   useEffect(() => {
     const storedSession = readStoredAuthSession();
 
-    if (!storedSession?.user) {
-      return;
+    if (storedSession?.user) {
+      navigate('/dashboard', { replace: true });
     }
-
-    navigate(getRedirectPathForRole(storedSession.user.role, storedSession.dashboard), { replace: true });
   }, [navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -44,7 +42,7 @@ export function LoginPage() {
         password,
       });
       persistAuthSession(data);
-      navigate(getRedirectPathForRole(data.user.role, data.dashboard), { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesion.';
       setError(message);

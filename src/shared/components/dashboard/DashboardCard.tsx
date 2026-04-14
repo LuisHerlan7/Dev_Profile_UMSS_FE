@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@shared/utils/cn';
 
 type DashboardCardProps = {
+  id?: string;
   title?: string;
   description?: string;
   action?: ReactNode;
@@ -11,6 +12,7 @@ type DashboardCardProps = {
 };
 
 export function DashboardCard({
+  id,
   title,
   description,
   action,
@@ -20,6 +22,7 @@ export function DashboardCard({
 }: DashboardCardProps) {
   return (
     <section
+      id={id}
       className={cn(
         'rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_18px_40px_-32px_rgba(15,23,42,0.28)]',
         className

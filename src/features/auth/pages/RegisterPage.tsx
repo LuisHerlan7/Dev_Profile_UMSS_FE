@@ -23,12 +23,9 @@ export function RegisterPage() {
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
-
-    if (!storedSession?.user) {
-      return;
+    if (storedSession?.user) {
+      navigate('/dashboard', { replace: true });
     }
-
-    navigate(getRedirectPathForRole(storedSession.user.role, storedSession.dashboard), { replace: true });
   }, [navigate]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

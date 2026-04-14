@@ -29,7 +29,7 @@ export function DashboardLayout({
         </aside>
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <header className="border-b border-[var(--umss-border)] bg-white/90 backdrop-blur-sm">
+          <header className="sticky top-0 z-50 border-b border-[var(--umss-border)] bg-white/90 backdrop-blur-md">
             {topbar}
           </header>
 

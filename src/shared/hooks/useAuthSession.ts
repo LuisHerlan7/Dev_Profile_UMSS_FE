@@ -62,7 +62,7 @@ export function useAuthSession({
         if (requiredRole) {
           const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
           if (!allowedRoles.includes(nextSession.user.role)) {
-            navigate(getRedirectPathForRole(nextSession.user.role, nextSession.dashboard), { replace: true });
+            navigate('/dashboard', { replace: true });
           }
         }
       } catch (requestError) {
