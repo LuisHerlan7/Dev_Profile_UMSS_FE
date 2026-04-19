@@ -14,6 +14,8 @@ const initialExperienceEntries: ExperienceRecord[] = [
     tone: 'brand',
     icon: FileText,
     footer: '4.2 MB',
+    startDate: '2023-01-01',
+    endDate: '2023-12-31',
   },
   {
     id: 'aws',
@@ -25,6 +27,7 @@ const initialExperienceEntries: ExperienceRecord[] = [
     tone: 'neutral',
     icon: ShieldCheck,
     footer: 'Verified Credential',
+    startDate: '2022-06-01',
   },
   {
     id: 'rust',
@@ -36,6 +39,8 @@ const initialExperienceEntries: ExperienceRecord[] = [
     tone: 'success',
     icon: Code2,
     footer: 'Production Ready',
+    startDate: '2021-01-01',
+    endDate: '2022-01-01',
   },
   {
     id: 'audit',
@@ -47,6 +52,8 @@ const initialExperienceEntries: ExperienceRecord[] = [
     tone: 'warning',
     icon: BarChart3,
     footer: 'Low Risk',
+    startDate: '2020-03-01',
+    endDate: '2020-05-01',
   },
   {
     id: 'behavioral',
@@ -58,6 +65,8 @@ const initialExperienceEntries: ExperienceRecord[] = [
     tone: 'info',
     icon: ArrowRight,
     footer: 'Research Summary',
+    startDate: '2019-10-01',
+    endDate: '2020-02-01',
   },
 ];
 
@@ -65,6 +74,31 @@ const recordTypes = ['Experiencia', 'Certificación'] as const;
 const filters = ['Todos', 'Documentos', 'Certificaciones', 'Codigo', 'Reportes'] as const;
 
 type RecordType = typeof recordTypes[number];
+
+function calculateYearsInUI(start: string, end: string | null | undefined): string {
+  if (!start) return '';
+  // Formato dd/mm/yyyy a objeto Date
+  const parts = start.split('/');
+  if (parts.length !== 3) return '';
+  const startDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+  if (isNaN(startDate.getTime())) return '';
+  
+  const endParts = end ? end.split('/') : null;
+  const endDate = endParts && endParts.length === 3 
+    ? new Date(`${endParts[2]}-${endParts[1]}-${endParts[0]}`) 
+    : new Date();
+    
+  if (isNaN(endDate.getTime())) return '';
+
+  let years = endDate.getFullYear() - startDate.getFullYear();
+  const m = endDate.getMonth() - startDate.getMonth();
+  if (m < 0 || (m === 0 && endDate.getDate() < startDate.getDate())) {
+    years--;
+  }
+  
+  if (years < 0) return '';
+  return years === 1 ? '1 año' : (years > 1 ? `${years} años` : '< 1 año');
+}
 
 export function ExperienceSection({
   initialFromServer,
@@ -104,6 +138,7 @@ export function ExperienceSection({
     evidenceUrl: '',
     evidenceFile: null as File | null,
     fileSize: '',
+    isCurrent: false,
   });
   const [certificationForm, setCertificationForm] = useState({
     name: '',
@@ -114,6 +149,7 @@ export function ExperienceSection({
     evidenceUrl: '',
     evidenceFile: null as File | null,
     fileSize: '',
+    isCurrent: false,
   });
 
   useEffect(() => {
@@ -134,8 +170,9 @@ export function ExperienceSection({
       evidenceUrl: '',
       evidenceFile: null,
       fileSize: '',
+      isCurrent: false,
     });
-    setCertificationForm({ name: '', issuer: '', credentialId: '', credentialUrl: '', evidence: '', evidenceUrl: '', evidenceFile: null, fileSize: '' });
+    setCertificationForm({ name: '', issuer: '', credentialId: '', credentialUrl: '', evidence: '', evidenceUrl: '', evidenceFile: null, fileSize: '', isCurrent: false });
     setEditingRecordId(null);
     setSelectedRecordId(null);
   };
@@ -149,28 +186,36 @@ export function ExperienceSection({
     setEditingRecordId(record.id);
 
     if (record.recordType === 'Experiencia') {
+      const title = record.title || '';
       setExperienceForm({
-        experienceType: record.badge,
-        company: record.title.includes('@') ? record.title.split('@')[1].trim() : '',
-        position: record.title.includes('@') ? record.title.split('@')[0].trim() : record.title,
-        startDate: record.footer.includes('—') ? record.footer.split('—')[0].trim() : '',
-        endDate: record.footer.includes('—') ? record.footer.split('—')[1].trim() : '',
-        description: record.description,
+        experienceType: record.badge || 'EXPERIENCIA',
+        company: record.company || (title.includes('@') ? title.split('@')[1]?.trim() : '') || '',
+        position: record.position || (title.includes('@') ? title.split('@')[0]?.trim() : title) || '',
+        startDate: record.startDate && typeof record.startDate === 'string' && record.startDate.includes('-') 
+          ? record.startDate.split('-').reverse().join('/') 
+          : '',
+        endDate: record.endDate && typeof record.endDate === 'string' && record.endDate.includes('-') 
+          ? record.endDate.split('-').reverse().join('/') 
+          : '',
+        description: record.description || '',
         evidence: '',
         evidenceUrl: record.evidenceUrl || '',
         evidenceFile: null,
         fileSize: record.fileSize || '',
+        isCurrent: Boolean(record.isCurrent),
       });
     } else {
+      const title = record.title || '';
       setCertificationForm({
-        name: record.title,
-        issuer: record.description,
+        name: record.position || title,
+        issuer: record.company || record.description || '',
         credentialId: '',
         credentialUrl: '',
         evidence: '',
         evidenceUrl: record.evidenceUrl || '',
         evidenceFile: null,
         fileSize: record.fileSize || '',
+        isCurrent: Boolean(record.isCurrent),
       });
     }
   };
@@ -227,24 +272,43 @@ export function ExperienceSection({
         formData.append('nombre_empresa', experienceForm.company || 'Sin Empresa');
         formData.append('descripcion_puesto', experienceForm.description);
         formData.append('fecha_inicio', bdDateFrom);
-        if (bdDateTo) formData.append('fecha_fin', bdDateTo);
+        formData.append('es_trabajo_actual', experienceForm.isCurrent ? '1' : '0');
+        formData.append('tipo_experiencia', experienceForm.experienceType);
+        
+        // CORRECCIÓN: Solo enviar fecha_fin si existe y NO es el trabajo actual
+        if (!experienceForm.isCurrent && bdDateTo) {
+          formData.append('fecha_fin', bdDateTo);
+        }
+
         if (experienceForm.evidenceFile) {
           formData.append('archivo', experienceForm.evidenceFile);
+        }
+
+        // Si estamos editando un registro guardado (db-exp-...), enviamos su ID
+        if (editingRecordId && editingRecordId.startsWith('db-exp-')) {
+          const rawId = editingRecordId.replace('db-exp-', '');
+          formData.append('id_experiencia', rawId);
         }
 
         const res = await saveExperience(formData);
 
         const newRecord: ExperienceRecord = {
-          id: res.id.toString(),
+          id: `db-exp-${res.id}`, // MANTENER PREFIJO PARA EVITAR DUPLICADOS
           recordType: 'Experiencia',
           badge: experienceForm.experienceType || 'EXPERIENCIA',
           title: `${experienceForm.position || 'Experiencia nueva'}${experienceForm.company ? ` @ ${experienceForm.company}` : ''}`,
           description: experienceForm.description || 'Detalles de la experiencia profesional.',
           tone: 'brand',
           icon: FileText,
-          footer: experienceForm.fileSize || (experienceForm.startDate || experienceForm.endDate ? `${experienceForm.startDate} — ${experienceForm.endDate}` : 'Sin fechas'),
+          footer: experienceForm.fileSize || (experienceForm.isCurrent ? 'Actualidad' : (experienceForm.startDate || experienceForm.endDate ? `${experienceForm.startDate} — ${experienceForm.endDate}` : 'Sin fechas')),
           fileSize: experienceForm.fileSize,
           evidenceUrl: experienceForm.evidenceUrl || (experienceForm.evidenceFile ? '/api/developer/files/experiencia/' + res.id : undefined),
+          isCurrent: experienceForm.isCurrent,
+          durationYears: experienceForm.isCurrent ? '' : calculateYearsInUI(experienceForm.startDate, experienceForm.endDate),
+          position: experienceForm.position,
+          company: experienceForm.company,
+          startDate: bdDateFrom,
+          endDate: bdDateTo || undefined,
         };
 
         setRecords((current) => {
@@ -259,14 +323,23 @@ export function ExperienceSection({
         formData.append('institucion', certificationForm.issuer || 'Institucion');
         formData.append('carrera_especialidad', certificationForm.name || 'Certificacion nueva');
         formData.append('fecha_inicio', bdDateFrom);
+        formData.append('actualmente_estudiante', certificationForm.isCurrent ? '1' : '0');
+        formData.append('tipo_formacion', certificationForm.name);
+
         if (certificationForm.evidenceFile) {
           formData.append('archivo', certificationForm.evidenceFile);
+        }
+
+        // Si estamos editando un registro guardado (db-form-...), enviamos su ID
+        if (editingRecordId && editingRecordId.startsWith('db-form-')) {
+          const rawId = editingRecordId.replace('db-form-', '');
+          formData.append('id_formacion', rawId);
         }
 
         const res = await saveFormation(formData);
 
         const newRecord: ExperienceRecord = {
-          id: res.id.toString(),
+          id: `db-form-${res.id}`, // MANTENER PREFIJO
           recordType: 'Certificación',
           badge: certificationForm.name || 'CERTIFICACIÓN',
           title: certificationForm.name || 'Nueva certificación',
@@ -276,6 +349,11 @@ export function ExperienceSection({
           footer: certificationForm.fileSize || (certificationForm.credentialUrl || 'Sin enlace'),
           fileSize: certificationForm.fileSize,
           evidenceUrl: certificationForm.evidenceUrl || (certificationForm.evidenceFile ? '/api/developer/files/formacion/' + res.id : undefined),
+          isCurrent: certificationForm.isCurrent,
+          position: certificationForm.name,
+          company: certificationForm.issuer,
+          startDate: bdDateFrom,
+          endDate: undefined,
         };
 
         setRecords((current) => {
@@ -439,7 +517,20 @@ export function ExperienceSection({
                       inputType="date"
                       onChange={(value) => setExperienceForm((current) => ({ ...current, endDate: value }))}
                       placeholder="mm/dd/aaaa"
+                      disabled={experienceForm.isCurrent}
                     />
+                  </div>
+                  <div className="flex items-center gap-2 px-1">
+                    <input
+                      id="is-current-job"
+                      type="checkbox"
+                      checked={experienceForm.isCurrent}
+                      onChange={(e) => setExperienceForm(curr => ({ ...curr, isCurrent: e.target.checked, endDate: e.target.checked ? '' : curr.endDate }))}
+                      className="h-4 w-4 rounded border-[var(--umss-border)] text-[var(--umss-brand)] focus:ring-[var(--umss-brand)]"
+                    />
+                    <label htmlFor="is-current-job" className="text-sm font-medium text-slate-700">
+                      Trabajo actual
+                    </label>
                   </div>
                   <TextareaField
                     label="Descripción"
@@ -476,6 +567,18 @@ export function ExperienceSection({
                     onChange={(value) => setCertificationForm((current) => ({ ...current, credentialUrl: value }))}
                     placeholder="https://coursera.org/verify/..."
                   />
+                  <div className="flex items-center gap-2 px-1">
+                    <input
+                      id="is-current-student"
+                      type="checkbox"
+                      checked={certificationForm.isCurrent}
+                      onChange={(e) => setCertificationForm(curr => ({ ...curr, isCurrent: e.target.checked }))}
+                      className="h-4 w-4 rounded border-[var(--umss-border)] text-[var(--umss-brand)] focus:ring-[var(--umss-brand)]"
+                    />
+                    <label htmlFor="is-current-student" className="text-sm font-medium text-slate-700">
+                      Actualmente estudiante / Activo
+                    </label>
+                  </div>
                 </>
               )}
             </div>
@@ -616,15 +719,22 @@ export function ExperienceSection({
       <div className="grid gap-4 xl:grid-cols-3">
         {records
           .filter((entry) => {
+            if (!entry) return false;
             // Filtro por texto
-            const q = searchQuery.toLowerCase();
+            const q = (searchQuery || '').toLowerCase();
+            const title = (entry.title || '').toLowerCase();
+            const desc = (entry.description || '').toLowerCase();
+            const badge = (entry.badge || '').toLowerCase();
+            const footer = (entry.footer || '').toLowerCase();
+            const type = (entry.recordType || '').toLowerCase();
+
             const matchesSearch =
               !q ||
-              entry.title.toLowerCase().includes(q) ||
-              entry.description.toLowerCase().includes(q) ||
-              entry.badge.toLowerCase().includes(q) ||
-              entry.footer.toLowerCase().includes(q) ||
-              entry.recordType.toLowerCase().includes(q);
+              title.includes(q) ||
+              desc.includes(q) ||
+              badge.includes(q) ||
+              footer.includes(q) ||
+              type.includes(q);
 
             // Filtro por categoría
             const matchesFilter =
@@ -651,11 +761,22 @@ export function ExperienceSection({
                 isEditMode && selectedRecordId === entry.id ? 'border-[rgb(80,72,229)] ring-2 ring-[rgba(80,72,229,0.16)]' : 'border-[var(--umss-border)]'
               }`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="rounded-full bg-[var(--umss-surface)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  {entry.badge}
-                </span>
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--umss-border)] text-[var(--umss-brand)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-2">
+                  <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] border ${
+                    entry.recordType === 'Experiencia' 
+                      ? 'bg-indigo-50 border-indigo-100 text-indigo-600' 
+                      : 'bg-purple-50 border-purple-100 text-purple-600'
+                  }`}>
+                    {entry.recordType === 'Experiencia' ? 'TIPO EXP' : 'TIPO CERT'}: {entry.badge}
+                  </span>
+                  {entry.durationYears && entry.recordType === 'Experiencia' && (
+                    <span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-600 border border-emerald-100 italic">
+                      {entry.durationYears} totales
+                    </span>
+                  )}
+                </div>
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--umss-surface)] text-[var(--umss-brand)] border border-[var(--umss-border)] shadow-sm">
                   {isEditMode ? (
                     <button
                       type="button"
@@ -663,21 +784,52 @@ export function ExperienceSection({
                         event.stopPropagation();
                         handleDeleteRecord(entry.id, entry.recordType);
                       }}
-                      className="absolute right-[-8px] top-[-8px] inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm transition hover:bg-red-600 hover:text-white"
+                      className="absolute right-[-8px] top-[-8px] inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-slate-400 shadow-md transition hover:bg-red-600 hover:text-white border border-slate-100"
                       aria-label="Eliminar registro"
                     >
                       ×
                     </button>
                   ) : null}
-                  <Icon className="h-5 w-5" />
+                  {Icon ? <Icon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                 </div>
               </div>
 
-              <h3 className="mt-6 text-lg font-semibold tracking-tight text-slate-900">{entry.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{entry.description}</p>
+              <div className="mt-6 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-slate-300"></span>
+                    {entry.recordType === 'Experiencia' ? 'ROL' : 'CERTIFICACIÓN'}
+                  </p>
+                  <h3 className="text-lg font-bold tracking-tight text-slate-900 leading-tight">
+                    {entry.position || ((entry.title || '').includes('@') ? entry.title.split('@')[0].trim() : entry.title)}
+                  </h3>
+                </div>
+                
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-slate-300"></span>
+                    {entry.recordType === 'Experiencia' ? 'EMPRESA' : 'INSTITUCIÓN'}
+                  </p>
+                  <p className={`text-sm font-semibold ${entry.recordType === 'Experiencia' ? 'text-indigo-600' : 'text-purple-600'}`}>
+                    {entry.company || ((entry.title || '').includes('@') ? entry.title.split('@')[1].trim() : 'N/A')}
+                  </p>
+                </div>
 
-              <div className="mt-6 overflow-hidden rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-5 text-sm text-slate-600">
-                <p className="font-semibold text-slate-900">{entry.fileSize || entry.footer}</p>
+                <div className="pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">DESCRIPCIÓN</p>
+                  <p className="text-xs leading-relaxed text-slate-500 line-clamp-3">
+                    {entry.description || 'Sin descripción detallada.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 overflow-hidden rounded-[20px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+                <div className="flex items-center gap-3 text-slate-600">
+                  <Calendar className="h-4 w-4 opacity-50" />
+                  <p className="text-[11px] font-bold">
+                    {entry.footer.includes('Actualidad') ? entry.footer.replace('Actualidad', ' — ACTUALIDAD') : (entry.fileSize || entry.footer)}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -752,6 +904,7 @@ function FormField({
   placeholder,
   inputType = 'text',
   required = false,
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -759,6 +912,7 @@ function FormField({
   placeholder?: string;
   inputType?: string;
   required?: boolean;
+  disabled?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hiddenDateRef = useRef<HTMLInputElement>(null);
@@ -792,11 +946,12 @@ function FormField({
         <input
           ref={inputRef}
           type="text"
-          value={value}
+          value={value || ''}
           required={required}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className={`w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none ${
+          disabled={disabled}
+          onChange={(event) => onChange?.(event.target.value)}
+          placeholder={placeholder || ''}
+          className={`w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 ${
             inputType === 'date'
               ? 'date-input-custom pr-10'
               : ''

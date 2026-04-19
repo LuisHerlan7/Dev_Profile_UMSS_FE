@@ -41,6 +41,7 @@ export type HabilidadRow = {
   tipo_habilidad: string;
   descripcion: string | null;
   nivel_dominio: string | null;
+  porcentaje: number | null;
   anos_experiencia: number | null;
   fecha_adquisicion: string | null;
   estado: string | null;
@@ -57,6 +58,7 @@ export type ExperienciaRow = {
   es_trabajo_actual: boolean;
   ubicacion: string | null;
   tipo_contrato: string | null;
+  tipo_experiencia: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;
@@ -72,6 +74,7 @@ export type FormacionRow = {
   fecha_fin: string | null;
   actualmente_estudiante: boolean;
   descripcion: string | null;
+  tipo_formacion: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;
@@ -220,7 +223,7 @@ export async function updateProfile(payload: {
 
 export async function syncSkills(payload: {
   technical: { name: string; level: string; progress: number }[];
-  soft: { name: string }[];
+  soft: { name: string; progress: number }[];
 }) {
   const token = localStorage.getItem('auth_token');
   if (!token) throw new Error('No hay sesión.');
