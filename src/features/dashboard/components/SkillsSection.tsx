@@ -12,10 +12,10 @@ const initialTechnicalSkills = [
 ];
 
 const initialSoftSkills = [
-  { id: 'soft-1', name: 'Trabajo en equipo' },
-  { id: 'soft-2', name: 'Comunicación asertiva' },
-  { id: 'soft-3', name: 'Resolución de problemas' },
-  { id: 'soft-4', name: 'Liderazgo' },
+  { id: 'soft-1', name: 'Trabajo en equipo', progress: 85 },
+  { id: 'soft-2', name: 'Comunicación asertiva', progress: 75 },
+  { id: 'soft-3', name: 'Resolución de problemas', progress: 90 },
+  { id: 'soft-4', name: 'Liderazgo', progress: 70 },
 ];
 
 const levelOptions = ['Principiante', 'Intermedio', 'Avanzado', 'Experto'];
@@ -96,16 +96,17 @@ export function SkillsSection({
           progress: t.progress
         })),
         soft: draftSoftSkills.map(s => ({
-          name: s.name
+          name: s.name,
+          progress: s.progress
         }))
       });
-      
+
       setTechnicalSkills(draftTechnicalSkills);
       setSoftSkills(draftSoftSkills);
       setEditingSoftSkillId(null);
       setEditingSoftSkillName('');
       setEditMode(false);
-      
+
       if (onDataDirty) onDataDirty();
     } catch (e: any) {
       alert(e.message || 'Error al guardar habilidades');
@@ -127,8 +128,8 @@ export function SkillsSection({
           field === 'progress'
             ? getLevelForProgress(Number(value))
             : field === 'level'
-            ? String(value)
-            : skill.level;
+              ? String(value)
+              : skill.level;
 
         return {
           ...skill,
@@ -151,8 +152,20 @@ export function SkillsSection({
     ]);
   };
 
-  const handleDeleteTechnicalSkill = (skillId: string) => {
-    setDraftTechnicalSkills((current) => current.filter((skill) => skill.id !== skillId));
+  const handleDraftSoftSkillChange = (
+    id: string,
+    field: 'name' | 'progress',
+    value: string | number
+  ) => {
+    setDraftSoftSkills((current) =>
+      current.map((skill) => {
+        if (skill.id !== id) return skill;
+        return {
+          ...skill,
+          [field]: field === 'progress' ? Number(value) : value,
+        };
+      })
+    );
   };
 
   const handleAddSoftSkill = () => {
@@ -160,7 +173,7 @@ export function SkillsSection({
     if (!trimmed) return;
     setDraftSoftSkills((current) => [
       ...current,
-      { id: `soft-${Date.now()}`, name: trimmed },
+      { id: `soft-${Date.now()}`, name: trimmed, progress: 0 },
     ]);
     setNewSoftSkill('');
   };
@@ -206,8 +219,8 @@ export function SkillsSection({
     <div className="space-y-6">
       <SectionHeading
         eyebrow="Editor de Perfil"
-        title="Habilidades y trayectoria"
-        description="Lenguajes, frameworks, herramientas y experiencia resumidos como en el editor del mockup."
+        title="Habilidades"
+        description="Lenguajes, frameworks, herramientas y habilidades blandas resumidos"
         actions={
           <div className="flex items-center gap-3">
             {!editMode && (
@@ -294,18 +307,11 @@ export function SkillsSection({
                         <label className="text-sm font-semibold text-slate-900" htmlFor={`${skill.id}-level`}>
                           Nivel
                         </label>
-                        <select
-                          id={`${skill.id}-level`}
-                          value={skill.level}
-                          onChange={(event) => handleDraftTechnicalChange(skill.id, 'level', event.target.value)}
-                          className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
+                        <div
+                          className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm"
                         >
-                          {levelOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
+                          {skill.level}
+                        </div>
                       </div>
                     </div>
 
@@ -313,7 +319,7 @@ export function SkillsSection({
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-slate-900">Dominio</p>
                         <span className="text-sm font-medium text-[var(--umss-brand)]">
-                          {skill.progress}%
+                          {skill.progress ?? 0}%
                         </span>
                       </div>
                       <input
@@ -329,7 +335,7 @@ export function SkillsSection({
                       <div className="h-3 overflow-hidden rounded-full bg-white p-1 shadow-inner">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] transition-all"
-                          style={{ width: `${skill.progress}%` }}
+                          style={{ width: `${skill.progress ?? 0}%` }}
                         />
                       </div>
                     </div>
@@ -342,13 +348,13 @@ export function SkillsSection({
                         <p className="mt-1 text-sm text-slate-600">{skill.level}</p>
                       </div>
                       <span className="text-sm font-semibold text-[var(--umss-brand)]">
-                        {skill.progress}%
+                        {skill.progress ?? 0}%
                       </span>
                     </div>
                     <div className="mt-4 h-3 overflow-hidden rounded-full bg-white p-1 shadow-inner">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]"
-                        style={{ width: `${skill.progress}%` }}
+                        style={{ width: `${skill.progress ?? 0}%` }}
                       />
                     </div>
                   </>
@@ -376,64 +382,78 @@ export function SkillsSection({
           }
         >
           <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {filteredSoftSkills.map((skill) => (
                 <div
                   key={skill.id}
                   id={`skill-${skill.id}`}
-                  className="flex items-center gap-2 rounded-full border border-[var(--umss-border)] bg-[var(--umss-surface)] px-3 py-2"
+                  className="relative rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4"
                 >
-                  {editMode && editingSoftSkillId === skill.id ? (
+                  {editMode ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSoftSkill(skill.id)}
+                      className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition hover:bg-[rgba(15,23,42,0.06)]"
+                      aria-label={`Eliminar ${skill.name}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : null}
+
+                  {editMode ? (
                     <>
-                      <input
-                        value={editingSoftSkillName}
-                        onChange={(event) => setEditingSoftSkillName(event.target.value)}
-                        className="rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-1 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        disabled={!editingSoftSkillName.trim()}
-                        className="rounded-full p-2 text-[var(--umss-brand)] hover:bg-[rgba(80,72,229,0.1)] disabled:opacity-50"
-                        onClick={handleSaveSoftSkill}
-                        aria-label="Guardar habilidad blanda"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]"
-                        onClick={() => {
-                          setEditingSoftSkillId(null);
-                          setEditingSoftSkillName('');
-                        }}
-                        aria-label="Cancelar edición"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="min-w-0 pr-8">
+                        <label className="text-sm font-semibold text-slate-900" htmlFor={`${skill.id}-name`}>
+                          Nombre
+                        </label>
+                        <input
+                          id={`${skill.id}-name`}
+                          value={skill.name}
+                          onChange={(event) => handleDraftSoftSkillChange(skill.id, 'name', event.target.value)}
+                          required
+                          className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-slate-900">Dominio</p>
+                          <span className="text-sm font-medium text-[var(--umss-brand)]">
+                            {skill.progress ?? 0}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={skill.progress}
+                          onChange={(event) =>
+                            handleDraftSoftSkillChange(skill.id, 'progress', Number(event.target.value))
+                          }
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--umss-border)] accent-[var(--umss-brand)]"
+                        />
+                        <div className="h-3 overflow-hidden rounded-full bg-white p-1 shadow-inner">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)] transition-all"
+                            style={{ width: `${skill.progress ?? 0}%` }}
+                          />
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <span className="text-sm font-medium text-slate-900">{skill.name}</span>
-                      {editMode ? (
-                        <>
-                          <button
-                            type="button"
-                            className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]"
-                            onClick={() => handleStartSoftSkillEdit(skill.id, skill.name)}
-                            aria-label={`Editar ${skill.name}`}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]"
-                            onClick={() => handleDeleteSoftSkill(skill.id)}
-                            aria-label={`Eliminar ${skill.name}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : null}
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-slate-900">{skill.name}</p>
+                        <span className="text-sm font-semibold text-[var(--umss-brand)]">
+                          {skill.progress ?? 0}%
+                        </span>
+                      </div>
+                      <div className="mt-4 h-3 overflow-hidden rounded-full bg-white p-1 shadow-inner">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[var(--umss-accent)]"
+                          style={{ width: `${skill.progress ?? 0}%` }}
+                        />
+                      </div>
                     </>
                   )}
                 </div>
@@ -475,9 +495,8 @@ export function SkillsSection({
               type="submit"
               form="skills-form"
               disabled={isSaving}
-              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${
-                isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
-              }`}
+              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
+                }`}
             >
               {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
