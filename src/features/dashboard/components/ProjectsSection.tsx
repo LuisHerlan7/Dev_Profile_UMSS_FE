@@ -28,7 +28,7 @@ export function ProjectsSection({
 }: {
   projects: ProjectItem[];
   onOpenProjectForm: () => void;
-  onToggleVisibility: (projectId: string) => void;
+  onToggleVisibility: (projectId: string) => Promise<void> | void;
   onEditProject: (projectId: string) => void;
   onDataDirty?: () => void;
 }) {
@@ -212,7 +212,10 @@ export function ProjectsSection({
                 <span className="text-sm font-semibold text-slate-900">Visible</span>
                 <button
                   type="button"
-                  onClick={() => onToggleVisibility(project.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void onToggleVisibility(project.id);
+                  }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                     project.visible ? 'bg-[var(--umss-brand)]' : 'bg-slate-300'
                   }`}
