@@ -18,7 +18,7 @@ type EvidenceItem = {
   status: string;
   file_url?: string | null;
   project: string;
-  projectId?: string; // We'll need this for 'add more'
+  project_id?: string | null;
   created_at?: string | null;
 };
 
@@ -52,7 +52,7 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
 
   const filteredEvidences = useMemo(() => {
     return evidences.filter((ev) => {
-      const matchesProject = filterProjectId === 'all' || ev.projectId === filterProjectId || ev.project === projects.find(p => p.id === filterProjectId)?.title;
+      const matchesProject = filterProjectId === 'all' || ev.project_id === filterProjectId || ev.project === projects.find(p => p.id === filterProjectId)?.title;
       const matchesSearch = ev.title.toLowerCase().includes(searchQuery.toLowerCase()) || ev.project.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesProject && matchesSearch;
     });
@@ -97,7 +97,6 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
     const formData = new FormData(event.currentTarget);
     const updates = {
       titulo: formData.get('titulo') as string,
-      estado_revision: formData.get('estado') as string,
     };
 
     try {
@@ -108,8 +107,8 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
       await updateEvidence(editingEvidence.id, updates);
       
       // If there are batch files, upload them to the project
-      if (batchFiles.length > 0 && editingEvidence.projectId) {
-         await uploadProjectEvidence(editingEvidence.projectId, batchFiles);
+      if (batchFiles.length > 0 && editingEvidence.project_id) {
+         await uploadProjectEvidence(editingEvidence.project_id, batchFiles);
       }
 
       setSuccess('Evidencia actualizada correctamente.');
@@ -361,15 +360,13 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
                  <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado de Validación</label>
-                      <select 
-                        name="estado"
-                        defaultValue={editingEvidence.status}
-                        className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition"
-                      >
-                        <option value="en_revision">Pendiente</option>
-                        <option value="verificado">Aprobado</option>
-                        <option value="rechazado">Observado</option>
-                      </select>
+                      <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-6 text-sm font-bold text-slate-700">
+                        {editingEvidence.status === 'verificado'
+                          ? 'Verificado'
+                          : editingEvidence.status === 'rechazado'
+                          ? 'Rechazado'
+                          : 'En revisión'}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identificador</label>
