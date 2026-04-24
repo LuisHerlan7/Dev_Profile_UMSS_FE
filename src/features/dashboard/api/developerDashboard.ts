@@ -41,6 +41,7 @@ export type HabilidadRow = {
   tipo_habilidad: string;
   descripcion: string | null;
   nivel_dominio: string | null;
+  porcentaje_dominio?: number | null;
   anos_experiencia: number | null;
   fecha_adquisicion: string | null;
   estado: string | null;
@@ -193,6 +194,30 @@ export async function deleteProject(id: string | number) {
   return res.json();
 }
 
+export async function updateProjectVisibility(id: string | number, visible: boolean) {
+  const token = localStorage.getItem('auth_token');
+  if (!token) throw new Error('No hay sesión.');
+
+  const res = await fetch(`/api/developer/proyecto/${id}/visibility`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      visibilidad: visible ? 'publico' : 'privado',
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'Error al actualizar la visibilidad del proyecto');
+  }
+
+  return res.json();
+}
+
 export async function updateAvatar(formData: FormData) {
   return fetchWithFormData('/api/developer/settings/avatar', 'POST', formData);
 }
@@ -220,7 +245,7 @@ export async function updateProfile(payload: {
 
 export async function syncSkills(payload: {
   technical: { name: string; level: string; progress: number }[];
-  soft: { name: string }[];
+  soft: { name: string; level: string; progress: number }[];
 }) {
   const token = localStorage.getItem('auth_token');
   if (!token) throw new Error('No hay sesión.');
