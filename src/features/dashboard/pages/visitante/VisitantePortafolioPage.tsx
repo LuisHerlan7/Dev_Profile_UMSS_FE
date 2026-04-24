@@ -33,7 +33,13 @@ interface PortfolioData {
     phone?: string;
   };
   social: Record<string, string>;
-  skills: { id_habilidad: number; nombre_habilidad: string; tipo_habilidad: string; nivel_dominio: string }[];
+  skills: {
+    id_habilidad: number;
+    nombre_habilidad: string;
+    tipo_habilidad: string;
+    nivel_dominio: string;
+    porcentaje_dominio?: number | null;
+  }[];
   projects: Project[];
   timeline: TimelineItem[];
   config: any;
@@ -92,6 +98,14 @@ export function VisitantePortafolioPage() {
   }
 
   const { profile, social, skills, projects, timeline } = data;
+  const skillProgressByLevel: Record<string, number> = {
+    basico: 25,
+    intermedio: 50,
+    avanzado: 75,
+    experto: 100,
+  };
+  const technicalSkills = skills.filter((skill) => skill.tipo_habilidad === 'tecnica');
+  const softSkills = skills.filter((skill) => skill.tipo_habilidad === 'blanda');
 
   return (
     <main className="vp-landing">
@@ -125,10 +139,13 @@ export function VisitantePortafolioPage() {
         .vp-section p {text-align: center; max-width: 760px; margin: 12px auto 30px; color: #4b5f84;}
 
         .vp-skills {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;}
-        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; text-align: center; min-height: 96px; transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center;}
+        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; min-height: 120px; transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center;}
         .vp-skill-card:hover {transform: scale(1.03);}
-        .vp-skill-card h3 {margin: 0; font-size: 12px; color: #5565a8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;}
-        .vp-skill-card p {margin: 8px 0 0; font-size: 16px; font-weight: 700; color: #233675;}
+        .vp-skill-card h3 {margin: 0; font-size: 16px; color: #233675; font-weight: 700;}
+        .vp-skill-card p {margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #5565a8; text-transform: uppercase; letter-spacing: 0.05em;}
+        .vp-skill-card__meta {display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; font-size: 13px; color: #55617b;}
+        .vp-skill-card__bar {margin-top: 10px; height: 10px; border-radius: 999px; background: #eef2ff; overflow: hidden;}
+        .vp-skill-card__bar span {display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f45ff 0%, #6c63ff 100%);}
 
         .vp-projects {display: grid; grid-template-columns: 1fr; gap: 18px;}
         .vp-project {background: #fff; border: 1px solid #e5edff; border-radius: 16px; padding: 18px; transition: transform 0.3s ease; display: flex; flex-direction: column;}
@@ -233,16 +250,62 @@ export function VisitantePortafolioPage() {
       {skills.length > 0 && (
         <FadeInSection>
           <section id="skills" className="vp-section">
-            <h2>Habilidades Técnicas</h2>
-            <p>Destacando mis herramientas y tecnologías de mayor dominio.</p>
-            <div className="vp-skills">
-              {skills.map(skill => (
-                <div key={skill.id_habilidad} className="vp-skill-card">
-                  <h3>{skill.nivel_dominio || 'Habilidad'}</h3>
-                  <p>{skill.nombre_habilidad}</p>
+            <h2>Habilidades</h2>
+            <p>Competencias técnicas y blandas con su nivel de dominio.</p>
+
+            {technicalSkills.length > 0 && (
+              <>
+                <h3 style={{ textAlign: 'left', color: '#142d60', marginBottom: '14px', fontSize: '22px' }}>Habilidades Técnicas</h3>
+                <div className="vp-skills">
+                  {technicalSkills.map((skill) => {
+                    const progress =
+                      typeof skill.porcentaje_dominio === 'number'
+                        ? Math.max(0, Math.min(100, skill.porcentaje_dominio))
+                        : skillProgressByLevel[(skill.nivel_dominio || 'intermedio').toLowerCase()] ?? 50;
+                    return (
+                      <div key={skill.id_habilidad} className="vp-skill-card">
+                        <h3>{skill.nombre_habilidad}</h3>
+                        <p>{skill.nivel_dominio || 'Intermedio'}</p>
+                        <div className="vp-skill-card__meta">
+                          <span>Dominio</span>
+                          <strong>{progress}%</strong>
+                        </div>
+                        <div className="vp-skill-card__bar">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
+
+            {softSkills.length > 0 && (
+              <>
+                <h3 style={{ textAlign: 'left', color: '#142d60', margin: '26px 0 14px', fontSize: '22px' }}>Habilidades Blandas</h3>
+                <div className="vp-skills">
+                  {softSkills.map((skill) => {
+                    const progress =
+                      typeof skill.porcentaje_dominio === 'number'
+                        ? Math.max(0, Math.min(100, skill.porcentaje_dominio))
+                        : skillProgressByLevel[(skill.nivel_dominio || 'intermedio').toLowerCase()] ?? 50;
+                    return (
+                      <div key={skill.id_habilidad} className="vp-skill-card">
+                        <h3>{skill.nombre_habilidad}</h3>
+                        <p>{skill.nivel_dominio || 'Intermedio'}</p>
+                        <div className="vp-skill-card__meta">
+                          <span>Dominio</span>
+                          <strong>{progress}%</strong>
+                        </div>
+                        <div className="vp-skill-card__bar">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </section>
         </FadeInSection>
       )}
