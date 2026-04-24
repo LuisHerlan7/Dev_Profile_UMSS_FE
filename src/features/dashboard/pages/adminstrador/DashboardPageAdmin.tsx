@@ -40,6 +40,36 @@ const sidebarItems: SidebarItem[] = [
   { id: 'security', label: 'Auditoría de Seguridad', icon: <ShieldCheck className="h-4 w-4" /> },
 ];
 
+function clampRatio(value: number, total: number) {
+  if (total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
+}
+
+function formatShare(value: number, total: number) {
+  if (total <= 0) return 'Sin datos';
+  return `${clampRatio(value, total)}% del total`;
+}
+
+function formatSystemLoad(load: number | null) {
+  if (load === null) return { label: 'Pendiente', tone: 'neutral' as const, width: 0 };
+  if (load >= 80) return { label: 'Alta', tone: 'warning' as const, width: load };
+  if (load >= 50) return { label: 'Media', tone: 'brand' as const, width: load };
+  return { label: 'Estable', tone: 'success' as const, width: load };
+}
+
+function formatDateLabel(value?: string | null) {
+  if (!value) return 'Sin fecha';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString('es-BO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function DashboardPageAdmin() {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -49,13 +79,15 @@ export function DashboardPageAdmin() {
   const [evidenceStatus, setEvidenceStatus] = useState<'en_revision' | 'verificado' | 'rechazado'>('en_revision');
   const [evidencePage, setEvidencePage] = useState(1);
   const [evidenceError, setEvidenceError] = useState('');
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const { session, isLoading, error } = useAuthSession({
     requiredRole: ['admin', 'administrador'],
     redirectTo: '/login',
   });
 
   useEffect(() => {
-    if (!session?.token) {
+    const sessionToken = session?.token;
+    if (!sessionToken) {
       return;
     }
 
@@ -63,7 +95,7 @@ export function DashboardPageAdmin() {
 
     async function loadAdminDashboard() {
       try {
-        const data = await fetchAdminDashboard(session.token);
+        const data = await fetchAdminDashboard(sessionToken);
         if (!cancelled) {
           setDashboardData(data);
           setDashboardError('');
@@ -133,7 +165,8 @@ export function DashboardPageAdmin() {
   const profileRole = resolveRoleLabel(session?.user.role);
 
   useEffect(() => {
-    if (activeSection !== 'moderation' || !session?.token) {
+    const sessionToken = session?.token;
+    if (activeSection !== 'moderation' || !sessionToken) {
       return;
     }
 
@@ -143,7 +176,7 @@ export function DashboardPageAdmin() {
       try {
         const data = await fetchAdminEvidences(
           { status: evidenceStatus, page: evidencePage, perPage: 6 },
-          session.token
+          sessionToken
         );
         if (!cancelled) {
           setEvidenceQueue(data);
@@ -301,6 +334,8 @@ export function DashboardPageAdmin() {
               <input
                 type="search"
                 placeholder="Buscar reportes..."
+                value={adminSearchQuery}
+                onChange={(event) => setAdminSearchQuery(event.target.value)}
                 className="h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] pr-4 pl-11 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgba(80,72,229,0.3)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
               />
             </label>
@@ -310,6 +345,7 @@ export function DashboardPageAdmin() {
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
+              onClick={() => setActiveSection('moderation')}
               className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
               aria-label="Notificaciones"
             >
@@ -317,6 +353,7 @@ export function DashboardPageAdmin() {
             </button>
             <button
               type="button"
+              onClick={() => setActiveSection('settings')}
               className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
               aria-label="Configuracion"
             >
@@ -343,13 +380,16 @@ export function DashboardPageAdmin() {
       {activeSection === 'dashboard' ? (
         <AdminSummarySection stats={stats} system={system} />
       ) : null}
-      {activeSection === 'users' ? <AdminUsersSection stats={stats} recentUsers={recentUsers} /> : null}
+      {activeSection === 'users' ? (
+        <AdminUsersSection stats={stats} recentUsers={recentUsers} searchQuery={adminSearchQuery} />
+      ) : null}
       {activeSection === 'moderation' ? (
         <AdminModerationSection
           moderation={moderation}
           evidenceQueue={evidenceQueue}
           evidenceStatus={evidenceStatus}
           evidenceError={evidenceError}
+          searchQuery={adminSearchQuery}
           onStatusChange={(status) => {
             setEvidenceStatus(status);
             setEvidencePage(1);
@@ -376,7 +416,9 @@ export function DashboardPageAdmin() {
       {activeSection === 'settings' ? (
         <AdminSettingsSection name={profileName} email={session.user.email} />
       ) : null}
-      {activeSection === 'security' ? <AdminSecuritySection events={security} /> : null}
+      {activeSection === 'security' ? (
+        <AdminSecuritySection events={security} searchQuery={adminSearchQuery} />
+      ) : null}
     </DashboardLayout>
   );
 }
@@ -439,6 +481,11 @@ function AdminSummarySection({
   stats: AdminDashboardData['stats'];
   system: AdminDashboardData['system'];
 }) {
+  const totalUsersWidth = clampRatio(stats.total_users, Math.max(stats.total_users, system.active_portfolios, 1));
+  const activePortfoliosWidth = clampRatio(system.active_portfolios, Math.max(stats.total_users, system.active_portfolios, 1));
+  const pendingReportsWidth = clampRatio(system.pending_reports, Math.max(system.pending_reports, stats.total_users, 1));
+  const loadState = formatSystemLoad(system.system_load);
+
   return (
     <div className="space-y-6">
       <div>
@@ -452,46 +499,52 @@ function AdminSummarySection({
         <DashboardCard>
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">Usuarios Totales</p>
-            <DashboardBadge tone="brand">+12.4%</DashboardBadge>
+            <DashboardBadge tone={stats.total_users > 0 ? 'success' : 'neutral'}>
+              {stats.total_users > 0 ? 'Datos reales' : 'Sin registros'}
+            </DashboardBadge>
           </div>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{stats.total_users}</p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-2/3 rounded-full bg-[var(--umss-brand)]" />
+            <div className="h-full rounded-full bg-[var(--umss-brand)]" style={{ width: `${totalUsersWidth}%` }} />
           </div>
         </DashboardCard>
 
         <DashboardCard>
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">Portafolios Activos</p>
-            <DashboardBadge tone="success">+5.2%</DashboardBadge>
+            <DashboardBadge tone={system.active_portfolios > 0 ? 'success' : 'neutral'}>
+              {formatShare(system.active_portfolios, Math.max(stats.total_users, 1))}
+            </DashboardBadge>
           </div>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{system.active_portfolios}</p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-1/2 rounded-full bg-[var(--umss-success)]" />
+            <div className="h-full rounded-full bg-[var(--umss-success)]" style={{ width: `${activePortfoliosWidth}%` }} />
           </div>
         </DashboardCard>
 
         <DashboardCard>
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">Carga del Sistema</p>
-            <DashboardBadge tone="warning">-0.5%</DashboardBadge>
+            <DashboardBadge tone={loadState.tone}>{loadState.label}</DashboardBadge>
           </div>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
             {system.system_load !== null ? `${system.system_load}%` : 'Pendiente'}
           </p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-3/4 rounded-full bg-[var(--umss-warning)]" />
+            <div className="h-full rounded-full bg-[var(--umss-warning)]" style={{ width: `${loadState.width}%` }} />
           </div>
         </DashboardCard>
 
         <DashboardCard>
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">Reportes Pendientes</p>
-            <DashboardBadge tone="neutral">Estático</DashboardBadge>
+            <DashboardBadge tone={system.pending_reports > 0 ? 'warning' : 'success'}>
+              {system.pending_reports > 0 ? 'Requiere atención' : 'Al día'}
+            </DashboardBadge>
           </div>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{system.pending_reports}</p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-1/4 rounded-full bg-[var(--umss-brand)]" />
+            <div className="h-full rounded-full bg-[var(--umss-brand)]" style={{ width: `${pendingReportsWidth}%` }} />
           </div>
         </DashboardCard>
       </div>
@@ -499,11 +552,6 @@ function AdminSummarySection({
       <DashboardCard
         title="Todos los Usuarios"
         description="Vista resumida para verificar actividad reciente."
-        action={
-          <Button size="sm" className="h-9 rounded-xl px-3 text-xs font-semibold">
-            + Nuevo Usuario
-          </Button>
-        }
       >
         <div className="space-y-3">
           {stats.total_users === 0 ? (
@@ -535,10 +583,21 @@ function AdminSummarySection({
 function AdminUsersSection({
   stats,
   recentUsers,
+  searchQuery,
 }: {
   stats: AdminDashboardData['stats'];
   recentUsers: AdminDashboardData['recent_users'];
+  searchQuery: string;
 }) {
+  const filteredUsers = recentUsers.filter((user) => {
+    const query = searchQuery.trim().toLocaleLowerCase('es');
+    if (!query) return true;
+
+    return [user.name, user.email, resolveRoleLabel(user.role)]
+      .filter(Boolean)
+      .some((value) => value.toLocaleLowerCase('es').includes(query));
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -552,45 +611,38 @@ function AdminUsersSection({
         <DashboardCard>
           <p className="text-sm text-slate-500">Total Usuarios</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{stats.total_users}</p>
-          <p className="mt-2 text-xs text-emerald-600">+12% este mes</p>
+          <p className="mt-2 text-xs text-slate-500">Base consolidada del sistema.</p>
         </DashboardCard>
         <DashboardCard>
           <p className="text-sm text-slate-500">Desarrolladores</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{stats.developers}</p>
           <div className="mt-3 h-1.5 rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-1/2 rounded-full bg-[var(--umss-brand)]" />
+            <div
+              className="h-full rounded-full bg-[var(--umss-brand)]"
+              style={{ width: `${clampRatio(stats.developers, Math.max(stats.total_users, 1))}%` }}
+            />
           </div>
         </DashboardCard>
         <DashboardCard>
           <p className="text-sm text-slate-500">Reclutadores</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">{stats.recruiters}</p>
           <div className="mt-3 h-1.5 rounded-full bg-[var(--umss-surface)]">
-            <div className="h-full w-1/3 rounded-full bg-[var(--umss-brand)]" />
+            <div
+              className="h-full rounded-full bg-[var(--umss-brand)]"
+              style={{ width: `${clampRatio(stats.recruiters, Math.max(stats.total_users, 1))}%` }}
+            />
           </div>
         </DashboardCard>
         <DashboardCard>
           <p className="text-sm text-slate-500">Suspendidos</p>
           <p className="mt-3 text-2xl font-semibold text-rose-600">{stats.suspended}</p>
-          <p className="mt-2 text-xs text-slate-500">1.2% del total</p>
+          <p className="mt-2 text-xs text-slate-500">{formatShare(stats.suspended, Math.max(stats.total_users, 1))}</p>
         </DashboardCard>
       </div>
 
       <DashboardCard
         title="Usuarios recientes"
         description="Resumen de cuentas creadas recientemente."
-        action={
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" className="h-9 rounded-xl px-3 text-xs font-semibold">
-              Estado: Todos
-            </Button>
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--umss-border)] bg-white text-slate-500"
-            >
-              <Filter className="h-4 w-4" />
-            </button>
-          </div>
-        }
       >
         <div className="overflow-hidden rounded-2xl border border-[var(--umss-border)]">
           <table className="w-full text-left text-sm">
@@ -603,14 +655,14 @@ function AdminUsersSection({
               </tr>
             </thead>
             <tbody>
-              {recentUsers.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
                   <td className="px-4 py-4 text-slate-500" colSpan={4}>
-                    Sin usuarios recientes.
+                    {searchQuery ? 'No hay usuarios que coincidan con la búsqueda.' : 'Sin usuarios recientes.'}
                   </td>
                 </tr>
               ) : (
-                recentUsers.map((user) => (
+                filteredUsers.map((user) => (
                   <tr key={user.id} className="border-t border-[var(--umss-border)]">
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-900">{user.name}</p>
@@ -619,7 +671,7 @@ function AdminUsersSection({
                     <td className="px-4 py-3">
                       <DashboardBadge tone="brand">{resolveRoleLabel(user.role)}</DashboardBadge>
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{user.created_at || 'Sin fecha'}</td>
+                    <td className="px-4 py-3 text-slate-500">{formatDateLabel(user.created_at)}</td>
                     <td className="px-4 py-3 text-right text-slate-400">···</td>
                   </tr>
                 ))
@@ -628,7 +680,7 @@ function AdminUsersSection({
           </table>
         </div>
         <p className="mt-3 text-xs text-slate-500">
-          Mostrando {recentUsers.length} de {stats.total_users} usuarios.
+          Mostrando {filteredUsers.length} de {stats.total_users} usuarios.
         </p>
       </DashboardCard>
     </div>
@@ -640,6 +692,7 @@ function AdminModerationSection({
   evidenceQueue,
   evidenceStatus,
   evidenceError,
+  searchQuery,
   onStatusChange,
   onPageChange,
   onEvidenceAction,
@@ -648,11 +701,26 @@ function AdminModerationSection({
   evidenceQueue: EvidencePage | null;
   evidenceStatus: 'en_revision' | 'verificado' | 'rechazado';
   evidenceError: string;
+  searchQuery: string;
   onStatusChange: (status: 'en_revision' | 'verificado' | 'rechazado') => void;
   onPageChange: (page: number) => void;
   onEvidenceAction: (id: number, status: 'en_revision' | 'verificado' | 'rechazado') => Promise<void>;
 }) {
   const items = evidenceQueue?.data || [];
+  const filteredItems = items.filter((item) => {
+    const query = searchQuery.trim().toLocaleLowerCase('es');
+    if (!query) return true;
+
+    return [
+      item.title,
+      item.project?.name ?? '',
+      item.owner?.name ?? '',
+      item.owner?.email ?? '',
+      item.status,
+    ]
+      .filter(Boolean)
+      .some((value) => value.toLocaleLowerCase('es').includes(query));
+  });
   const meta = evidenceQueue?.meta;
 
   return (
@@ -665,12 +733,9 @@ function AdminModerationSection({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" className="h-9 rounded-xl px-3 text-xs font-semibold">
-            Historial
-          </Button>
-          <Button size="sm" className="h-9 rounded-xl px-3 text-xs font-semibold">
-            Exportar Informe
-          </Button>
+          <DashboardBadge tone="brand">
+            {meta ? `${meta.total} evidencias` : 'Cargando'}
+          </DashboardBadge>
         </div>
       </div>
 
@@ -716,7 +781,7 @@ function AdminModerationSection({
             </div>
           </div>
           <div className="text-xs text-slate-500">
-            {meta ? `Mostrando ${items.length} de ${meta.total} evidencias.` : 'Cargando evidencias...'}
+            {meta ? `Mostrando ${filteredItems.length} de ${meta.total} evidencias.` : 'Cargando evidencias...'}
           </div>
         </div>
 
@@ -727,12 +792,12 @@ function AdminModerationSection({
         ) : null}
 
         <div className="mt-4 space-y-4">
-          {items.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--umss-border)] bg-[var(--umss-surface)] p-6 text-sm text-slate-500">
-              No hay evidencias en este estado.
+              {searchQuery ? 'No hay evidencias que coincidan con la búsqueda actual.' : 'No hay evidencias en este estado.'}
             </div>
           ) : (
-            items.map((item) => (
+            filteredItems.map((item) => (
               <ModerationCard
                 key={item.id}
                 title={item.title}
@@ -796,9 +861,7 @@ function AdminAnalyticsSection({
             Métricas reales del ecosistema Dev Profile UMSS.
           </p>
         </div>
-        <Button size="sm" className="h-9 rounded-xl px-3 text-xs font-semibold">
-          Exportar Reporte
-        </Button>
+        <DashboardBadge tone="success">Datos sincronizados</DashboardBadge>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -908,7 +971,22 @@ function AdminSettingsSection({ name, email }: { name: string; email: string }) 
   );
 }
 
-function AdminSecuritySection({ events }: { events: AdminDashboardData['security'] }) {
+function AdminSecuritySection({
+  events,
+  searchQuery,
+}: {
+  events: AdminDashboardData['security'];
+  searchQuery: string;
+}) {
+  const filteredEvents = events.filter((item) => {
+    const query = searchQuery.trim().toLocaleLowerCase('es');
+    if (!query) return true;
+
+    return [item.title, item.user, item.details, item.date ?? '']
+      .filter(Boolean)
+      .some((value) => value.toLocaleLowerCase('es').includes(query));
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -928,18 +1006,18 @@ function AdminSecuritySection({ events }: { events: AdminDashboardData['security
         </div>
 
         <div className="mt-4 space-y-3">
-          {events.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 text-sm text-slate-500">
-              No hay eventos de seguridad registrados.
+              {searchQuery ? 'No hay eventos que coincidan con la búsqueda actual.' : 'No hay eventos de seguridad registrados.'}
             </div>
           ) : (
-            events.map((item) => (
+            filteredEvents.map((item) => (
               <div key={`${item.title}-${item.date}`} className="flex items-center justify-between rounded-2xl border border-[var(--umss-border)] bg-white p-4">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                   <p className="text-xs text-slate-500">{item.user}</p>
                   <p className="text-xs text-slate-400">{item.details}</p>
-                  {item.date ? <p className="text-xs text-slate-400">{item.date}</p> : null}
+                  {item.date ? <p className="text-xs text-slate-400">{formatDateLabel(item.date)}</p> : null}
                 </div>
                 <DashboardBadge tone="neutral">Auditoría</DashboardBadge>
               </div>
