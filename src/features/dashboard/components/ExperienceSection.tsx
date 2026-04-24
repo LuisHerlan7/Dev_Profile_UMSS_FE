@@ -1,65 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BarChart3, Calendar, Code2, FileText, Plus, ShieldCheck } from 'lucide-react';
+import { Calendar, FileText, Plus, ShieldCheck } from 'lucide-react';
 import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
 import { saveExperience, saveFormation, deleteExperience, deleteFormation } from '@features/dashboard/api/developerDashboard';
-
-const initialExperienceEntries: ExperienceRecord[] = [
-  {
-    id: 'cloudscale',
-    recordType: 'Experiencia',
-    badge: 'SYSTEM ARCHITECTURE',
-    title: 'CloudScale ERP Blueprint',
-    description:
-      'Full technical documentation of the microservices orchestration using Kubernetes and gRPC protocols.',
-    tone: 'brand',
-    icon: FileText,
-    footer: '4.2 MB',
-  },
-  {
-    id: 'aws',
-    recordType: 'Certificación',
-    badge: 'CERTIFICATION',
-    title: 'AWS Solutions Architect',
-    description:
-      'Professional certification validating expertise in designing distributed systems on AWS platforms.',
-    tone: 'neutral',
-    icon: ShieldCheck,
-    footer: 'Verified Credential',
-  },
-  {
-    id: 'rust',
-    recordType: 'Experiencia',
-    badge: 'SOURCE CODE',
-    title: 'Neural-Net Core Framework',
-    description:
-      'Proprietary logic for edge-computing inference engines written in high-performance Rust.',
-    tone: 'success',
-    icon: Code2,
-    footer: 'Production Ready',
-  },
-  {
-    id: 'audit',
-    recordType: 'Experiencia',
-    badge: 'QA REPORT',
-    title: 'Security Audit - Fintech Module',
-    description:
-      'Comprehensive vulnerability assessment and penetration test results for the payment gateway.',
-    tone: 'warning',
-    icon: BarChart3,
-    footer: 'Low Risk',
-  },
-  {
-    id: 'behavioral',
-    recordType: 'Experiencia',
-    badge: 'R&D INSIGHT',
-    title: 'Behavioral Pattern Analysis',
-    description:
-      'Evidence based research on user interaction models for next-gen accessibility interfaces.',
-    tone: 'info',
-    icon: ArrowRight,
-    footer: 'Research Summary',
-  },
-];
 
 const recordTypes = ['Experiencia', 'Certificación'] as const;
 const filters = ['Todos', 'Documentos', 'Certificaciones', 'Codigo', 'Reportes'] as const;
@@ -84,9 +26,7 @@ export function ExperienceSection({
   const [recordType, setRecordType] = useState<RecordType>('Experiencia');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<typeof filters[number]>('Todos');
-  const [records, setRecords] = useState<ExperienceRecord[]>(() =>
-    initialFromServer === undefined ? initialExperienceEntries : initialFromServer
-  );
+  const [records, setRecords] = useState<ExperienceRecord[]>(() => initialFromServer ?? []);
   
   useEffect(() => {
     if (initialFromServer) {
