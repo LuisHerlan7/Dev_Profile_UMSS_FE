@@ -230,7 +230,7 @@ export function EditProjectPage() {
         const folderPath = parts.join('/') + '/';
         
         let subPath = '';
-        parts.forEach(p => {
+        parts.forEach((p: string) => {
           subPath += p + '/';
           newFolders.add(subPath);
         });
