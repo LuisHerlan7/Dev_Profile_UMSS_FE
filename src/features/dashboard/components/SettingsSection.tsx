@@ -9,29 +9,24 @@ import type {
 } from '@features/dashboard/utils/developerDashboardMappers';
 
 const initialProfile = {
-  firstName: 'Alex',
-  lastName: 'Rivera',
-  maternalLastName: 'Terceros',
-  role: 'Full Stack Developer',
-  bio:
-    'Desarrollador Full Stack apasionado con más de 5 años de experiencia en la creación de aplicaciones web escalables. Me especializo en React, Node.js y arquitectura en la nube. Mi objetivo es conectar backends de alto rendimiento con experiencias de usuario excepcionales.',
-  github: 'https://github.com/arivera',
-  linkedin: 'https://linkedin.com/in/alexrivera-dev',
-  website: 'https://alexrivera.io',
-  phone: '+591 700 00000',
-  email: 'raulito@gmail.com',
+  firstName: '',
+  lastName: '',
+  maternalLastName: '',
+  role: '',
+  bio: '',
+  github: '',
+  linkedin: '',
+  website: '',
+  phone: '',
+  email: '',
   password: '**********',
   newPassword: '',
 };
 
 const initialHighlights = {
-  projects: [
-    'Digital Curator Platform',
-    'Cloud Scale Infrastructure',
-    'AI Portfolio Analyzer',
-  ],
-  skills: ['React & Next.js', 'TypeScript Expert', 'Node.js / Express'],
-  trajectory: ['Senior Developer @ Tech Corp', 'Lead Eng @ Startup X', 'MS Computer Science'],
+  projects: [] as string[],
+  skills: [] as string[],
+  trajectory: [] as string[],
 };
 
 export function SettingsSection({
@@ -539,6 +534,11 @@ export function SettingsSection({
               setAvatarUrl(serverProfile.avatar || null);
               originalServerAvatar.current = serverProfile.avatar || null;
               if (setPendingAvatarFile) setPendingAvatarFile(null);
+            }
+            if (serverHighlights) {
+              setHighlights(serverHighlights);
+            } else {
+              setHighlights(initialHighlights);
             }
             // Si el panel de seguridad está abierto, resetearlo siempre
             if (showSecurityPanel) {
