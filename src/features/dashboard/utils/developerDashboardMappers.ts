@@ -90,6 +90,16 @@ const NIVEL_PROGRESS: Record<string, number> = {
   experto: 100,
 };
 
+function resolveSkillProgress(skill: HabilidadRow): number {
+  const rawProgress = skill.porcentaje_dominio;
+
+  if (typeof rawProgress === 'number' && Number.isFinite(rawProgress)) {
+    return Math.max(0, Math.min(100, rawProgress));
+  }
+
+  return NIVEL_PROGRESS[(skill.nivel_dominio ?? 'intermedio').toLowerCase()] ?? 50;
+}
+
 export type TechnicalSkillState = {
   id: string;
   name: string;
@@ -97,7 +107,12 @@ export type TechnicalSkillState = {
   progress: number;
 };
 
-export type SoftSkillState = { id: string; name: string };
+export type SoftSkillState = {
+  id: string;
+  name: string;
+  level: string;
+  progress: number;
+};
 
 export function mapHabilidades(rows: HabilidadRow[]): {
   technical: TechnicalSkillState[];
@@ -113,12 +128,14 @@ export function mapHabilidades(rows: HabilidadRow[]): {
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
         level: NIVEL_ES[nivel] ?? 'Intermedio',
-        progress: NIVEL_PROGRESS[nivel] ?? 50,
+        progress: resolveSkillProgress(h),
       });
     } else {
       soft.push({
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
+        level: NIVEL_ES[nivel] ?? 'Intermedio',
+        progress: resolveSkillProgress(h),
       });
     }
   }
