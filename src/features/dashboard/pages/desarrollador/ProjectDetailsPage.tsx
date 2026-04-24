@@ -8,6 +8,7 @@ import {
   Calendar, Layers, Activity as ActivityIcon
 } from 'lucide-react';
 import { fetchProjectDetails } from '@features/dashboard/api/developerDashboard';
+import { readStoredAuthSession } from '@services/auth';
 
 type ProjectData = {
   proyecto: any;
@@ -34,6 +35,8 @@ const formatTimeAgo = (dateStr: string) => {
 export function ProjectDetailsPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const currentSession = readStoredAuthSession();
+  const currentUserName = currentSession?.user?.name ?? 'Desarrollador';
   
   const [data, setData] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,7 +178,7 @@ export function ProjectDetailsPage() {
             <div className="h-4 w-[1px] bg-slate-200"></div>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-slate-400 font-medium" />
-              <span className="text-sm font-bold text-slate-600">desarrollador_umss</span>
+              <span className="text-sm font-bold text-slate-600">{currentUserName}</span>
               <span className="text-slate-300">/</span>
               <span className="text-sm font-black text-[#1E293B] uppercase tracking-tight">{proyecto.nombre_proyecto}</span>
             </div>
