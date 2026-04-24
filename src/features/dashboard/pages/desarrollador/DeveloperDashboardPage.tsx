@@ -39,6 +39,7 @@ import {
   sidebarHeadline,
   welcomeFirstName,
 } from '@features/dashboard/utils/developerDashboardMappers';
+import { updateProjectVisibility } from '@features/dashboard/api/developerDashboard';
 
 type SectionId = 'overview' | 'projects' | 'evidence' | 'skills' | 'experience' | 'settings';
 
@@ -103,7 +104,7 @@ export function DeveloperDashboardPage() {
       // Mapear proyectos usando la lógica local existente
       if (data.proyectos || data.projects) {
           const rawProyects = data.proyectos || data.projects;
-          setProjects(mapProyectosToProjectItems(rawProyects));
+          setProjects(mapProyectosToProjectItems(rawProyects as any));
       }
     } catch (requestError) {
       console.error('Error al cargar dashboard', requestError);
@@ -135,12 +136,31 @@ export function DeveloperDashboardPage() {
     navigate('/nuevo-proyecto');
   };
 
-  const handleToggleVisibility = (projectId: string) => {
+  const handleToggleVisibility = async (projectId: string) => {
+    const targetProject = projects.find((project) => project.id === projectId);
+    if (!targetProject) return;
+
+    const nextVisibility = !targetProject.visible;
+
     setProjects((items) =>
       items.map((project) =>
-        project.id === projectId ? { ...project, visible: !project.visible } : project
+        project.id === projectId ? { ...project, visible: nextVisibility } : project
       )
     );
+
+    try {
+      await updateProjectVisibility(projectId, nextVisibility);
+      await fetchDashboardData();
+    } catch (error) {
+      setProjects((items) =>
+        items.map((project) =>
+          project.id === projectId ? { ...project, visible: targetProject.visible } : project
+        )
+      );
+      setDashboardError(
+        error instanceof Error ? error.message : 'No se pudo actualizar la visibilidad del proyecto.'
+      );
+    }
   };
 
   const handleEditProject = (projectId: string) => {
@@ -312,7 +332,6 @@ export function DeveloperDashboardPage() {
           onOpenProjectForm={handleOpenProjectForm}
           onToggleVisibility={handleToggleVisibility}
           onEditProject={handleEditProject}
-          onProjectCreated={refreshDashboard}
         />
       )}
 
