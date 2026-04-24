@@ -158,7 +158,7 @@ export function NewProjectPage() {
         
         // Add all subfolders to the folders list
         let subPath = '';
-        parts.forEach(p => {
+        parts.forEach((p: string) => {
           subPath += p + '/';
           newFolders.add(subPath);
         });
