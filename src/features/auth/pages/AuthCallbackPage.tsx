@@ -22,12 +22,13 @@ export function AuthCallbackPage() {
       return;
     }
 
+    const authToken = token;
     let isCancelled = false;
 
     async function completeSession() {
       try {
-        window.localStorage.setItem('auth_token', token);
-        const session = await fetchDashboardSession(token);
+        window.localStorage.setItem('auth_token', authToken);
+        const session = await fetchDashboardSession(authToken);
 
         if (isCancelled) {
           return;
