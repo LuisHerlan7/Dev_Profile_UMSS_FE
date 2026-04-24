@@ -25,6 +25,60 @@ export type DeveloperSkill = {
 };
 
 export type DeveloperDashboardData = {
+  auth_user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+  usuario?: Record<string, unknown> | null;
+  portafolio?: Record<string, unknown> | null;
+  proyectos?: Array<{
+    id_proyecto: number;
+    nombre_proyecto: string;
+    descripcion_proyecto: string;
+    estado_proyecto: string;
+    tecnologias: string[];
+    visibilidad: string;
+    fecha_creacion?: string | null;
+    enlace_proyecto_activo?: string | null;
+    enlace_repositorio?: string | null;
+  }>;
+  habilidades?: Array<{
+    id_habilidad: number;
+    nombre_habilidad: string;
+    tipo_habilidad: string;
+    nivel_dominio: string | null;
+    porcentaje_dominio?: number | null;
+  }>;
+  experiencias?: Array<{
+    id_experiencia: number;
+    titulo_puesto: string;
+    nombre_empresa: string;
+    descripcion_puesto?: string | null;
+    fecha_inicio: string;
+    fecha_fin?: string | null;
+    es_trabajo_actual?: boolean;
+    tipo_contrato?: string | null;
+    visibilidad?: string | null;
+    evidenceUrl?: string | null;
+    fileSize?: string | null;
+  }>;
+  formaciones?: Array<{
+    id_formacion: number;
+    institucion: string;
+    nivel_estudio: string;
+    carrera_especialidad: string;
+    fecha_inicio: string;
+    fecha_fin?: string | null;
+    actualmente_estudiante?: boolean;
+    descripcion?: string | null;
+    visibilidad?: string | null;
+    evidenceUrl?: string | null;
+    fileSize?: string | null;
+  }>;
+  redes?: Array<Record<string, unknown>>;
+  visibilidad?: Record<string, unknown> | null;
   metrics: DeveloperMetricData;
   profile: DeveloperProfileData;
   recent_projects: DeveloperRecentProject[];
