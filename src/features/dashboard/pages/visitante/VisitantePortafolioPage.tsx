@@ -29,8 +29,10 @@ interface PortfolioData {
     title: string;
     summary: string;
     avatarUrl: string;
-    email: string;
-    phone?: string;
+    email?: string | null;
+    phone?: string | null;
+    titleHierarchy?: string[];
+    roleHierarchy?: string[];
   };
   social: Record<string, string>;
   skills: {
@@ -39,10 +41,37 @@ interface PortfolioData {
     tipo_habilidad: string;
     nivel_dominio: string;
     porcentaje_dominio?: number | null;
+    vinculos?: Array<{
+      id: number;
+      tipo_referencia: string;
+      etiqueta_referencia: string;
+      referencia_id: number | null;
+    }> | string;
   }[];
   projects: Project[];
   timeline: TimelineItem[];
   config: any;
+}
+
+function parseLinks(value: PortfolioData['skills'][number]['vinculos']) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function getSocialLink(social: Record<string, string>, key: 'github' | 'linkedin' | 'website') {
+  const direct = social[key];
+  if (direct) return direct;
+
+  const match = Object.entries(social).find(([name]) => name.toLowerCase() === key);
+  return match?.[1];
 }
 
 export function VisitantePortafolioPage() {
@@ -97,7 +126,11 @@ export function VisitantePortafolioPage() {
     );
   }
 
-  const { profile, social, skills, projects, timeline } = data;
+  const { profile, social, skills, projects, timeline, config } = data;
+  const githubUrl = getSocialLink(social, 'github');
+  const linkedinUrl = getSocialLink(social, 'linkedin');
+  const websiteUrl = getSocialLink(social, 'website');
+  const hasVisibleContactBlock = Boolean(profile.email || profile.phone || githubUrl || linkedinUrl || websiteUrl);
   const skillProgressByLevel: Record<string, number> = {
     basico: 25,
     intermedio: 50,
@@ -195,9 +228,9 @@ export function VisitantePortafolioPage() {
           {skills.length > 0 && <li className="vp-nav__item"><a href="#skills">Habilidades</a></li>}
           {projects.length > 0 && <li className="vp-nav__item"><a href="#projects">Proyectos</a></li>}
           {timeline.length > 0 && <li className="vp-nav__item"><a href="#trajectory">Trayectoria</a></li>}
-          <li className="vp-nav__item"><a href="#contact">Contacto</a></li>
+          {hasVisibleContactBlock && <li className="vp-nav__item"><a href="#contact">Contacto</a></li>}
         </ul>
-        <a className="vp-nav__cta" href={`mailto:${profile.email}`}>Contactar</a>
+        {profile.email ? <a className="vp-nav__cta" href={`mailto:${profile.email}`}>Contactar</a> : <span className="vp-nav__cta" style={{ opacity: 0.65 }}>Perfil publico</span>}
       </header>
 
       <FadeInSection>
@@ -212,16 +245,30 @@ export function VisitantePortafolioPage() {
             <h1 className="vp-hero__title">Hola, soy <span>{profile.name}</span></h1>
             <p className="vp-subtitle" style={{ fontWeight: 700, color: '#1c2d73' }}>{profile.title}</p>
             <p className="vp-subtitle">{profile.summary}</p>
+            {Array.isArray(profile.titleHierarchy) && profile.titleHierarchy.length > 0 ? (
+              <div className="vp-btn-group" style={{ marginTop: '8px' }}>
+                {profile.titleHierarchy.map((item) => (
+                  <span key={`title-${item}`} className="vp-badge">{item}</span>
+                ))}
+              </div>
+            ) : null}
+            {Array.isArray(profile.roleHierarchy) && profile.roleHierarchy.length > 0 ? (
+              <div className="vp-btn-group" style={{ marginTop: '8px' }}>
+                {profile.roleHierarchy.map((item) => (
+                  <span key={`role-${item}`} className="vp-badge" style={{ background: '#eef2ff' }}>{item}</span>
+                ))}
+              </div>
+            ) : null}
             
             <div className="vp-btn-group">
-              {social.github && (
-                <a className="vp-btn--primary" href={social.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+              {config?.mostrar_redes_sociales !== false && githubUrl && (
+                <a className="vp-btn--primary" href={githubUrl} target="_blank" rel="noopener noreferrer">GitHub</a>
               )}
-              {social.linkedin && (
-                <a className="vp-btn--secondary" href={social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
+                <a className="vp-btn--secondary" href={linkedinUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a>
               )}
-              {social.website && (
-                <a className="vp-btn--secondary" href={social.website} target="_blank" rel="noopener noreferrer">Website</a>
+              {config?.mostrar_redes_sociales !== false && websiteUrl && (
+                <a className="vp-btn--secondary" href={websiteUrl} target="_blank" rel="noopener noreferrer">Website</a>
               )}
             </div>
           </div>
@@ -273,6 +320,15 @@ export function VisitantePortafolioPage() {
                         <div className="vp-skill-card__bar">
                           <span style={{ width: `${progress}%` }} />
                         </div>
+                        {skill.vinculos ? (
+                          <div className="vp-project-tags" style={{ marginTop: '12px' }}>
+                            {parseLinks(skill.vinculos).map((link: any) => (
+                              <span key={`tech-link-${skill.id_habilidad}-${link.id}`} className="vp-badge">
+                                {link.etiqueta_referencia}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -300,6 +356,15 @@ export function VisitantePortafolioPage() {
                         <div className="vp-skill-card__bar">
                           <span style={{ width: `${progress}%` }} />
                         </div>
+                        {skill.vinculos ? (
+                          <div className="vp-project-tags" style={{ marginTop: '12px' }}>
+                            {parseLinks(skill.vinculos).map((link: any) => (
+                              <span key={`soft-link-${skill.id_habilidad}-${link.id}`} className="vp-badge">
+                                {link.etiqueta_referencia}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -327,9 +392,14 @@ export function VisitantePortafolioPage() {
                   </div>
 
                   <div className="vp-btn-group" style={{ marginTop: '16px' }}>
-                    {project.liveUrl && (
-                      <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="vp-badge" style={{ background: '#3949ff', color: '#fff', border: 'none' }}>Ver Vivo →</a>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/portafolio/${profile.id}/proyecto/${project.id}`)}
+                      className="vp-badge"
+                      style={{ background: '#3949ff', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    >
+                      Ver Proyecto →
+                    </button>
                     {project.repoUrl && (
                       <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="vp-badge">Repositorio</a>
                     )}
@@ -360,18 +430,24 @@ export function VisitantePortafolioPage() {
         </FadeInSection>
       )}
 
-      <FadeInSection>
-        <section id="contact" className="vp-cta-section">
-          <h3>¿Alguna idea en mente?</h3>
-          <p>Estoy siempre abierto a colaborar en proyectos innovadores. Conectemos por los canales oficiales.</p>
-          <div className="vp-cta-buttons">
-            <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">Contactar por Email</a>
-            {social.linkedin && (
-              <a href={social.linkedin} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
-            )}
-          </div>
-        </section>
-      </FadeInSection>
+      {hasVisibleContactBlock && (
+        <FadeInSection>
+          <section id="contact" className="vp-cta-section">
+            <h3>¿Alguna idea en mente?</h3>
+            <p>Estoy siempre abierto a colaborar en proyectos innovadores. Conectemos por los canales oficiales.</p>
+            <div className="vp-cta-buttons">
+              {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">Contactar por Email</a> : null}
+              {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
+              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
+                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
+              )}
+              {config?.mostrar_redes_sociales !== false && githubUrl && !profile.email && !profile.phone ? (
+                <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">GitHub</a>
+              ) : null}
+            </div>
+          </section>
+        </FadeInSection>
+      )}
 
       <footer className="vp-footer">© 2026 Dev Profile UMSS. Todos los derechos reservados.</footer>
     </main>

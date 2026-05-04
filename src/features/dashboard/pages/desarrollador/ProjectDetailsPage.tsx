@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { fetchProjectDetails } from '@features/dashboard/api/developerDashboard';
 import { readStoredAuthSession } from '@services/auth';
+import { renderMarkdownToHtml } from '@shared/utils/markdown';
 
 type ProjectData = {
   proyecto: any;
@@ -135,6 +136,10 @@ export function ProjectDetailsPage() {
      // Each evidence is like a commit/update
      return data.evidencias.length + 1; // +1 for project creation
   }, [data]);
+  const readmeHtml = useMemo(
+    () => renderMarkdownToHtml(data?.proyecto?.descripcion_tecnica ?? ''),
+    [data?.proyecto?.descripcion_tecnica]
+  );
 
   if (loading) {
     return (
@@ -331,7 +336,7 @@ export function ProjectDetailsPage() {
                </div>
                <div className="p-8 sm:p-14 prose prose-slate max-w-none prose-headings:text-slate-900 prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:text-slate-500 prose-p:font-medium prose-p:leading-relaxed prose-indigo prose-img:rounded-[32px] prose-img:shadow-2xl">
                  {proyecto.descripcion_tecnica ? (
-                   <div className="space-y-6 animate-in fade-in duration-1000" dangerouslySetInnerHTML={{ __html: proyecto.descripcion_tecnica.replace(/\n/g, '<br/>') }} />
+                   <div className="space-y-6 animate-in fade-in duration-1000" dangerouslySetInnerHTML={{ __html: readmeHtml }} />
                  ) : (
                    <div className="flex flex-col items-center justify-center py-16 text-center opacity-50">
                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 mb-4">

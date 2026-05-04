@@ -27,6 +27,10 @@ export function OverviewSection({
   firstName = 'desarrollador',
   completionPercentage = 0,
   nextStep = 'Completa tu perfil para destacar más.',
+  contactEmail = '',
+  contactPhone = '',
+  titleHierarchy = [],
+  roleHierarchy = [],
 }: {
   onOpenProjects: () => void;
   onOpenProjectForm: () => void;
@@ -38,6 +42,10 @@ export function OverviewSection({
   firstName?: string;
   completionPercentage?: number;
   nextStep?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  titleHierarchy?: string[];
+  roleHierarchy?: string[];
 }) {
   const renderIcon = (iconId: string) => {
     switch (iconId) {
@@ -208,6 +216,48 @@ export function OverviewSection({
         </DashboardCard>
 
         <div className="space-y-4">
+          <DashboardCard title="Informacion de Contacto" description="Canales visibles para reclutadores y colaboradores.">
+            <div className="space-y-3">
+              <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Correo</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {contactEmail || 'Aun no configurado'}
+                </p>
+              </div>
+              <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Telefono</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  {contactPhone || 'Aun no configurado'}
+                </p>
+              </div>
+              {(titleHierarchy.length > 0 || roleHierarchy.length > 0) ? (
+                <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trayectoria resumida</p>
+                  {titleHierarchy.length > 0 ? (
+                    <div className="mt-3">
+                      <p className="text-sm font-semibold text-slate-900">Titulos</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {titleHierarchy.map((item) => (
+                          <DashboardBadge key={item} tone="neutral">{item}</DashboardBadge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {roleHierarchy.length > 0 ? (
+                    <div className="mt-3">
+                      <p className="text-sm font-semibold text-slate-900">Roles</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {roleHierarchy.map((item) => (
+                          <DashboardBadge key={item} tone="brand">{item}</DashboardBadge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </DashboardCard>
+
           <DashboardCard
             title="Habilidades Principales"
             description="Tecnologías destacadas de tu stack."

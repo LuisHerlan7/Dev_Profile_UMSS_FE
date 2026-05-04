@@ -6,6 +6,7 @@ import type {
   HabilidadRow,
   ExperienciaRow,
   FormacionRow,
+  SkillLinkRow,
 } from '@features/dashboard/api/developerDashboard';
 import { FileText, ShieldCheck, type LucideIcon } from 'lucide-react';
 
@@ -90,6 +91,23 @@ const NIVEL_PROGRESS: Record<string, number> = {
   experto: 100,
 };
 
+function parseJsonArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
 function resolveSkillProgress(skill: HabilidadRow): number {
   const rawProgress = skill.porcentaje_dominio;
 
@@ -105,6 +123,7 @@ export type TechnicalSkillState = {
   name: string;
   level: string;
   progress: number;
+  links: SkillReferenceState[];
 };
 
 export type SoftSkillState = {
@@ -112,7 +131,37 @@ export type SoftSkillState = {
   name: string;
   level: string;
   progress: number;
+  links: SkillReferenceState[];
 };
+
+export type SkillReferenceState = {
+  id: string;
+  referenceType: 'project' | 'experience' | 'formation';
+  label: string;
+  referenceId: number;
+};
+
+function mapSkillLinks(rawLinks: HabilidadRow['vinculos']): SkillReferenceState[] {
+  const links = parseJsonArray<SkillLinkRow>(rawLinks);
+
+  return links
+    .map((link) => {
+      const type =
+        link.tipo_referencia === 'proyecto'
+          ? 'project'
+          : link.tipo_referencia === 'experiencia'
+            ? 'experience'
+            : 'formation';
+
+      return {
+        id: `link-${link.id}`,
+        referenceType: type,
+        label: String(link.etiqueta_referencia ?? ''),
+        referenceId: Number(link.referencia_id ?? 0),
+      } satisfies SkillReferenceState;
+    })
+    .filter((link) => link.referenceId > 0 && link.label);
+}
 
 export function mapHabilidades(rows: HabilidadRow[]): {
   technical: TechnicalSkillState[];
@@ -129,6 +178,7 @@ export function mapHabilidades(rows: HabilidadRow[]): {
         name: h.nombre_habilidad,
         level: NIVEL_ES[nivel] ?? 'Intermedio',
         progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos),
       });
     } else {
       soft.push({
@@ -136,6 +186,7 @@ export function mapHabilidades(rows: HabilidadRow[]): {
         name: h.nombre_habilidad,
         level: NIVEL_ES[nivel] ?? 'Intermedio',
         progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos),
       });
     }
   }
@@ -342,14 +393,18 @@ export type SettingsProfileState = {
   maternalLastName: string;
   role: string;
   bio: string;
+  contactEmail: string;
   github: string;
   linkedin: string;
   website: string;
   phone: string;
+  phoneVerificationStatus: string;
   email: string;
   password: string;
   newPassword: string;
   avatar: string | null;
+  titleHierarchy: string[];
+  roleHierarchy: string[];
 };
 
 export function buildSettingsProfile(payload: DeveloperDashboardPayload): SettingsProfileState {
@@ -358,21 +413,29 @@ export function buildSettingsProfile(payload: DeveloperDashboardPayload): Settin
   const name = typeof u?.nombre_completo === 'string' ? u.nombre_completo : auth.name;
   const { firstName, lastName, maternalLastName } = splitNombreCompleto(name);
   const redes = payload.redes ?? [];
+  const currentRole =
+    typeof u?.profesion === 'string' && u.profesion ? u.profesion : 'Desarrollador';
+  const titleHierarchy = parseJsonArray<string>(u?.titulos_jerarquia_json).map(String).filter(Boolean);
+  const roleHierarchy = parseJsonArray<string>(u?.roles_jerarquia_json).map(String).filter(Boolean);
 
   return {
     firstName,
     lastName,
     maternalLastName,
-    role: typeof u?.profesion === 'string' && u.profesion ? u.profesion : 'Desarrollador',
+    role: currentRole,
     bio: typeof u?.biografia === 'string' ? u.biografia : '',
+    contactEmail: typeof u?.correo_contacto === 'string' && u.correo_contacto ? u.correo_contacto : auth.email,
     github: findRedUrl(redes, ['github', 'git']),
     linkedin: findRedUrl(redes, ['linkedin']),
     website: findRedUrl(redes, ['web', 'sitio', 'portfolio', 'portafolio']),
     phone: typeof u?.telefono === 'string' ? u.telefono : '',
+    phoneVerificationStatus: typeof u?.telefono_verificacion_estado === 'string' ? u.telefono_verificacion_estado : 'sin_verificar',
     email: auth.email,
     password: '**********',
     newPassword: '',
     avatar: (u?.fotografiaUrl as string | undefined) ?? null,
+    titleHierarchy,
+    roleHierarchy: roleHierarchy.length > 0 ? roleHierarchy : (currentRole ? [currentRole] : []),
   };
 }
 
@@ -380,6 +443,19 @@ export type VisibilityHighlightsState = {
   projects: string[];
   skills: string[];
   trajectory: string[];
+};
+
+export type VisibilitySettingsState = {
+  mode: 'publico' | 'privado' | 'personalizado';
+  showGeneral: boolean;
+  showProjects: boolean;
+  showSkills: boolean;
+  showExperience: boolean;
+  showFormation: boolean;
+  showSocialLinks: boolean;
+  showContact: boolean;
+  showEmail: boolean;
+  showPhone: boolean;
 };
 
 export function buildVisibilityHighlights(payload: DeveloperDashboardPayload): VisibilityHighlightsState {
@@ -411,13 +487,34 @@ export function buildVisibilityHighlights(payload: DeveloperDashboardPayload): V
     tray.push(`${e.titulo_puesto} @ ${e.nombre_empresa}`);
   }
   for (const f of payload.formaciones?.slice(0, 1) ?? []) {
-    tray.push(`${f.carrera_especialidad} · ${f.institucion}`);
+    tray.push(f.carrera_especialidad);
   }
 
   return {
     projects:   proyectos,
     skills:     skills,
     trajectory: tray,
+  };
+}
+
+export function buildVisibilitySettings(payload: DeveloperDashboardPayload): VisibilitySettingsState {
+  const config = payload.visibilidad as Record<string, unknown> | null;
+  const userVisibility = (payload.usuario?.visibilidad_perfil as string | undefined) ?? 'publico';
+  const rawMode = (config?.modo_visibilidad as string | undefined) ?? userVisibility;
+  const mode =
+    rawMode === 'privado' || rawMode === 'personalizado' ? rawMode : 'publico';
+
+  return {
+    mode,
+    showGeneral: Boolean(config?.mostrar_informacion_general ?? mode !== 'privado'),
+    showProjects: Boolean(config?.mostrar_proyectos ?? mode !== 'privado'),
+    showSkills: Boolean(config?.mostrar_habilidades ?? mode !== 'privado'),
+    showExperience: Boolean(config?.mostrar_experiencia ?? mode !== 'privado'),
+    showFormation: Boolean(config?.mostrar_formacion ?? mode !== 'privado'),
+    showSocialLinks: Boolean(config?.mostrar_redes_sociales ?? mode !== 'privado'),
+    showContact: Boolean(config?.mostrar_contacto ?? mode !== 'privado'),
+    showEmail: Boolean(config?.mostrar_correo ?? mode !== 'privado'),
+    showPhone: Boolean(config?.mostrar_telefono ?? false),
   };
 }
 

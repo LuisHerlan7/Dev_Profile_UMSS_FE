@@ -32,6 +32,7 @@ import {
   buildSettingsProfile,
   buildTopSkillBadges,
   buildVisibilityHighlights,
+  buildVisibilitySettings,
   estimateProfileCompletion,
   mapExperienciaYFormacion,
   mapHabilidades,
@@ -39,7 +40,7 @@ import {
   sidebarHeadline,
   welcomeFirstName,
 } from '@features/dashboard/utils/developerDashboardMappers';
-import { updateProjectVisibility } from '@features/dashboard/api/developerDashboard';
+import { updateProjectVisibility, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
 
 type SectionId = 'overview' | 'projects' | 'evidence' | 'skills' | 'experience' | 'settings';
 
@@ -177,9 +178,16 @@ export function DeveloperDashboardPage() {
   const topSkills = dashboardData ? buildTopSkillBadges(dashboardData.habilidades || dashboardData.skills?.technical || []) : [];
   const settingsProfile = dashboardData ? buildSettingsProfile(dashboardData) : undefined;
   const visibilityHighlights = dashboardData ? buildVisibilityHighlights(dashboardData) : undefined;
+  const visibilitySettings = dashboardData ? buildVisibilitySettings(dashboardData) : undefined;
   const completionPercentage = dashboardData ? estimateProfileCompletion(dashboardData) : 0;
   const firstName = dashboardData ? welcomeFirstName(dashboardData) : (session?.user?.name?.split(' ')[0] || 'desarrollador');
   const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias || dashboardData.experience || [], dashboardData.formaciones || []) : [];
+
+  useEffect(() => {
+    if (visibilitySettings) {
+      setIsPublicProfile(visibilitySettings.mode !== 'privado');
+    }
+  }, [visibilitySettings]);
 
   // Mantener el índice de búsqueda global (Feature local)
   const searchIndex: SearchResultItem[] = [
@@ -264,10 +272,34 @@ export function DeveloperDashboardPage() {
           onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
           onItemSelect={(id) => setActiveSection(id as SectionId)}
           footer={
-            <SidebarVisibilityCard
+          <SidebarVisibilityCard
               collapsed={isSidebarCollapsed}
               enabled={isPublicProfile}
-              onToggle={() => setIsPublicProfile((value) => !value)}
+              mode={visibilitySettings?.mode ?? 'publico'}
+              onToggle={async () => {
+                const nextPublicState = !isPublicProfile;
+                setIsPublicProfile(nextPublicState);
+                try {
+                  await updateVisibilitySettings({
+                    mode: nextPublicState ? 'publico' : 'privado',
+                    showGeneral: nextPublicState,
+                    showProjects: nextPublicState,
+                    showSkills: nextPublicState,
+                    showExperience: nextPublicState,
+                    showFormation: nextPublicState,
+                    showSocialLinks: nextPublicState,
+                    showContact: nextPublicState,
+                    showEmail: nextPublicState,
+                    showPhone: nextPublicState,
+                  });
+                  await fetchDashboardData();
+                } catch (error) {
+                  setIsPublicProfile(!nextPublicState);
+                  setDashboardError(
+                    error instanceof Error ? error.message : 'No se pudo cambiar la visibilidad del perfil.'
+                  );
+                }
+              }}
             />
           }
         />
@@ -319,6 +351,10 @@ export function DeveloperDashboardPage() {
           metrics={overviewMetrics}
           recentProjects={recentProjects}
           topSkills={topSkills}
+          contactEmail={settingsProfile?.contactEmail ?? ''}
+          contactPhone={settingsProfile?.phone ?? ''}
+          titleHierarchy={settingsProfile?.titleHierarchy ?? []}
+          roleHierarchy={settingsProfile?.roleHierarchy ?? []}
           onOpenProjects={() => setActiveSection('projects')}
           onOpenProjectForm={handleOpenProjectForm}
           onOpenSkills={() => setActiveSection('skills')}
@@ -347,6 +383,13 @@ export function DeveloperDashboardPage() {
         <SkillsSection
           serverTechnical={technicalAndSoft.technical.length > 0 ? technicalAndSoft.technical : undefined}
           serverSoft={technicalAndSoft.soft.length > 0 ? technicalAndSoft.soft : undefined}
+          availableProjects={projects.map((project) => ({ id: project.id, label: project.title, tags: project.tags }))}
+          availableExperience={experienceRecords
+            .filter((record) => record.recordType === 'Experiencia')
+            .map((record) => ({ id: record.id.replace('db-exp-', ''), label: record.title, description: record.description }))}
+          availableFormations={experienceRecords
+            .filter((record) => record.recordType === 'Certificación')
+            .map((record) => ({ id: record.id.replace('db-form-', ''), label: record.title, description: record.description }))}
           onDataDirty={fetchDashboardData}
         />
       )}
@@ -362,6 +405,7 @@ export function DeveloperDashboardPage() {
         <SettingsSection
           serverProfile={settingsProfile?.firstName ? settingsProfile : undefined}
           serverHighlights={visibilityHighlights}
+          serverVisibility={visibilitySettings}
           availableProjects={projects.map(p => p.title)}
           availableSkills={[...technicalAndSoft.technical.map(t => t.name), ...technicalAndSoft.soft.map(s => s.name)]}
           availableExperience={experienceRecords.map(e => e.title)}

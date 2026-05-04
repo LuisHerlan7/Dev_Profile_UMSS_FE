@@ -45,6 +45,14 @@ export type HabilidadRow = {
   anos_experiencia: number | null;
   fecha_adquisicion: string | null;
   estado: string | null;
+  vinculos?: SkillLinkRow[] | string | null;
+};
+
+export type SkillLinkRow = {
+  id: number;
+  tipo_referencia: 'proyecto' | 'experiencia' | 'formacion' | string;
+  etiqueta_referencia: string;
+  referencia_id: number | null;
 };
 
 export type ExperienciaRow = {
@@ -140,6 +148,10 @@ export async function saveExperience(formData: FormData) {
   return fetchWithFormData('/api/developer/experiencia', 'POST', formData);
 }
 
+export async function updateExperience(id: string | number, formData: FormData) {
+  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'PUT', formData);
+}
+
 export async function deleteExperience(id: string | number) {
   const token = localStorage.getItem('auth_token');
   const res = await fetch(`/api/developer/experiencia/${id}`, {
@@ -152,6 +164,10 @@ export async function deleteExperience(id: string | number) {
 
 export async function saveFormation(formData: FormData) {
   return fetchWithFormData('/api/developer/formacion', 'POST', formData);
+}
+
+export async function updateFormation(id: string | number, formData: FormData) {
+  return fetchWithFormData(`/api/developer/formacion/${id}`, 'PUT', formData);
 }
 
 export async function deleteFormation(id: string | number) {
@@ -228,6 +244,9 @@ export async function updateProfile(payload: {
   maternalLastName?: string;
   role?: string;
   bio?: string;
+  contactEmail?: string;
+  titleHierarchy?: string[];
+  roleHierarchy?: string[];
 }) {
   const token = localStorage.getItem('auth_token');
   const res = await fetch('/api/developer/settings/profile', {
@@ -244,8 +263,18 @@ export async function updateProfile(payload: {
 }
 
 export async function syncSkills(payload: {
-  technical: { name: string; level: string; progress: number }[];
-  soft: { name: string; level: string; progress: number }[];
+  technical: {
+    name: string;
+    level: string;
+    progress: number;
+    links?: { referenceType: 'project' | 'formation'; referenceId: number; label: string }[];
+  }[];
+  soft: {
+    name: string;
+    level: string;
+    progress: number;
+    links?: { referenceType: 'experience' | 'formation'; referenceId: number; label: string }[];
+  }[];
 }) {
   const token = localStorage.getItem('auth_token');
   if (!token) throw new Error('No hay sesión.');
@@ -340,6 +369,32 @@ export async function syncHighlights(payload: {
   return res.json();
 }
 
+export async function updateVisibilitySettings(payload: {
+  mode: 'publico' | 'privado' | 'personalizado';
+  showGeneral: boolean;
+  showProjects: boolean;
+  showSkills: boolean;
+  showExperience: boolean;
+  showFormation: boolean;
+  showSocialLinks: boolean;
+  showContact: boolean;
+  showEmail: boolean;
+  showPhone: boolean;
+}) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/settings/visibility', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Error al guardar la visibilidad del perfil');
+  return res.json();
+}
+
 /**
  * Rutas Públicas
  */
@@ -378,5 +433,29 @@ export async function fetchPublicPortfolioDetail(id: string | number) {
     projects: any[];
     timeline: any[];
     config: any;
+  }>;
+}
+
+export async function fetchPublicProjectDetail(portfolioId: string | number, projectId: string | number) {
+  const res = await fetch(`/api/portafolios/${portfolioId}/proyectos/${projectId}`, {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Proyecto no encontrado o es privado.');
+    const text = await res.text();
+    throw new Error(text || 'Error al cargar el proyecto público.');
+  }
+
+  return res.json() as Promise<{
+    project: any;
+    owner: any;
+    social: Record<string, string>;
+    contact: {
+      emailVisible: boolean;
+      whatsappVisible: boolean;
+    };
   }>;
 }

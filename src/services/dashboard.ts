@@ -50,6 +50,7 @@ export type DeveloperDashboardData = {
     tipo_habilidad: string;
     nivel_dominio: string | null;
     porcentaje_dominio?: number | null;
+    vinculos?: unknown;
   }>;
   experiencias?: Array<{
     id_experiencia: number;

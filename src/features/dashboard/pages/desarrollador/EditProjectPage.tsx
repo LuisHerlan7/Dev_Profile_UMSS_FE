@@ -8,6 +8,7 @@ import {
   Folder, FolderOpen, MoreVertical, Plus, Box, AlertCircle, Check
 } from 'lucide-react';
 import { fetchProjectDetails, updateProject } from '@features/dashboard/api/developerDashboard';
+import { renderMarkdownToHtml } from '@shared/utils/markdown';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -394,6 +395,7 @@ export function EditProjectPage() {
   const filteredFiles = useMemo(() => {
     return projectFiles.filter(f => f.folder === currentFolder);
   }, [projectFiles, currentFolder]);
+  const previewHtml = useMemo(() => renderMarkdownToHtml(detailedDescription), [detailedDescription]);
 
   if (isLoadingData) {
     return (
@@ -514,7 +516,7 @@ export function EditProjectPage() {
                     <textarea id="detailed-desc" value={detailedDescription} onChange={e => setDetailedDescription(e.target.value)} placeholder="Describe los desafíos técnicos..." className="h-full min-h-[300px] w-full bg-transparent p-8 text-sm leading-relaxed text-slate-700 outline-none resize-none" />
                   ) : (
                     <div className="h-full min-h-[300px] w-full p-8 text-sm text-slate-600 prose prose-indigo">
-                      {detailedDescription ? <div dangerouslySetInnerHTML={{ __html: detailedDescription.replace(/\n/g, '<br/>') }} /> : <p className="italic text-slate-400">Nada que previsualizar aún...</p>}
+                      {detailedDescription ? <div dangerouslySetInnerHTML={{ __html: previewHtml }} /> : <p className="italic text-slate-400">Nada que previsualizar aún...</p>}
                     </div>
                   )}
                 </div>
