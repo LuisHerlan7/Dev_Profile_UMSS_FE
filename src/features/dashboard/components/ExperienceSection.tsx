@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Calendar, FileText, Plus, ShieldCheck } from 'lucide-react';
 import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
-import { saveExperience, saveFormation, deleteExperience, deleteFormation } from '@features/dashboard/api/developerDashboard';
+import { saveExperience, saveFormation, deleteExperience, deleteFormation, updateExperience, updateFormation } from '@features/dashboard/api/developerDashboard';
 
 const recordTypes = ['Experiencia', 'Certificación'] as const;
 const filters = ['Todos', 'Documentos', 'Certificaciones', 'Codigo', 'Reportes'] as const;
@@ -172,7 +172,9 @@ export function ExperienceSection({
           formData.append('archivo', experienceForm.evidenceFile);
         }
 
-        const res = await saveExperience(formData);
+        const res = editingRecordId
+          ? await updateExperience(editingRecordId.replace('db-exp-', ''), formData)
+          : await saveExperience(formData);
 
         const newRecord: ExperienceRecord = {
           id: res.id.toString(),
@@ -203,7 +205,9 @@ export function ExperienceSection({
           formData.append('archivo', certificationForm.evidenceFile);
         }
 
-        const res = await saveFormation(formData);
+        const res = editingRecordId
+          ? await updateFormation(editingRecordId.replace('db-form-', ''), formData)
+          : await saveFormation(formData);
 
         const newRecord: ExperienceRecord = {
           id: res.id.toString(),
