@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { 
   FileText, Image, UploadCloud, Video, 
   Filter, Edit, X, Archive, CheckCircle, 
@@ -49,6 +49,12 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
   const [editingEvidence, setEditingEvidence] = useState<EvidenceItem | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    if (!selectedProject && projects.length > 0) {
+      setSelectedProject(projects[0].id);
+    }
+  }, [projects, selectedProject]);
 
   const filteredEvidences = useMemo(() => {
     return evidences.filter((ev) => {
