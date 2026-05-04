@@ -66,6 +66,14 @@ function parseLinks(value: PortfolioData['skills'][number]['vinculos']) {
   return [];
 }
 
+function getSocialLink(social: Record<string, string>, key: 'github' | 'linkedin' | 'website') {
+  const direct = social[key];
+  if (direct) return direct;
+
+  const match = Object.entries(social).find(([name]) => name.toLowerCase() === key);
+  return match?.[1];
+}
+
 export function VisitantePortafolioPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -119,6 +127,10 @@ export function VisitantePortafolioPage() {
   }
 
   const { profile, social, skills, projects, timeline, config } = data;
+  const githubUrl = getSocialLink(social, 'github');
+  const linkedinUrl = getSocialLink(social, 'linkedin');
+  const websiteUrl = getSocialLink(social, 'website');
+  const hasVisibleContactBlock = Boolean(profile.email || profile.phone || githubUrl || linkedinUrl || websiteUrl);
   const skillProgressByLevel: Record<string, number> = {
     basico: 25,
     intermedio: 50,
@@ -216,7 +228,7 @@ export function VisitantePortafolioPage() {
           {skills.length > 0 && <li className="vp-nav__item"><a href="#skills">Habilidades</a></li>}
           {projects.length > 0 && <li className="vp-nav__item"><a href="#projects">Proyectos</a></li>}
           {timeline.length > 0 && <li className="vp-nav__item"><a href="#trajectory">Trayectoria</a></li>}
-          <li className="vp-nav__item"><a href="#contact">Contacto</a></li>
+          {hasVisibleContactBlock && <li className="vp-nav__item"><a href="#contact">Contacto</a></li>}
         </ul>
         {profile.email ? <a className="vp-nav__cta" href={`mailto:${profile.email}`}>Contactar</a> : <span className="vp-nav__cta" style={{ opacity: 0.65 }}>Perfil publico</span>}
       </header>
@@ -249,14 +261,14 @@ export function VisitantePortafolioPage() {
             ) : null}
             
             <div className="vp-btn-group">
-              {config?.mostrar_redes_sociales !== false && social.github && (
-                <a className="vp-btn--primary" href={social.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+              {config?.mostrar_redes_sociales !== false && githubUrl && (
+                <a className="vp-btn--primary" href={githubUrl} target="_blank" rel="noopener noreferrer">GitHub</a>
               )}
-              {config?.mostrar_redes_sociales !== false && social.linkedin && (
-                <a className="vp-btn--secondary" href={social.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
+                <a className="vp-btn--secondary" href={linkedinUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a>
               )}
-              {config?.mostrar_redes_sociales !== false && social.website && (
-                <a className="vp-btn--secondary" href={social.website} target="_blank" rel="noopener noreferrer">Website</a>
+              {config?.mostrar_redes_sociales !== false && websiteUrl && (
+                <a className="vp-btn--secondary" href={websiteUrl} target="_blank" rel="noopener noreferrer">Website</a>
               )}
             </div>
           </div>
@@ -413,19 +425,24 @@ export function VisitantePortafolioPage() {
         </FadeInSection>
       )}
 
-      <FadeInSection>
-        <section id="contact" className="vp-cta-section">
-          <h3>¿Alguna idea en mente?</h3>
-          <p>Estoy siempre abierto a colaborar en proyectos innovadores. Conectemos por los canales oficiales.</p>
-          <div className="vp-cta-buttons">
-            {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">Contactar por Email</a> : null}
-            {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
-            {config?.mostrar_redes_sociales !== false && social.linkedin && (
-              <a href={social.linkedin} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
-            )}
-          </div>
-        </section>
-      </FadeInSection>
+      {hasVisibleContactBlock && (
+        <FadeInSection>
+          <section id="contact" className="vp-cta-section">
+            <h3>¿Alguna idea en mente?</h3>
+            <p>Estoy siempre abierto a colaborar en proyectos innovadores. Conectemos por los canales oficiales.</p>
+            <div className="vp-cta-buttons">
+              {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">Contactar por Email</a> : null}
+              {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
+              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
+                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
+              )}
+              {config?.mostrar_redes_sociales !== false && githubUrl && !profile.email && !profile.phone ? (
+                <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">GitHub</a>
+              ) : null}
+            </div>
+          </section>
+        </FadeInSection>
+      )}
 
       <footer className="vp-footer">© 2026 Dev Profile UMSS. Todos los derechos reservados.</footer>
     </main>
