@@ -392,9 +392,14 @@ export function VisitantePortafolioPage() {
                   </div>
 
                   <div className="vp-btn-group" style={{ marginTop: '16px' }}>
-                    {project.liveUrl && (
-                      <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="vp-badge" style={{ background: '#3949ff', color: '#fff', border: 'none' }}>Ver Vivo →</a>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/portafolio/${profile.id}/proyecto/${project.id}`)}
+                      className="vp-badge"
+                      style={{ background: '#3949ff', color: '#fff', border: 'none', cursor: 'pointer' }}
+                    >
+                      Ver Proyecto →
+                    </button>
                     {project.repoUrl && (
                       <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="vp-badge">Repositorio</a>
                     )}
