@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, Lock, Pencil, Trash2, X, Plus, Upload, ImageIcon, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Lock, Pencil, Trash2, X, Plus, Upload, ImageIcon, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
-import { updateAvatar, updateProfile, updateSocialLinks, updateEmail, updatePassword, syncHighlights } from '@features/dashboard/api/developerDashboard';
+import { updateAvatar, updateProfile, updateSocialLinks, updateEmail, updatePassword, syncHighlights, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
 import type {
   SettingsProfileState,
   VisibilityHighlightsState,
+  VisibilitySettingsState,
 } from '@features/dashboard/utils/developerDashboardMappers';
 
 const initialProfile = {
@@ -14,13 +15,17 @@ const initialProfile = {
   maternalLastName: '',
   role: '',
   bio: '',
+  contactEmail: '',
   github: '',
   linkedin: '',
   website: '',
   phone: '',
+  phoneVerificationStatus: 'sin_verificar',
   email: '',
   password: '**********',
   newPassword: '',
+  titleHierarchy: [] as string[],
+  roleHierarchy: [] as string[],
 };
 
 const initialHighlights = {
@@ -39,9 +44,11 @@ export function SettingsSection({
   availableProjects,
   availableSkills,
   availableExperience,
+  serverVisibility,
 }: {
   serverProfile?: SettingsProfileState;
   serverHighlights?: VisibilityHighlightsState;
+  serverVisibility?: VisibilitySettingsState;
   onDataDirty?: () => void;
   onLocalUpdate?: (updates: Partial<SettingsProfileState>) => void;
   pendingAvatarFile?: File | null;
@@ -52,6 +59,20 @@ export function SettingsSection({
 }) {
   const [profile, setProfile] = useState(serverProfile || initialProfile);
   const [highlights, setHighlights] = useState<typeof initialHighlights>(serverHighlights || initialHighlights);
+  const [visibility, setVisibility] = useState<VisibilitySettingsState>(
+    serverVisibility || {
+      mode: 'publico',
+      showGeneral: true,
+      showProjects: true,
+      showSkills: true,
+      showExperience: true,
+      showFormation: true,
+      showSocialLinks: true,
+      showContact: true,
+      showEmail: true,
+      showPhone: false,
+    }
+  );
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [showQuickAlert, setShowQuickAlert] = useState(true);
   const [addingSection, setAddingSection] = useState<keyof typeof highlights | null>(null);
@@ -72,11 +93,14 @@ export function SettingsSection({
   const [isVerifying, setIsVerifying] = useState(false);
   const [newEmail, setNewEmail] = useState(''); // Estado separado para nuevo email
 
-  const updateField = (field: keyof typeof profile, value: string) => {
+  const updateField = (
+    field: keyof typeof profile,
+    value: string | string[]
+  ) => {
     const newProfile = { ...profile, [field]: value };
     setProfile(newProfile);
     if (onLocalUpdate) {
-      onLocalUpdate({ [field]: value });
+      onLocalUpdate({ [field]: value } as Partial<SettingsProfileState>);
     }
   };
 
@@ -179,6 +203,15 @@ export function SettingsSection({
     }
   }, [serverHighlights, isSaving]);
 
+  useEffect(() => {
+    if (serverVisibility && !isSaving) {
+      setVisibility((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(serverVisibility)) return prev;
+        return serverVisibility;
+      });
+    }
+  }, [serverVisibility, isSaving]);
+
   const saveChanges = async () => {
     setIsSaving(true);
     try {
@@ -199,13 +232,18 @@ export function SettingsSection({
         if (setPendingAvatarFile) setPendingAvatarFile(null);
       }
 
+      const primaryRole = [...profile.roleHierarchy].reverse().find((item) => item.trim()) || profile.role || 'Desarrollador';
+
       // 2. Guardar nombre, apellidos, rol, bio
       await updateProfile({
         firstName: profile.firstName,
         lastName: profile.lastName,
         maternalLastName: profile.maternalLastName,
-        role: profile.role,
+        role: primaryRole,
         bio: profile.bio,
+        contactEmail: profile.contactEmail,
+        titleHierarchy: profile.titleHierarchy,
+        roleHierarchy: profile.roleHierarchy,
       });
 
       // 3. Guardar redes sociales y teléfono
@@ -246,6 +284,8 @@ export function SettingsSection({
         skills: highlights.skills,
         trajectory: highlights.trajectory,
       });
+
+      await updateVisibilitySettings(visibility);
 
       if (onDataDirty) onDataDirty();
       alert('Configuración guardada correctamente.');
@@ -337,11 +377,12 @@ export function SettingsSection({
                 value={profile.maternalLastName}
                 onChange={(value) => updateField('maternalLastName', value)}
               />
-              <FormField
-                label="Titulo profesional / Rol"
-                value={profile.role}
-                onChange={(value) => updateField('role', value)}
-              />
+              <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+                <p className="text-sm font-semibold text-slate-900">Titulos y roles jerarquicos</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  El rol principal del perfil ahora se toma de tu jerarquia de roles. El ultimo rol registrado se usa como rol visible principal.
+                </p>
+              </div>
             </div>
           </div>
         </DashboardCard>
@@ -359,7 +400,106 @@ export function SettingsSection({
           </div>
         </DashboardCard>
 
-        <DashboardCard id="settings-visibility-card" title="Configuración de Visibilidad">
+        <DashboardCard title="Informacion de Contacto">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <FormField
+              label="Correo de contacto"
+              type="email"
+              value={profile.contactEmail}
+              onChange={(value) => updateField('contactEmail', value)}
+            />
+            <div>
+              <FormField label="Telefono de contacto" value={profile.phone} onChange={(value) => updateField('phone', value)} />
+              <p className="mt-2 text-xs text-slate-500">
+                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de verificación externa por WhatsApp'}.
+              </p>
+            </div>
+          </div>
+        </DashboardCard>
+
+        <DashboardCard title="Titulos y Roles Jerarquicos">
+          <div className="grid gap-4 xl:grid-cols-2">
+            <HierarchyEditor
+              title="Titulos academicos"
+              items={profile.titleHierarchy}
+              placeholder="Ej: Especializacion en Arquitectura de Software"
+              onChange={(items) => updateField('titleHierarchy', items)}
+            />
+            <HierarchyEditor
+              title="Roles profesionales"
+              items={profile.roleHierarchy}
+              placeholder="Ej: Desarrollador Semi Senior"
+              onChange={(items) => updateField('roleHierarchy', items)}
+            />
+          </div>
+        </DashboardCard>
+
+        <DashboardCard id="settings-profile-visibility-card" title="Configuracion de Visibilidad del Perfil">
+          <div className="space-y-5">
+            <div className="flex flex-wrap gap-3 rounded-[24px] bg-[var(--umss-surface)] p-2">
+              {([
+                { id: 'publico', label: 'Publico' },
+                { id: 'privado', label: 'Privado' },
+                { id: 'personalizado', label: 'Personalizado' },
+              ] as const).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setVisibility((current) => ({
+                    ...current,
+                    mode: option.id,
+                    ...(option.id === 'publico'
+                      ? {
+                          showGeneral: true,
+                          showProjects: true,
+                          showSkills: true,
+                          showExperience: true,
+                          showFormation: true,
+                          showSocialLinks: true,
+                          showContact: true,
+                          showEmail: true,
+                          showPhone: true,
+                        }
+                      : option.id === 'privado'
+                        ? {
+                            showGeneral: false,
+                            showProjects: false,
+                            showSkills: false,
+                            showExperience: false,
+                            showFormation: false,
+                            showSocialLinks: false,
+                            showContact: false,
+                            showEmail: false,
+                            showPhone: false,
+                          }
+                        : {}),
+                  }))}
+                  className={`rounded-[20px] px-5 py-3 text-sm font-semibold transition ${
+                    visibility.mode === option.id
+                      ? 'bg-[var(--umss-brand)] text-white shadow-sm'
+                      : 'bg-white text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.08)]'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-2">
+              <VisibilityToggleRow label="Informacion general" description="Permite o bloquea la visualizacion de la cabecera principal del perfil y sus datos base." checked={visibility.showGeneral} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showGeneral: checked }))} />
+              <VisibilityToggleRow label="Proyectos" description="Muestra u oculta la seccion publica de proyectos del portafolio." checked={visibility.showProjects} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showProjects: checked }))} />
+              <VisibilityToggleRow label="Habilidades" description="Muestra u oculta habilidades, porcentajes y vinculos visibles en el portafolio publico." checked={visibility.showSkills} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showSkills: checked }))} />
+              <VisibilityToggleRow label="Experiencia laboral" description="Controla si los visitantes pueden ver la trayectoria profesional registrada." checked={visibility.showExperience} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showExperience: checked }))} />
+              <VisibilityToggleRow label="Formacion y certificaciones" description="Controla la visibilidad de estudios, certificaciones y formacion academica." checked={visibility.showFormation} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showFormation: checked }))} />
+              <VisibilityToggleRow label="Redes sociales" description="Permite mostrar u ocultar GitHub, LinkedIn y sitio personal en el perfil publico." checked={visibility.showSocialLinks} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showSocialLinks: checked }))} />
+              <VisibilityToggleRow label="Bloque de contacto" description="Activa o desactiva por completo el bloque de contacto del perfil publico." checked={visibility.showContact} disabled={visibility.mode !== 'personalizado'} onChange={(checked) => setVisibility((current) => ({ ...current, showContact: checked }))} />
+              <VisibilityToggleRow label="Correo de contacto" description="Permite que los visitantes vean y utilicen el correo de contacto configurado." checked={visibility.showEmail} disabled={visibility.mode !== 'personalizado' || !visibility.showContact} onChange={(checked) => setVisibility((current) => ({ ...current, showEmail: checked }))} />
+              <VisibilityToggleRow label="Telefono de contacto" description="Permite que los visitantes vean el telefono del desarrollador para contacto directo." checked={visibility.showPhone} disabled={visibility.mode !== 'personalizado' || !visibility.showContact} onChange={(checked) => setVisibility((current) => ({ ...current, showPhone: checked }))} />
+            </div>
+          </div>
+        </DashboardCard>
+
+        <DashboardCard id="settings-visibility-card" title="Destacados del Portafolio">
           <div className="space-y-4">
             {(['projects', 'skills', 'trajectory'] as const).map((section) => (
               <VisibilitySection
@@ -386,7 +526,9 @@ export function SettingsSection({
             <FormField label="GitHub" value={profile.github} onChange={(value) => updateField('github', value)} />
             <FormField label="LinkedIn" value={profile.linkedin} onChange={(value) => updateField('linkedin', value)} />
             <FormField label="Personal Website" value={profile.website} onChange={(value) => updateField('website', value)} />
-            <FormField label="Teléfono de contacto" value={profile.phone} onChange={(value) => updateField('phone', value)} />
+            <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 text-sm text-slate-600">
+              Si el numero cambia, queda marcado como pendiente para una futura verificacion por WhatsApp mediante proveedor externo.
+            </div>
           </div>
         </DashboardCard>
 
@@ -540,6 +682,9 @@ export function SettingsSection({
             } else {
               setHighlights(initialHighlights);
             }
+            if (serverVisibility) {
+              setVisibility(serverVisibility);
+            }
             // Si el panel de seguridad está abierto, resetearlo siempre
             if (showSecurityPanel) {
               setShowSecurityPanel(false);
@@ -600,6 +745,113 @@ function FormField({
         required={required}
         className="mt-3 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
       />
+    </div>
+  );
+}
+
+function VisibilityToggleRow({
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className={`rounded-[24px] border border-[var(--umss-border)] p-4 ${disabled ? 'bg-slate-50 text-slate-400' : 'bg-white text-slate-700'}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold">{label}</p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">{description}</p>
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(!checked)}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${checked ? 'bg-[var(--umss-brand)]' : 'bg-slate-300'} ${disabled ? 'opacity-50' : ''}`}
+        >
+          <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HierarchyEditor({
+  title,
+  items,
+  placeholder,
+  onChange,
+}: {
+  title: string;
+  items: string[];
+  placeholder: string;
+  onChange: (items: string[]) => void;
+}) {
+  const [draft, setDraft] = useState('');
+
+  const updateItem = (index: number, value: string) => {
+    onChange(items.map((item, itemIndex) => (itemIndex === index ? value : item)));
+  };
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= items.length) return;
+    const nextItems = [...items];
+    [nextItems[index], nextItems[nextIndex]] = [nextItems[nextIndex], nextItems[index]];
+    onChange(nextItems);
+  };
+
+  return (
+    <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-5">
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <div className="mt-4 space-y-3">
+        {items.map((item, index) => (
+          <div key={`${title}-${index}`} className="flex items-center gap-2 rounded-2xl border border-[var(--umss-border)] bg-white p-3">
+            <span className="text-xs font-bold text-[var(--umss-brand)]">{index + 1}</span>
+            <input
+              value={item}
+              onChange={(event) => updateItem(index, event.target.value)}
+              className="flex-1 rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
+            />
+            <button type="button" onClick={() => moveItem(index, -1)} className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]" aria-label="Subir">
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => moveItem(index, 1)} className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]" aria-label="Bajar">
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} className="rounded-full p-2 text-slate-500 hover:bg-[rgba(15,23,42,0.06)]" aria-label="Eliminar">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+
+        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--umss-border)] bg-white p-3">
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder={placeholder}
+            className="flex-1 rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              const value = draft.trim();
+              if (!value) return;
+              onChange([...items, value]);
+              setDraft('');
+            }}
+            className="inline-flex h-10 items-center justify-center rounded-2xl bg-[var(--umss-brand)] px-4 text-sm font-semibold text-white hover:bg-[#4338ca]"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
