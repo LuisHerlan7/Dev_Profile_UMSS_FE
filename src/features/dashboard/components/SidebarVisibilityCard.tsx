@@ -4,11 +4,20 @@ export function SidebarVisibilityCard({
   collapsed,
   enabled,
   onToggle,
+  mode = 'publico',
 }: {
   collapsed: boolean;
   enabled: boolean;
   onToggle: () => void;
+  mode?: 'publico' | 'privado' | 'personalizado';
 }) {
+  const description =
+    mode === 'privado'
+      ? 'Tu perfil no es visible para visitantes.'
+      : mode === 'personalizado'
+        ? 'Tu perfil usa una visibilidad personalizada por secciones.'
+        : 'Tu perfil es publico y visible para reclutadores.';
+
   return (
     <div
       className={`rounded-[24px] border border-[rgba(80,72,229,0.12)] bg-[rgba(240,240,255,0.82)] shadow-[0_16px_35px_-34px_rgba(80,72,229,0.45)] ${
@@ -32,10 +41,10 @@ export function SidebarVisibilityCard({
           {!collapsed ? (
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--umss-brand)]">
-                Visibilidad
+                Visibilidad {mode === 'personalizado' ? 'personalizada' : ''}
               </p>
               <p className="mt-2 max-w-[180px] text-[11px] leading-relaxed text-slate-500">
-                Tu perfil es publico y visible para reclutadores.
+                {description}
               </p>
             </div>
           ) : null}
