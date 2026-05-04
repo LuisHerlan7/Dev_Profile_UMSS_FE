@@ -435,3 +435,27 @@ export async function fetchPublicPortfolioDetail(id: string | number) {
     config: any;
   }>;
 }
+
+export async function fetchPublicProjectDetail(portfolioId: string | number, projectId: string | number) {
+  const res = await fetch(`/api/portafolios/${portfolioId}/proyectos/${projectId}`, {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Proyecto no encontrado o es privado.');
+    const text = await res.text();
+    throw new Error(text || 'Error al cargar el proyecto público.');
+  }
+
+  return res.json() as Promise<{
+    project: any;
+    owner: any;
+    social: Record<string, string>;
+    contact: {
+      emailVisible: boolean;
+      whatsappVisible: boolean;
+    };
+  }>;
+}
