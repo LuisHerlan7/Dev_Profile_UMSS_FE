@@ -8,6 +8,7 @@ import {
   Folder, FolderOpen, MoreVertical, Plus, Box, AlertCircle, Check
 } from 'lucide-react';
 import { saveProject } from '@features/dashboard/api/developerDashboard';
+import { renderMarkdownToHtml } from '@shared/utils/markdown';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -311,6 +312,7 @@ export function NewProjectPage() {
   const filteredFiles = useMemo(() => {
     return projectFiles.filter(f => f.folder === currentFolder);
   }, [projectFiles, currentFolder]);
+  const previewHtml = useMemo(() => renderMarkdownToHtml(detailedDescription), [detailedDescription]);
 
   return (
     <div className="min-h-screen bg-[#FDFDFF] px-4 py-8 sm:px-6 lg:px-12 font-['Inter',sans-serif]">
@@ -414,7 +416,7 @@ export function NewProjectPage() {
                     <textarea id="detailed-desc" value={detailedDescription} onChange={e => setDetailedDescription(e.target.value)} placeholder="Describe los desafíos técnicos, tu solución y el impacto usando Markdown..." className="h-full min-h-[300px] w-full bg-transparent p-8 text-sm leading-relaxed text-slate-700 outline-none resize-none" />
                   ) : (
                     <div className="h-full min-h-[300px] w-full p-8 text-sm text-slate-600 prose prose-indigo">
-                      {detailedDescription ? <div dangerouslySetInnerHTML={{ __html: detailedDescription.replace(/\n/g, '<br/>') }} /> : <p className="italic text-slate-400">Nada que previsualizar aún...</p>}
+                      {detailedDescription ? <div dangerouslySetInnerHTML={{ __html: previewHtml }} /> : <p className="italic text-slate-400">Nada que previsualizar aún...</p>}
                     </div>
                   )}
                 </div>
