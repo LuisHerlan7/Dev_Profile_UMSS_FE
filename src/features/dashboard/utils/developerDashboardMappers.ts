@@ -487,7 +487,7 @@ export function buildVisibilityHighlights(payload: DeveloperDashboardPayload): V
     tray.push(`${e.titulo_puesto} @ ${e.nombre_empresa}`);
   }
   for (const f of payload.formaciones?.slice(0, 1) ?? []) {
-    tray.push(`${f.carrera_especialidad} · ${f.institucion}`);
+    tray.push(f.carrera_especialidad);
   }
 
   return {
