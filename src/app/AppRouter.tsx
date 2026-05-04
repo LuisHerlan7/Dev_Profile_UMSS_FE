@@ -4,6 +4,7 @@ import { HomePage } from '../pages/HomePage';
 import { VisitanteOfertaPortafolioPage } from '../features/dashboard/pages/visitante/VisitanteOfertaPortafolioPage';
 import { NewProjectPage } from '../features/dashboard/pages/desarrollador/NewProjectPage';
 import { VisitantePortafolioPage } from '../features/dashboard/pages/visitante/VisitantePortafolioPage';
+import { VisitanteProyectoDetallePage } from '../features/dashboard/pages/visitante/VisitanteProyectoDetallePage';
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { RegisterPage } from '../features/auth/pages/RegisterPage';
 import { AuthCallbackPage } from '../features/auth/pages/AuthCallbackPage';
@@ -77,6 +78,7 @@ export function AppRouter() {
         <Route path="/admin" element={<DashboardPageAdmin />} />
         <Route path="/visitante" element={<VisitanteOfertaPortafolioPage />} />
         <Route path="/portafolio/:id" element={<VisitantePortafolioPage />} />
+        <Route path="/portafolio/:portfolioId/proyecto/:projectId" element={<VisitanteProyectoDetallePage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
