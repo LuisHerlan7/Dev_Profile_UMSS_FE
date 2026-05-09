@@ -12,6 +12,12 @@ import {
   readStoredAuthSession,
 } from '@services/auth';
 
+function GoogleIcon() {
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">G</span>
+  );
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -22,6 +28,7 @@ export function LoginPage() {
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
   const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
+  const googleOauthUrl = `${apiBase || ''}/api/auth/google/redirect`;
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -58,14 +65,23 @@ export function LoginPage() {
         Bienvenido de vuelta. Accede a UMSS Dev Network para continuar construyendo tu perfil.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <SocialButton
-          icon={<Github className="h-4 w-4" />}
-          aria-label="Continuar con GitHub"
-          onClick={() => window.location.assign(githubOauthUrl)}
-        >
-          GitHub
-        </SocialButton>
+      <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid gap-3">
+          <SocialButton
+            icon={<Github className="h-4 w-4" />}
+            aria-label="Continuar con GitHub"
+            onClick={() => window.location.assign(githubOauthUrl)}
+          >
+            GitHub
+          </SocialButton>
+          <SocialButton
+            icon={<GoogleIcon />}
+            aria-label="Continuar con Google"
+            onClick={() => window.location.assign(googleOauthUrl)}
+          >
+            Google
+          </SocialButton>
+        </div>
         <SocialButton
           icon={<Linkedin className="h-4 w-4" />}
           aria-label="Continuar con LinkedIn"

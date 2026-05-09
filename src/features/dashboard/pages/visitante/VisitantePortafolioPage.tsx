@@ -216,6 +216,20 @@ export function VisitantePortafolioPage() {
                 <a className="vp-btn--secondary" href={social.website} target="_blank" rel="noopener noreferrer">Website</a>
               )}
             </div>
+            {social.google && (
+  <div 
+    className="vp-btn-group" 
+    style={{ 
+      marginTop: '8px', 
+      justifyContent: 'center',  // 👈 centra horizontalmente
+      width: '100%' 
+    }} 
+  >
+    <a className="vp-btn--secondary vp-btn-unified" href={social.google} target="_blank" rel="noopener noreferrer">
+      Google
+    </a>
+  </div>
+)}
           </div>
 
           <div className="vp-hero__hero-box">
