@@ -65,29 +65,27 @@ export function LoginPage() {
         Bienvenido de vuelta. Accede a UMSS Dev Network para continuar construyendo tu perfil.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="grid gap-3">
-          <SocialButton
-            icon={<Github className="h-4 w-4" />}
-            aria-label="Continuar con GitHub"
-            onClick={() => window.location.assign(githubOauthUrl)}
-          >
-            GitHub
-          </SocialButton>
-          <SocialButton
-            icon={<GoogleIcon />}
-            aria-label="Continuar con Google"
-            onClick={() => window.location.assign(googleOauthUrl)}
-          >
-            Google
-          </SocialButton>
-        </div>
+      <div className="mt-6 flex flex-col gap-3">
+        <SocialButton
+          icon={<Github className="h-4 w-4" />}
+          aria-label="Continuar con GitHub"
+          onClick={() => window.location.assign(githubOauthUrl)}
+        >
+          Continuar con GitHub
+        </SocialButton>
+        <SocialButton
+          icon={<GoogleIcon />}
+          aria-label="Continuar con Google"
+          onClick={() => window.location.assign(googleOauthUrl)}
+        >
+          Continuar con Google
+        </SocialButton>
         <SocialButton
           icon={<Linkedin className="h-4 w-4" />}
           aria-label="Continuar con LinkedIn"
           onClick={() => window.location.assign(linkedinOauthUrl)}
         >
-          LinkedIn
+          Continuar con LinkedIn
         </SocialButton>
       </div>
 

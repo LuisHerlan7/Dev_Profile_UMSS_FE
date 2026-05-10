@@ -7,6 +7,12 @@ import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
 import { getRedirectPathForRole, readStoredAuthSession, registerUser } from '@services/auth';
 
+function GoogleIcon() {
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">G</span>
+  );
+}
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -19,6 +25,7 @@ export function RegisterPage() {
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
+  const googleOauthUrl = `${apiBase || ''}/api/auth/google/redirect`;
   const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
 
   useEffect(() => {
@@ -66,20 +73,27 @@ export function RegisterPage() {
         ¿Solo quieres explorar? Puedes visitar la sección Explorar sin crear una cuenta.
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6 flex flex-col gap-3">
         <SocialButton
           icon={<Github className="h-4 w-4" />}
           aria-label="Registrarse con GitHub"
           onClick={() => window.location.assign(githubOauthUrl)}
         >
-          GitHub
+          Registrarse con GitHub
+        </SocialButton>
+        <SocialButton
+          icon={<GoogleIcon />}
+          aria-label="Registrarse con Google"
+          onClick={() => window.location.assign(googleOauthUrl)}
+        >
+          Registrarse con Google
         </SocialButton>
         <SocialButton
           icon={<Linkedin className="h-4 w-4" />}
           aria-label="Registrarse con LinkedIn"
           onClick={() => window.location.assign(linkedinOauthUrl)}
         >
-          LinkedIn
+          Registrarse con LinkedIn
         </SocialButton>
       </div>
 
