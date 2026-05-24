@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 import { fetchPublicPortfolios } from '../../api/developerDashboard';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 type Portfolio = {
   id: number;
@@ -15,6 +16,7 @@ type Portfolio = {
 };
 
 export function VisitanteOfertaPortafolioPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -114,23 +116,23 @@ export function VisitanteOfertaPortafolioPage() {
 
       <FadeInSection>
         <section className="vp-header">
-          <h1 className="vp-title">Explorador de Portafolios</h1>
-          <p className="vp-subtitle">Descubre y conecta con los mejores talentos de la comunidad UMSS.</p>
+          <h1 className="vp-title">{t('visitor.exploreTitle')}</h1>
+          <p className="vp-subtitle">{t('visitor.exploreSubtitle')}</p>
 
           <div className="vp-search-wrap">
             <input
-              aria-label="Buscar portafolios"
+              aria-label={t('common.search')}
               className="vp-input"
-              placeholder="Buscar por nombre, lenguaje, especialidad..."
+              placeholder={t('visitor.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
 
             <div className="vp-filters">
               <div className="vp-filter-group">
-                <label>Tecnología</label>
+                <label>{t('visitor.technology')}</label>
                 <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)} className="vp-select">
-                  <option value="all">Todas</option>
+                  <option value="all">{t('visitor.allFemale')}</option>
                   {technologyOptions.map((tech) => (
                     <option value={tech} key={tech}>{tech}</option>
                   ))}
@@ -138,9 +140,9 @@ export function VisitanteOfertaPortafolioPage() {
               </div>
 
               <div className="vp-filter-group">
-                <label>Nivel de Experiencia</label>
+                <label>{t('visitor.level')}</label>
                 <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as any)} className="vp-select">
-                  <option value="all">Todos</option>
+                  <option value="all">{t('visitor.all')}</option>
                   <option value="Senior">Senior</option>
                   <option value="Semi-Senior">Semi-Senior</option>
                   <option value="Junior">Junior</option>
@@ -148,9 +150,9 @@ export function VisitanteOfertaPortafolioPage() {
               </div>
 
               <div className="vp-filter-group">
-                <label>Tipo de Perfil</label>
+                <label>{t('visitor.profileType')}</label>
                 <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as any)} className="vp-select">
-                  <option value="all">Todos</option>
+                  <option value="all">{t('visitor.all')}</option>
                   <option value="Full Stack">Full Stack</option>
                   <option value="Frontend">Frontend</option>
                   <option value="Backend">Backend</option>
@@ -164,7 +166,7 @@ export function VisitanteOfertaPortafolioPage() {
                 setLevelFilter('all');
                 setProfileFilter('all');
               }}>
-                Limpiar Filtros
+                {t('visitor.clearFilters')}
               </button>
             </div>
           </div>
@@ -173,7 +175,7 @@ export function VisitanteOfertaPortafolioPage() {
 
       <FadeInSection>
         <section className="vp-grid">
-          {isLoading && <p className="col-span-full py-12 text-center text-slate-500">Cargando portafolios...</p>}
+          {isLoading && <p className="col-span-full py-12 text-center text-slate-500">{t('visitor.loading')}</p>}
           {!isLoading && error && <p className="col-span-full py-12 text-center text-red-500">{error}</p>}
           
           {!isLoading && !error && filtered.map((portfolio) => (
@@ -215,14 +217,14 @@ export function VisitanteOfertaPortafolioPage() {
                 className="vp-link"
                 onClick={() => navigate(`/portafolio/${portfolio.id}`)}
               >
-                Ver Portafolio →
+                {t('visitor.viewPortfolio')}
               </button>
             </article>
           ))}
 
           {!isLoading && !error && filtered.length === 0 && (
             <p className="col-span-full py-12 text-center text-slate-500">
-              No se encontraron portafolios que coincidan con tu búsqueda.
+              {t('visitor.empty')}
             </p>
           )}
         </section>
@@ -232,7 +234,7 @@ export function VisitanteOfertaPortafolioPage() {
         <button className="vp-page" type="button">1</button>
         <button className="vp-page" type="button">2</button>
         <button className="vp-page" type="button">3</button>
-        <button className="vp-page" type="button">Siguiente</button>
+        <button className="vp-page" type="button">{t('visitor.next')}</button>
       </nav>
     </main>
   );
