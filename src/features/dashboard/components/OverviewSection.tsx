@@ -1,6 +1,7 @@
 import {
   BriefcaseBusiness,
   Eye,
+  Download,
   FolderKanban,
   Grip,
   MoreVertical,
@@ -14,11 +15,13 @@ import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { DashboardMetricCard } from '@shared/components/dashboard/DashboardMetricCard';
 import { Button } from '@shared/components/ui/Button';
+import { useI18n } from '@shared/i18n/I18nProvider';
 import type { OverviewMetric, OverviewRecentProject } from '@features/dashboard/utils/developerDashboardMappers';
 
 export function OverviewSection({
   onOpenProjects,
   onOpenProjectForm,
+  onOpenReport,
   onOpenSkills,
   onOpenSettings,
   metrics = [],
@@ -34,6 +37,7 @@ export function OverviewSection({
 }: {
   onOpenProjects: () => void;
   onOpenProjectForm: () => void;
+  onOpenReport: () => void;
   onOpenSkills: () => void;
   onOpenSettings: () => void;
   metrics?: OverviewMetric[];
@@ -47,6 +51,8 @@ export function OverviewSection({
   titleHierarchy?: string[];
   roleHierarchy?: string[];
 }) {
+  const { t } = useI18n();
+
   const renderIcon = (iconId: string) => {
     switch (iconId) {
       case 'folder': return <FolderKanban className="h-5 w-5" />;
@@ -67,25 +73,32 @@ export function OverviewSection({
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-[var(--umss-brand)]">
-              Dashboard del desarrollador
+              {t('dashboard.overview.eyebrow')}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 capitalize">
-              Bienvenido de nuevo, {firstName}!
+              {t('dashboard.overview.title', { name: firstName })}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-              Gestiona tu portafolio profesional y realiza un seguimiento del crecimiento
-              de tu perfil dentro de UMSS Dev Network.
+              {t('dashboard.overview.subtitle')}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={onOpenReport}
+              variant="secondary"
+              className="h-11 rounded-2xl px-4 text-sm"
+            >
+              <Download className="h-4 w-4" />
+              {t('dashboard.overview.exportCv')}
+            </Button>
             <Button 
               onClick={onOpenSettings}
               variant="secondary" 
               className="h-11 rounded-2xl px-4 text-sm"
             >
               <PencilLine className="h-4 w-4" />
-              Editar bio
+              {t('dashboard.overview.editBio')}
             </Button>
 
             <Button
@@ -93,7 +106,7 @@ export function OverviewSection({
               className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#2563EB] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
             >
               <Plus className="h-4 w-4" />
-              Añadir proyecto
+              {t('dashboard.overview.addProject')}
             </Button>
           </div>
         </div>
@@ -105,7 +118,7 @@ export function OverviewSection({
                 <UserRoundCog className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Perfil completado</p>
+                <p className="text-sm font-semibold text-slate-900">{t('dashboard.overview.profileCompleted')}</p>
                 <p className="text-sm text-slate-600 font-medium">
                   {nextStep}
                 </p>
@@ -123,7 +136,9 @@ export function OverviewSection({
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-500">
-              {completionPercentage < 100 ? 'Añade más información para llegar al 100%.' : '¡Tu perfil está completo!'}
+              {completionPercentage < 100
+                ? t('dashboard.overview.completeHint')
+                : t('dashboard.overview.completeDone')}
             </p>
             {completionPercentage < 100 && (
               <button
@@ -131,7 +146,7 @@ export function OverviewSection({
                 onClick={onOpenSettings}
                 className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
               >
-                Completar ahora
+                {t('dashboard.overview.completeNow')}
               </button>
             )}
           </div>
@@ -160,15 +175,15 @@ export function OverviewSection({
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)]">
         <DashboardCard
-          title="Proyectos Recientes"
-          description="Resumen rápido de tus proyectos más activos."
+          title={t('dashboard.overview.recentProjects')}
+          description={t('dashboard.overview.recentProjectsSubtitle')}
           action={
             <button
               type="button"
               onClick={onOpenProjects}
               className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
             >
-              Ver todos
+              {t('common.viewAll')}
             </button>
           }
         >
@@ -208,34 +223,34 @@ export function OverviewSection({
               ))
             ) : (
               <div className="py-8 text-center text-slate-500">
-                <FolderKanban className="mx-auto h-8 w-8 opacity-20" />
-                <p className="mt-2 text-sm">No hay proyectos recientes.</p>
+              <FolderKanban className="mx-auto h-8 w-8 opacity-20" />
+                <p className="mt-2 text-sm">{t('dashboard.overview.noRecentProjects')}</p>
               </div>
             )}
           </div>
         </DashboardCard>
 
         <div className="space-y-4">
-          <DashboardCard title="Informacion de Contacto" description="Canales visibles para reclutadores y colaboradores.">
+          <DashboardCard title={t('dashboard.overview.contactInfo')} description={t('dashboard.overview.contactInfoSubtitle')}>
             <div className="space-y-3">
               <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Correo</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('common.email')}</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  {contactEmail || 'Aun no configurado'}
+                  {contactEmail || t('dashboard.overview.notConfiguredYet')}
                 </p>
               </div>
               <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Telefono</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('common.phone')}</p>
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  {contactPhone || 'Aun no configurado'}
+                  {contactPhone || t('dashboard.overview.notConfiguredYet')}
                 </p>
               </div>
               {(titleHierarchy.length > 0 || roleHierarchy.length > 0) ? (
                 <div className="rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trayectoria resumida</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t('dashboard.overview.trajectorySummary')}</p>
                   {titleHierarchy.length > 0 ? (
                     <div className="mt-3">
-                      <p className="text-sm font-semibold text-slate-900">Titulos</p>
+                      <p className="text-sm font-semibold text-slate-900">{t('dashboard.overview.titles')}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {titleHierarchy.map((item) => (
                           <DashboardBadge key={item} tone="neutral">{item}</DashboardBadge>
@@ -245,7 +260,7 @@ export function OverviewSection({
                   ) : null}
                   {roleHierarchy.length > 0 ? (
                     <div className="mt-3">
-                      <p className="text-sm font-semibold text-slate-900">Roles</p>
+                      <p className="text-sm font-semibold text-slate-900">{t('dashboard.overview.roles')}</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {roleHierarchy.map((item) => (
                           <DashboardBadge key={item} tone="brand">{item}</DashboardBadge>
@@ -259,17 +274,17 @@ export function OverviewSection({
           </DashboardCard>
 
           <DashboardCard
-            title="Habilidades Principales"
-            description="Tecnologías destacadas de tu stack."
+            title={t('dashboard.overview.topSkills')}
+            description={t('dashboard.overview.topSkillsSubtitle')}
             action={
               <button
                 type="button"
-                onClick={onOpenSkills}
-                className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
-              >
-                Gestionar
-              </button>
-            }
+              onClick={onOpenSkills}
+              className="text-sm font-semibold text-[var(--umss-brand)] transition hover:text-[#4338CA]"
+            >
+              {t('dashboard.overview.manage')}
+            </button>
+          }
           >
             <div className="flex flex-wrap gap-2">
               {topSkills.length > 0 ? (
@@ -279,20 +294,20 @@ export function OverviewSection({
                   </DashboardBadge>
                 ))
               ) : (
-                <p className="text-sm text-slate-400">Sin habilidades destacadas.</p>
+                <p className="text-sm text-slate-400">{t('common.noData')}</p>
               )}
             </div>
           </DashboardCard>
 
-          <DashboardCard title="Ultimo logro" description="Actividad destacada de este mes.">
+          <DashboardCard title={t('dashboard.overview.lastAchievement')} description={t('dashboard.overview.lastAchievementSubtitle')}>
             <div className="flex items-start gap-4 rounded-3xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(245,158,11,0.12)] text-[var(--umss-warning)]">
                 <Trophy className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Colaborador Open Source</p>
+                <p className="text-sm font-semibold text-slate-900">{t('dashboard.overview.achievementTitle')}</p>
                 <p className="mt-1 text-sm leading-relaxed text-slate-500">
-                  Fusionaste 5 PRs en librerias importantes este mes.
+                  {t('dashboard.overview.achievementText')}
                 </p>
               </div>
             </div>
