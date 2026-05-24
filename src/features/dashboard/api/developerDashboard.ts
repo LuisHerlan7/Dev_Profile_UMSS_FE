@@ -396,29 +396,9 @@ export async function updateVisibilitySettings(payload: {
   return res.json();
 }
 
-export async function updateLanguagePreference(payload: { language: 'es' | 'en' }) {
-  const token = localStorage.getItem('auth_token');
-  const res = await fetch('/api/developer/settings/language', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error('Error al guardar la preferencia de idioma');
-  }
-
-  return res.json();
-}
-
 export async function recordReportExport(payload: {
   format: 'pdf' | 'word';
   name: string;
-  content_html?: string;
 }) {
   const token = localStorage.getItem('auth_token');
   const res = await fetch('/api/developer/reports', {
