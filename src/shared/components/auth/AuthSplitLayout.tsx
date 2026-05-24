@@ -32,20 +32,9 @@ type InfoItem = {
 
 export function AuthSplitLayout({
   children,
-  title = 'Construye tu futuro en la UMSS.',
-  description = 'Una red universitaria de desarrolladores donde estudiantes pueden conectar, colaborar en proyectos y descubrir oportunidades tecnológicas.',
-  items = [
-    {
-      title: 'Red verificada',
-      description:
-        'Conecta con estudiantes y egresados reales mediante autenticación universitaria.',
-    },
-    {
-      title: 'Red verificada',
-      description:
-        'Conecta con estudiantes y egresados reales mediante autenticación universitaria segura.',
-    },
-  ],
+  title,
+  description,
+  items,
   className,
 }: PropsWithChildren<{
   title?: string;
@@ -54,6 +43,20 @@ export function AuthSplitLayout({
   className?: string;
 }>) {
   const { t } = useI18n();
+  const resolvedTitle = title ?? t('auth.layoutTitle');
+  const resolvedDescription = description ?? t('auth.layoutDescription');
+  const resolvedItems =
+    items ??
+    [
+      {
+        title: t('home.benefits.centralization.title'),
+        description: t('auth.verifiedNetwork'),
+      },
+      {
+        title: t('home.benefits.visibility.title'),
+        description: t('auth.backendValidation'),
+      },
+    ];
 
   return (
     <div className={cn('bg-[#F9FAFB]', className)}>
@@ -73,14 +76,14 @@ export function AuthSplitLayout({
               </div>
 
               <h1 className="mt-6 text-4xl font-semibold tracking-tight">
-                {title}
+                {resolvedTitle}
               </h1>
               <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
-                {description}
+                {resolvedDescription}
               </p>
 
               <div className="mt-10 grid gap-4">
-                {items.map((it, idx) => (
+                {resolvedItems.map((it, idx) => (
                   <div
                     key={`${it.title}-${idx}`}
                     className="flex items-start gap-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"
@@ -108,7 +111,7 @@ export function AuthSplitLayout({
                     {t('home.ctaSubtitle')}
                   </p>
                   <p className="mt-2 text-xs font-semibold tracking-wide text-white/80">
-                    UMSS Student · Engineering
+                    {t('common.appName')}
                   </p>
                 </div>
               </div>
