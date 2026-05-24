@@ -8,8 +8,10 @@ import {
   getRedirectPathForRole,
   persistAuthSession,
 } from '@services/auth';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 export function AuthCallbackPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState('');
@@ -18,7 +20,7 @@ export function AuthCallbackPage() {
     const token = searchParams.get('token')?.trim();
 
     if (!token) {
-      setError('No se recibio un token valido desde el proveedor social.');
+      setError('No se recibió un token válido desde el proveedor social.');
       return;
     }
 
@@ -60,21 +62,21 @@ export function AuthCallbackPage() {
 
   return (
     <AuthSplitLayout>
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Validando tu acceso</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{t('auth.callbackTitle')}</h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
-        Estamos conectando tu cuenta social con tu dashboard de UMSS Dev Network.
+        {t('auth.callbackSubtitle')}
       </p>
 
       {error ? (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
           <Link to="/login" className="mt-4 inline-flex">
-            <Button variant="secondary">Volver a iniciar sesion</Button>
+            <Button variant="secondary">{t('auth.callbackBack')}</Button>
           </Link>
         </div>
       ) : (
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-          Estamos obteniendo tu perfil, rol y datos iniciales del dashboard.
+          {t('auth.callbackLoading')}
         </div>
       )}
     </AuthSplitLayout>
