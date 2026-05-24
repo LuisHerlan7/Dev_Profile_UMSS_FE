@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 export type DashboardSidebarItem = {
   id: string;
@@ -37,6 +38,7 @@ export function DashboardSidebar({
   onToggleCollapse,
   onItemSelect,
 }: DashboardSidebarProps) {
+  const { t } = useI18n();
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
@@ -79,8 +81,8 @@ export function DashboardSidebar({
             type="button"
             onClick={onToggleCollapse}
             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-            aria-label="Expandir barra lateral"
-            title="Expandir barra lateral"
+            aria-label={t('common.expandSidebar')}
+            title={t('common.expandSidebar')}
           >
             <PanelLeftOpen className="h-4 w-4" />
           </button>
@@ -103,8 +105,8 @@ export function DashboardSidebar({
                 type="button"
                 onClick={onToggleCollapse}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-                aria-label="Colapsar barra lateral"
-                title="Colapsar barra lateral"
+                aria-label={t('common.collapseSidebar')}
+                title={t('common.collapseSidebar')}
               >
                 <PanelLeftClose className="h-4 w-4" />
               </button>
