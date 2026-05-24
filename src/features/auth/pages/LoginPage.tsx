@@ -11,8 +11,10 @@ import {
   persistAuthSession,
   readStoredAuthSession,
 } from '@services/auth';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 export function LoginPage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +46,7 @@ export function LoginPage() {
       persistAuthSession(data);
       navigate('/dashboard', { replace: true });
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesion.';
+      const message = requestError instanceof Error ? requestError.message : 'No se pudo iniciar sesión.';
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -53,9 +55,9 @@ export function LoginPage() {
 
   return (
     <AuthSplitLayout>
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Iniciar sesión</h2>
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{t('auth.loginTitle')}</h2>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
-        Bienvenido de vuelta. Accede a UMSS Dev Network para continuar construyendo tu perfil.
+        {t('auth.loginSubtitle')}
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -77,13 +79,13 @@ export function LoginPage() {
 
       <div className="my-6 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
-        <div className="text-xs font-semibold text-slate-500">O ingresa con correo</div>
+        <div className="text-xs font-semibold text-slate-500">{t('auth.loginDivider')}</div>
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
         <TextField
-          label="Correo institucional"
+          label={t('auth.institutionalEmail')}
           type="email"
           placeholder="nombre.apellido@umss.edu"
           autoComplete="email"
@@ -94,7 +96,7 @@ export function LoginPage() {
         />
 
         <TextField
-          label="Contraseña"
+          label={t('auth.password')}
           type="password"
           placeholder="••••••••"
           autoComplete="current-password"
@@ -108,7 +110,7 @@ export function LoginPage() {
           disabled={isSubmitting}
           className="mt-1 h-12 w-full bg-gradient-to-r from-[#6C63FF] via-[#4F46E5] to-[#0EA5E9] hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#0284C7]"
         >
-          <span>{isSubmitting ? 'Ingresando...' : 'Iniciar sesion ->'}</span>
+          <span>{isSubmitting ? t('auth.loggingIn') : t('auth.loginAction')}</span>
           <span className="sr-only">en UMSS Dev Network</span>
         </Button>
 
@@ -116,7 +118,7 @@ export function LoginPage() {
 
         <div className="mt-1 flex items-center justify-between text-sm">
           <Link to="/register" className="font-semibold text-[#6C63FF] hover:text-[#5A52FF]">
-            Crear cuenta
+            {t('auth.createAccount')}
           </Link>
         </div>
 
@@ -124,13 +126,13 @@ export function LoginPage() {
           <div className="flex items-start gap-2">
             <Mail className="mt-0.5 h-4 w-4 text-slate-600" />
             <p className="leading-relaxed">
-              Usa tu correo institucional para una red verificada dentro de la UMSS.
+              {t('auth.verifiedNetwork')}
             </p>
           </div>
           <div className="mt-2 flex items-start gap-2">
             <LockKeyhole className="mt-0.5 h-4 w-4 text-slate-600" />
             <p className="leading-relaxed">
-              Tus credenciales se validan contra la base de datos del backend.
+              {t('auth.backendValidation')}
             </p>
           </div>
         </div>
