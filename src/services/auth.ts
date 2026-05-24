@@ -1,3 +1,5 @@
+import { persistStoredLanguage } from '@shared/i18n/storage';
+
 export type UserRole = 'desarrollador' | 'visitante' | 'admin' | 'administrador' | string;
 
 export type AuthUser = {
@@ -7,6 +9,7 @@ export type AuthUser = {
   role: UserRole;
   avatar?: string | null;
   provider?: string | null;
+  preferred_language?: 'es' | 'en' | string | null;
 };
 
 export type DashboardSection = {
@@ -141,6 +144,10 @@ export function persistAuthSession(session: AuthSession) {
   }
 
   storage.setItem(USER_STORAGE_KEY, JSON.stringify(session.user));
+
+  if (session.user.preferred_language === 'es' || session.user.preferred_language === 'en') {
+    persistStoredLanguage(session.user.preferred_language);
+  }
 
   if (session.dashboard) {
     storage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(session.dashboard));
