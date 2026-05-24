@@ -78,6 +78,9 @@ export const messages = {
       footerMadeFor: 'Hecho para la comunidad UMSS',
     },
     auth: {
+      layoutTitle: 'Construye tu futuro en la UMSS.',
+      layoutDescription:
+        'Una red universitaria de desarrolladores donde estudiantes pueden conectar, colaborar en proyectos y descubrir oportunidades tecnológicas.',
       loginTitle: 'Iniciar sesión',
       loginSubtitle:
         'Bienvenido de vuelta. Accede a UMSS Dev Network para continuar construyendo tu perfil.',
@@ -183,6 +186,31 @@ export const messages = {
         emptySkills: 'No hay habilidades registradas todavía.',
         emptyExperience: 'No hay experiencia o formación registrada todavía.',
         generatedName: 'CV-{name}',
+        footer: 'Documento generado desde Dev Profile UMSS.',
+      },
+    },
+    admin: {
+      sidebar: {
+        dashboard: 'Resumen del Sistema',
+        users: 'Gestión de Usuarios',
+        moderation: 'Moderación de Contenido',
+        analytics: 'Analíticas del Sistema',
+        settings: 'Configuración',
+        security: 'Auditoría de Seguridad',
+      },
+      role: 'Administrador',
+      settings: {
+        title: 'Configuración de Perfil',
+        subtitle: 'Gestiona tu información personal, privacidad e integraciones del panel administrativo.',
+        general: 'Información General',
+        privacy: 'Privacidad y Visibilidad',
+        privacyHint: 'Perfil administrativo visible en el sistema',
+        active: 'Activo',
+        language: 'Idioma del sistema',
+        languageHint: 'Selecciona el idioma que usarás en tu panel administrativo.',
+        currentLanguage: 'Idioma actual: {language}',
+        name: 'Nombre',
+        email: 'Correo',
       },
     },
     visitor: {
@@ -319,6 +347,9 @@ export const messages = {
       footerMadeFor: 'Made for the UMSS community',
     },
     auth: {
+      layoutTitle: 'Build your future at UMSS.',
+      layoutDescription:
+        'A university network for developers where students can connect, collaborate on projects, and discover technology opportunities.',
       loginTitle: 'Sign in',
       loginSubtitle:
         'Welcome back. Access UMSS Dev Network to keep building your profile.',
@@ -424,6 +455,31 @@ export const messages = {
         emptySkills: 'There are no registered skills yet.',
         emptyExperience: 'There is no registered experience or education yet.',
         generatedName: 'Resume-{name}',
+        footer: 'Document generated from Dev Profile UMSS.',
+      },
+    },
+    admin: {
+      sidebar: {
+        dashboard: 'System Overview',
+        users: 'User Management',
+        moderation: 'Content Moderation',
+        analytics: 'System Analytics',
+        settings: 'Settings',
+        security: 'Security Audit',
+      },
+      role: 'Administrator',
+      settings: {
+        title: 'Profile Settings',
+        subtitle: 'Manage your personal information, privacy, and administrative panel integrations.',
+        general: 'General Information',
+        privacy: 'Privacy and Visibility',
+        privacyHint: 'Administrative profile visible in the system',
+        active: 'Active',
+        language: 'System language',
+        languageHint: 'Select the language you will use in your administrative panel.',
+        currentLanguage: 'Current language: {language}',
+        name: 'Name',
+        email: 'Email',
       },
     },
     visitor: {
