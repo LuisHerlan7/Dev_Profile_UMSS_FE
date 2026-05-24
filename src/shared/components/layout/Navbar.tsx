@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@shared/utils/cn';
 import { Button } from '@shared/components/ui/Button';
+import { useI18n } from '@shared/i18n/I18nProvider';
+import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
 
 function LogoMark({ className }: { className?: string }) {
   return (
@@ -64,17 +66,18 @@ function MenuIcon({ open }: { open: boolean }) {
 type NavItem = { label: string; href: string; kind: 'hash' | 'route' };
 
 export function Navbar() {
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const navItems = useMemo<NavItem[]>(
     () => [
-      { label: 'Beneficios', href: '#benefits', kind: 'hash' },
-      { label: 'Cómo funciona', href: '#how-it-works', kind: 'hash' },
-      { label: 'Explorar', href: '/visitante', kind: 'route' },
+      { label: t('navbar.benefits'), href: '#benefits', kind: 'hash' },
+      { label: t('navbar.howItWorks'), href: '#how-it-works', kind: 'hash' },
+      { label: t('navbar.explore'), href: '/visitante', kind: 'route' },
     ],
-    []
+    [t]
   );
 
   function onHashClick(href: string) {
@@ -130,18 +133,19 @@ export function Navbar() {
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
+            <LanguageSwitcher compact />
             <Link to="/login" className="rounded-lg px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100">
-              Iniciar sesión
+              {t('common.login')}
             </Link>
             <Link to="/register">
-              <Button size="sm">Registrarse</Button>
+              <Button size="sm">{t('common.register')}</Button>
             </Link>
           </div>
 
           <button
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 md:hidden"
             onClick={() => setOpen((v) => !v)}
-            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-label={open ? t('navbar.closeMenu') : t('navbar.openMenu')}
             aria-expanded={open}
           >
             <MenuIcon open={open} />
@@ -173,13 +177,16 @@ export function Navbar() {
               )}
 
               <div className="mt-2 grid gap-2 px-1">
+                <div className="mb-1">
+                  <LanguageSwitcher compact className="w-full justify-center" />
+                </div>
                 <Link to="/login" onClick={() => setOpen(false)}>
                   <Button variant="secondary" className="w-full">
-                    Iniciar sesión
+                    {t('common.login')}
                   </Button>
                 </Link>
                 <Link to="/register" onClick={() => setOpen(false)}>
-                  <Button className="w-full">Registrarse</Button>
+                  <Button className="w-full">{t('common.register')}</Button>
                 </Link>
               </div>
             </div>
