@@ -2,6 +2,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 export type ButtonBackProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   fallbackTo?: string;
@@ -9,6 +10,7 @@ export type ButtonBackProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function ButtonBack({ className, fallbackTo = '/', ...props }: ButtonBackProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <button
@@ -32,7 +34,7 @@ export function ButtonBack({ className, fallbackTo = '/', ...props }: ButtonBack
       {...props}
     >
       <ArrowLeft className="h-4 w-4" />
-      <span>Atrás</span>
+      <span>{t('common.back')}</span>
     </button>
   );
 }
