@@ -242,6 +242,30 @@ export async function logoutUser(token = getStoredAuthToken()) {
   }
 }
 
+export async function updateUserLanguagePreference(language: 'es' | 'en', token = getStoredAuthToken()) {
+  if (!token) {
+    throw new Error('No existe una sesión activa.');
+  }
+
+  const response = await fetch(buildApiUrl('/api/auth/language'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ language }),
+  });
+
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(data, 'No se pudo actualizar el idioma.'));
+  }
+
+  return data;
+}
+
 export async function fetchDashboardSession(token = getStoredAuthToken()) {
   if (!token) {
     throw new Error('No existe una sesion activa.');
