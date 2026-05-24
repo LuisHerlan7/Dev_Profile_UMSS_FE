@@ -1,6 +1,8 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { cn } from '@shared/utils/cn';
 import { ButtonBack } from '@shared/components/ui/ButtonBack';
+import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 function CheckIcon() {
   return (
@@ -51,6 +53,8 @@ export function AuthSplitLayout({
   items?: InfoItem[];
   className?: string;
 }>) {
+  const { t } = useI18n();
+
   return (
     <div className={cn('bg-[#F9FAFB]', className)}>
       <div className="grid lg:grid-cols-2">
@@ -101,11 +105,10 @@ export function AuthSplitLayout({
                 <div className="h-12 w-12 rounded-full bg-white/20 ring-2 ring-white/25" />
                 <div>
                   <p className="text-sm leading-relaxed text-white/85">
-                    “Me ayudó a organizar mis proyectos y compartir mi perfil con empresas sin
-                    complicarme.”
+                    {t('home.ctaSubtitle')}
                   </p>
                   <p className="mt-2 text-xs font-semibold tracking-wide text-white/80">
-                    Estudiante UMSS · Ingeniería
+                    UMSS Student · Engineering
                   </p>
                 </div>
               </div>
@@ -118,6 +121,7 @@ export function AuthSplitLayout({
           <div className="w-full max-w-md">
             <div className="mb-4 flex items-center justify-between">
               <ButtonBack />
+              <LanguageSwitcher compact />
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6">
               {children}
