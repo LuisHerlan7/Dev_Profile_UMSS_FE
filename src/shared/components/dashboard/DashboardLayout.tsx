@@ -7,6 +7,8 @@ type DashboardLayoutProps = {
   children: ReactNode;
   className?: string;
   sidebarCollapsed?: boolean;
+  mobileSidebarOpen?: boolean;
+  onCloseMobileSidebar?: () => void;
 };
 
 export function DashboardLayout({
@@ -15,13 +17,26 @@ export function DashboardLayout({
   children,
   className,
   sidebarCollapsed = false,
+  mobileSidebarOpen = false,
+  onCloseMobileSidebar,
 }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-[var(--umss-surface)]">
       <div className="flex min-h-screen w-full flex-col lg:flex-row">
+        {mobileSidebarOpen ? (
+          <div className="fixed inset-0 z-[80] bg-slate-950/45 backdrop-blur-sm lg:hidden" onClick={onCloseMobileSidebar}>
+            <aside
+              className="h-full w-[280px] overflow-y-auto border-r border-[var(--umss-border)] bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {sidebar}
+            </aside>
+          </div>
+        ) : null}
+
         <aside
           className={cn(
-            'w-full shrink-0 overflow-hidden border-b border-[var(--umss-border)] bg-white transition-[width] duration-300 lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0',
+            'hidden shrink-0 overflow-hidden border-b border-[var(--umss-border)] bg-white transition-[width] duration-300 lg:sticky lg:top-0 lg:flex lg:h-screen lg:border-r lg:border-b-0',
             sidebarCollapsed ? 'lg:w-[88px]' : 'lg:w-[280px]'
           )}
         >
