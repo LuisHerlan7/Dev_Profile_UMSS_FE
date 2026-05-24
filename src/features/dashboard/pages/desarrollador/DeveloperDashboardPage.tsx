@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -8,6 +8,7 @@ import {
   FolderKanban,
   HelpCircle,
   LayoutDashboard,
+  Menu,
   Settings,
 } from 'lucide-react';
 import {
@@ -23,9 +24,8 @@ import { ExperienceSection } from '@features/dashboard/components/ExperienceSect
 import { SettingsSection } from '@features/dashboard/components/SettingsSection';
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
 import { EvidenceSection } from '@features/dashboard/components/EvidenceSection';
-import { PortfolioReportModal } from '@features/dashboard/components/PortfolioReportModal';
 import { useAuthSession } from '@shared/hooks/useAuthSession';
-import { logoutUser, persistAuthSession, readStoredAuthSession } from '@services/auth';
+import { logoutUser, persistAuthSession, readStoredAuthSession, updateUserLanguagePreference } from '@services/auth';
 import { fetchDeveloperDashboard } from '@services/dashboard';
 import {
   buildOverviewMetrics,
@@ -41,41 +41,41 @@ import {
   sidebarHeadline,
   welcomeFirstName,
 } from '@features/dashboard/utils/developerDashboardMappers';
-import { updateLanguagePreference, updateProjectVisibility, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
+import { updateProjectVisibility, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
 import { useI18n } from '@shared/i18n/I18nProvider';
 import type { AppLanguage } from '@shared/i18n/storage';
 
 type SectionId = 'overview' | 'projects' | 'evidence' | 'skills' | 'experience' | 'settings';
 
-const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }> = [
+const PortfolioReportModal = lazy(() =>
+  import('@features/dashboard/components/PortfolioReportModal').then((module) => ({
+    default: module.PortfolioReportModal,
+  }))
+);
+
+const baseNavItemDefs: Array<{ id: SectionId; icon: JSX.Element }> = [
   {
     id: 'overview',
-    label: 'Informacion General',
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
     id: 'projects',
-    label: 'Proyectos',
     icon: <FolderKanban className="h-4 w-4" />,
   },
   {
     id: 'evidence',
-    label: 'Evidencias',
     icon: <FileText className="h-4 w-4" />,
   },
   {
     id: 'skills',
-    label: 'Habilidades',
     icon: <Code2 className="h-4 w-4" />,
   },
   {
     id: 'experience',
-    label: 'Experiencia',
     icon: <BriefcaseBusiness className="h-4 w-4" />,
   },
   {
     id: 'settings',
-    label: 'Configuracion',
     icon: <Settings className="h-4 w-4" />,
   },
 ];
@@ -86,6 +86,7 @@ export function DeveloperDashboardPage() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   
@@ -157,7 +158,7 @@ export function DeveloperDashboardPage() {
     }
 
     try {
-      await updateLanguagePreference({ language });
+      await updateUserLanguagePreference(language);
       await fetchDashboardData();
     } catch (error) {
       setDashboardError(error instanceof Error ? error.message : 'No se pudo guardar la preferencia de idioma.');
@@ -209,6 +210,17 @@ export function DeveloperDashboardPage() {
   const completionPercentage = dashboardData ? estimateProfileCompletion(dashboardData) : 0;
   const firstName = dashboardData ? welcomeFirstName(dashboardData) : (session?.user?.name?.split(' ')[0] || 'desarrollador');
   const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias || dashboardData.experience || [], dashboardData.formaciones || []) : [];
+  const baseNavItems = useMemo<Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }>>(
+    () => [
+      { ...baseNavItemDefs[0], label: t('dashboard.sections.overview') },
+      { ...baseNavItemDefs[1], label: t('dashboard.sections.projects') },
+      { ...baseNavItemDefs[2], label: t('dashboard.sections.evidence') },
+      { ...baseNavItemDefs[3], label: t('dashboard.sections.skills') },
+      { ...baseNavItemDefs[4], label: t('dashboard.sections.experience') },
+      { ...baseNavItemDefs[5], label: t('dashboard.sections.settings') },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     if (visibilitySettings) {
@@ -291,6 +303,8 @@ export function DeveloperDashboardPage() {
   return (
     <DashboardLayout
       sidebarCollapsed={isSidebarCollapsed}
+      mobileSidebarOpen={isMobileSidebarOpen}
+      onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
       sidebar={
         <DashboardSidebar
           brand={t('dashboard.brand')}
@@ -302,7 +316,10 @@ export function DeveloperDashboardPage() {
           navItems={navItems}
           collapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
-          onItemSelect={(id) => setActiveSection(id as SectionId)}
+          onItemSelect={(id) => {
+            setActiveSection(id as SectionId);
+            setIsMobileSidebarOpen(false);
+          }}
           footer={
           <SidebarVisibilityCard
               collapsed={isSidebarCollapsed}
@@ -351,6 +368,14 @@ export function DeveloperDashboardPage() {
           }}
           actions={
             <>
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)] lg:hidden"
+                aria-label={t('common.expandSidebar')}
+              >
+                <Menu className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
@@ -457,11 +482,13 @@ export function DeveloperDashboardPage() {
         />
       )}
 
-      <PortfolioReportModal
-        open={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        dashboardData={dashboardData}
-      />
+      <Suspense fallback={null}>
+        <PortfolioReportModal
+          open={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          dashboardData={dashboardData}
+        />
+      </Suspense>
     </DashboardLayout>
   );
 }
