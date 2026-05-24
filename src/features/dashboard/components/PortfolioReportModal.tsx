@@ -1,13 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { Download, FileText, Globe, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, FileText, Image as ImageIcon, X } from 'lucide-react';
 import {
   buildSettingsProfile,
   mapExperienciaYFormacion,
   mapHabilidades,
   mapProyectosToProjectItems,
-  type ExperienceRecord,
 } from '@features/dashboard/utils/developerDashboardMappers';
 import type { DeveloperDashboardPayload } from '@features/dashboard/api/developerDashboard';
 import { recordReportExport } from '@features/dashboard/api/developerDashboard';
@@ -21,45 +18,248 @@ type PortfolioReportModalProps = {
 
 type ReportFormat = 'pdf' | 'word';
 
-function buildExportDocument(title: string, content: string) {
+type ReportProfile = {
+  name: string;
+  role: string;
+  summary: string;
+  contactEmail: string;
+  phone: string;
+  github: string;
+  linkedin: string;
+  website: string;
+  titleHierarchy: string[];
+  roleHierarchy: string[];
+  technicalSkills: Array<{ id: string; name: string; level: string; progress: number }>;
+  softSkills: Array<{ id: string; name: string; level: string; progress: number }>;
+  projects: Array<{ id: string; title: string; subtitle: string; tags: string[]; status: string }>;
+  records: Array<{ id: string; title: string; description: string; footer: string; recordType: string }>;
+  avatarUrl: string | null;
+};
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.URL.revokeObjectURL(url);
+}
+
+function buildDocumentShell(title: string, body: string) {
   return `<!DOCTYPE html>
-  <html lang="en">
+  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="es">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>${title}</title>
+      <title>${escapeHtml(title)}</title>
       <style>
-        body { font-family: Inter, Segoe UI, Arial, sans-serif; margin: 0; background: #f3f6ff; color: #0f172a; }
-        .report-shell { max-width: 860px; margin: 0 auto; padding: 36px 28px; }
-        .report-sheet { background: white; border-radius: 28px; padding: 34px; border: 1px solid #dbe4ff; }
-        .report-header { display: flex; gap: 24px; align-items: center; padding-bottom: 24px; border-bottom: 1px solid #e8eeff; }
-        .report-avatar { width: 108px; height: 108px; border-radius: 24px; background: linear-gradient(135deg, #5048e5, #6c63ff); overflow: hidden; display: flex; align-items: center; justify-content: center; color: white; font-size: 34px; font-weight: 700; }
-        .report-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .report-eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #4f46e5; font-weight: 700; }
-        .report-name { font-size: 34px; font-weight: 800; margin: 10px 0 8px; color: #111827; }
-        .report-role { font-size: 18px; font-weight: 700; color: #334155; margin: 0; }
-        .report-summary { margin-top: 14px; font-size: 14px; line-height: 1.7; color: #475569; }
-        .report-grid { display: grid; gap: 18px; margin-top: 26px; }
-        .report-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .report-card { border: 1px solid #e5ebff; border-radius: 22px; padding: 20px; background: #fbfcff; }
-        .report-card h3 { margin: 0 0 12px; font-size: 16px; color: #1e293b; }
-        .report-section { margin-top: 26px; }
-        .report-section h2 { margin: 0 0 12px; font-size: 20px; color: #111827; }
-        .report-chip { display: inline-flex; align-items: center; padding: 6px 10px; margin: 6px 6px 0 0; border-radius: 999px; border: 1px solid #d8e0ff; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 700; }
-        .report-list { display: grid; gap: 12px; }
-        .report-item { border: 1px solid #e5ebff; border-radius: 18px; padding: 16px; background: white; }
-        .report-item-title { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: #0f172a; }
-        .report-item-subtitle { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #6366f1; font-weight: 700; }
-        .report-item-text { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #475569; }
-        .report-progress { margin-top: 10px; height: 10px; border-radius: 999px; background: #e9edff; overflow: hidden; }
-        .report-progress > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #5048e5, #6c63ff); }
-        .report-meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; color: #475569; }
+        @page { size: A4; margin: 18mm; }
+        body { margin: 0; padding: 0; background: #edf3ff; color: #162033; font-family: Arial, Helvetica, sans-serif; }
+        .doc-page { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+        .doc-sheet { background: #ffffff; border: 1px solid #dbe5ff; border-radius: 28px; overflow: hidden; box-shadow: 0 24px 52px rgba(26,35,66,0.12); }
+        .doc-ribbon { height: 16px; background: linear-gradient(90deg, #5b63ff 0%, #5048e5 42%, #08a5e8 100%); }
+        .doc-header { padding: 28px; background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%); }
+        .doc-hero { width: 100%; border-spacing: 0; }
+        .doc-avatar-cell { width: 158px; vertical-align: top; padding-right: 20px; }
+        .doc-avatar { width: 132px; height: 132px; border-radius: 28px; overflow: hidden; background: linear-gradient(135deg, #5048e5, #6c63ff); text-align: center; line-height: 132px; color: #fff; font-size: 42px; font-weight: 800; box-shadow: 0 16px 32px rgba(80,72,229,0.25); }
+        .doc-avatar img { width: 132px; height: 132px; object-fit: cover; display: block; }
+        .doc-pill { display: inline-block; padding: 7px 12px; border-radius: 999px; background: #eef2ff; color: #4f46e5; border: 1px solid #d8defe; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
+        .doc-name { margin: 16px 0 6px; font-size: 35px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+        .doc-role { margin: 0; font-size: 18px; font-weight: 700; color: #42526d; }
+        .doc-summary { margin: 14px 0 0; font-size: 14px; line-height: 1.75; color: #4b5563; }
+        .doc-main { padding: 28px; }
+        .doc-grid { width: 100%; border-spacing: 0; margin-bottom: 22px; }
+        .doc-grid td { width: 50%; vertical-align: top; }
+        .doc-grid td:first-child { padding-right: 10px; }
+        .doc-grid td:last-child { padding-left: 10px; }
+        .doc-card { border: 1px solid #e1e8ff; border-radius: 22px; background: #f9fbff; padding: 18px; }
+        .doc-card-title { margin: 0 0 10px; font-size: 14px; font-weight: 800; color: #0f172a; }
+        .doc-meta { margin: 7px 0 0; font-size: 13px; line-height: 1.6; color: #475569; }
+        .doc-section { margin-top: 24px; }
+        .doc-section-title { margin: 0 0 14px; font-size: 20px; font-weight: 800; color: #0f172a; }
+        .doc-tags { margin-top: 12px; }
+        .doc-tag { display: inline-block; margin: 0 8px 8px 0; padding: 7px 11px; border-radius: 999px; background: #eef2ff; border: 1px solid #d9e3ff; color: #3730a3; font-size: 12px; font-weight: 700; }
+        .doc-skills { width: 100%; border-spacing: 0; }
+        .doc-skills td { width: 50%; vertical-align: top; padding: 0 8px 12px 0; }
+        .doc-skill { border: 1px solid #e3e9ff; border-radius: 18px; padding: 16px; background: #fff; }
+        .doc-skill-name { font-size: 15px; font-weight: 800; color: #0f172a; }
+        .doc-skill-meta { margin-top: 8px; font-size: 12px; color: #64748b; }
+        .doc-skill-progress { float: right; font-weight: 700; color: #4f46e5; }
+        .doc-bar { margin-top: 10px; height: 10px; border-radius: 999px; background: #e5eafc; overflow: hidden; }
+        .doc-bar-fill { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #5b63ff 0%, #5048e5 42%, #08a5e8 100%); }
+        .doc-list { margin-top: 4px; }
+        .doc-item { border: 1px solid #e2e8ff; border-radius: 18px; background: #fff; padding: 16px; margin-bottom: 12px; }
+        .doc-item-label { display: inline-block; padding: 5px 9px; border-radius: 999px; background: #eef2ff; color: #4f46e5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+        .doc-item-title { margin: 10px 0 6px; font-size: 16px; font-weight: 800; color: #0f172a; }
+        .doc-item-subtitle { margin: 0; font-size: 13px; color: #64748b; }
+        .doc-item-text { margin: 10px 0 0; font-size: 13px; line-height: 1.65; color: #475569; }
+        .doc-footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e3e8f8; font-size: 12px; color: #64748b; text-align: center; }
       </style>
     </head>
     <body>
-      <div class="report-shell">${content}</div>
+      <div class="doc-page">${body}</div>
     </body>
   </html>`;
+}
+
+function buildMarkup(profile: ReportProfile, labels: Record<string, string>, avatarDataUrl: string | null) {
+  const initials = profile.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((item) => item[0])
+    .join('')
+    .toUpperCase();
+
+  const skillMarkup = (items: ReportProfile['technicalSkills']) =>
+    items.length > 0
+      ? `<table class="doc-skills">${items
+          .map(
+            (item, index) => `${index % 2 === 0 ? '<tr>' : ''}<td>
+                <div class="doc-skill">
+                  <div class="doc-skill-name">${escapeHtml(item.name)}</div>
+                  <div class="doc-skill-meta">
+                    ${escapeHtml(item.level || labels.notConfigured)}
+                    <span class="doc-skill-progress">${item.progress}%</span>
+                  </div>
+                  <div class="doc-bar"><div class="doc-bar-fill" style="width:${Math.max(0, Math.min(100, item.progress))}%"></div></div>
+                </div>
+              </td>${index % 2 === 1 || index === items.length - 1 ? '</tr>' : ''}`
+          )
+          .join('')}</table>`
+      : `<div class="doc-item"><p class="doc-item-text">${escapeHtml(labels.emptySkills)}</p></div>`;
+
+  const recordMarkup = profile.records.length
+    ? profile.records
+        .map(
+          (record) => `
+            <div class="doc-item">
+              <span class="doc-item-label">${escapeHtml(record.recordType)}</span>
+              <p class="doc-item-title">${escapeHtml(record.title)}</p>
+              <p class="doc-item-subtitle">${escapeHtml(record.footer)}</p>
+              <p class="doc-item-text">${escapeHtml(record.description || labels.emptyDescription)}</p>
+            </div>
+          `
+        )
+        .join('')
+    : `<div class="doc-item"><p class="doc-item-text">${escapeHtml(labels.emptyExperience)}</p></div>`;
+
+  const projectMarkup = profile.projects.length
+    ? profile.projects
+        .map(
+          (project) => `
+            <div class="doc-item">
+              <span class="doc-item-label">${escapeHtml(project.status || labels.projectLabel)}</span>
+              <p class="doc-item-title">${escapeHtml(project.title)}</p>
+              <p class="doc-item-subtitle">${escapeHtml(project.subtitle)}</p>
+              ${
+                project.tags.length
+                  ? `<div class="doc-tags">${project.tags
+                      .map((tag) => `<span class="doc-tag">${escapeHtml(tag)}</span>`)
+                      .join('')}</div>`
+                  : ''
+              }
+            </div>
+          `
+        )
+        .join('')
+    : `<div class="doc-item"><p class="doc-item-text">${escapeHtml(labels.emptyProjects)}</p></div>`;
+
+  return `
+    <div class="doc-sheet">
+      <div class="doc-ribbon"></div>
+      <div class="doc-header">
+        <table class="doc-hero">
+          <tr>
+            <td class="doc-avatar-cell">
+              <div class="doc-avatar">
+                ${
+                  avatarDataUrl
+                    ? `<img src="${avatarDataUrl}" alt="${escapeHtml(profile.name)}" />`
+                    : escapeHtml(initials || 'DP')
+                }
+              </div>
+            </td>
+            <td valign="top">
+              <span class="doc-pill">${escapeHtml(labels.profile)}</span>
+              <p class="doc-name">${escapeHtml(profile.name)}</p>
+              <p class="doc-role">${escapeHtml(profile.role || labels.notConfigured)}</p>
+              <p class="doc-summary">${escapeHtml(profile.summary || labels.emptySummary)}</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="doc-main">
+        <table class="doc-grid">
+          <tr>
+            <td>
+              <div class="doc-card">
+                <p class="doc-card-title">${escapeHtml(labels.contact)}</p>
+                <p class="doc-meta"><strong>${escapeHtml(labels.email)}:</strong> ${escapeHtml(profile.contactEmail || labels.notConfigured)}</p>
+                <p class="doc-meta"><strong>${escapeHtml(labels.phone)}:</strong> ${escapeHtml(profile.phone || labels.notConfigured)}</p>
+                <p class="doc-meta"><strong>GitHub:</strong> ${escapeHtml(profile.github || labels.notConfigured)}</p>
+                <p class="doc-meta"><strong>LinkedIn:</strong> ${escapeHtml(profile.linkedin || labels.notConfigured)}</p>
+                <p class="doc-meta"><strong>${escapeHtml(labels.website)}:</strong> ${escapeHtml(profile.website || labels.notConfigured)}</p>
+              </div>
+            </td>
+            <td>
+              <div class="doc-card">
+                <p class="doc-card-title">${escapeHtml(labels.trajectory)}</p>
+                <div class="doc-tags">
+                  ${profile.titleHierarchy.map((item) => `<span class="doc-tag">${escapeHtml(item)}</span>`).join('')}
+                  ${profile.roleHierarchy.map((item) => `<span class="doc-tag">${escapeHtml(item)}</span>`).join('')}
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="doc-section">
+          <p class="doc-section-title">${escapeHtml(labels.technicalSkills)}</p>
+          ${skillMarkup(profile.technicalSkills)}
+        </div>
+
+        <div class="doc-section">
+          <p class="doc-section-title">${escapeHtml(labels.softSkills)}</p>
+          ${skillMarkup(profile.softSkills)}
+        </div>
+
+        <div class="doc-section">
+          <p class="doc-section-title">${escapeHtml(labels.projects)}</p>
+          <div class="doc-list">${projectMarkup}</div>
+        </div>
+
+        <div class="doc-section">
+          <p class="doc-section-title">${escapeHtml(labels.experience)}</p>
+          <div class="doc-list">${recordMarkup}</div>
+        </div>
+
+        <div class="doc-footer">${escapeHtml(labels.footer)}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function imageUrlToDataUrl(url: string) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 export function PortfolioReportModal({
@@ -70,26 +270,20 @@ export function PortfolioReportModal({
   const { t } = useI18n();
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
-  const previewRef = useRef<HTMLDivElement | null>(null);
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
 
-  const profile = useMemo(() => {
+  const profile = useMemo<ReportProfile | null>(() => {
     if (!dashboardData) {
       return null;
     }
 
     const settings = buildSettingsProfile(dashboardData);
-    const skills = mapHabilidades(dashboardData.habilidades ?? []);
-    const projects = mapProyectosToProjectItems(dashboardData.proyectos ?? []);
-    const records = mapExperienciaYFormacion(
-      dashboardData.experiencias ?? [],
-      dashboardData.formaciones ?? []
-    );
+    const skills = mapHabilidades(dashboardData.habilidades || []);
+    const projects = mapProyectosToProjectItems(dashboardData.proyectos || []);
+    const records = mapExperienciaYFormacion(dashboardData.experiencias || [], dashboardData.formaciones || []);
 
     return {
-      settings,
-      skills,
-      projects,
-      records,
       name:
         dashboardData.usuario?.nombre_completo?.toString() ||
         dashboardData.auth_user?.name ||
@@ -98,201 +292,238 @@ export function PortfolioReportModal({
         dashboardData.usuario?.profesion?.toString() ||
         dashboardData.auth_user?.role ||
         'Developer',
+      summary: settings.bio || '',
+      contactEmail: settings.contactEmail || '',
+      phone: settings.phone || '',
+      github: settings.github || '',
+      linkedin: settings.linkedin || '',
+      website: settings.website || '',
+      titleHierarchy: settings.titleHierarchy,
+      roleHierarchy: settings.roleHierarchy,
+      technicalSkills: skills.technical,
+      softSkills: skills.soft,
+      projects: projects.map((project) => ({
+        id: project.id,
+        title: project.title,
+        subtitle: project.subtitle,
+        tags: project.tags,
+        status: project.status,
+      })),
+      records: records.map((record) => ({
+        id: record.id,
+        title: record.title,
+        description: record.description,
+        footer: record.footer,
+        recordType: record.recordType,
+      })),
       avatarUrl: dashboardData.usuario?.fotografiaUrl?.toString() || null,
     };
   }, [dashboardData]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAvatar() {
+      if (!open || !profile?.avatarUrl) {
+        setAvatarDataUrl(null);
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToDataUrl(profile.avatarUrl);
+        if (active) {
+          setAvatarDataUrl(dataUrl);
+        }
+      } catch {
+        if (active) {
+          setAvatarDataUrl(null);
+        }
+      }
+    }
+
+    loadAvatar();
+    return () => {
+      active = false;
+    };
+  }, [open, profile?.avatarUrl]);
+
+  const labels = useMemo(
+    () => ({
+      profile: t('dashboard.report.profile'),
+      contact: t('dashboard.report.contact'),
+      technicalSkills: t('dashboard.report.technicalSkills'),
+      softSkills: t('dashboard.report.softSkills'),
+      projects: t('dashboard.report.projects'),
+      experience: t('dashboard.report.experience'),
+      trajectory: t('dashboard.overview.trajectorySummary'),
+      email: t('common.email'),
+      phone: t('common.phone'),
+      website: t('common.website'),
+      emptySkills: t('dashboard.report.emptySkills'),
+      emptyProjects: t('dashboard.report.emptyProjects'),
+      emptyExperience: t('dashboard.report.emptyExperience'),
+      emptySummary: t('dashboard.overview.notConfiguredYet'),
+      notConfigured: t('dashboard.overview.notConfiguredYet'),
+      emptyDescription: t('dashboard.report.emptyExperience'),
+      projectLabel: t('dashboard.report.projects'),
+      footer: t('dashboard.report.footer'),
+    }),
+    [t]
+  );
+
+  const reportName = useMemo(
+    () =>
+      t('dashboard.report.generatedName', {
+        name: (profile?.name || 'Developer').replace(/\s+/g, '-'),
+      }),
+    [profile?.name, t]
+  );
+
+  const markup = useMemo(() => {
+    if (!profile) {
+      return '';
+    }
+
+    return buildMarkup(profile, labels, avatarDataUrl);
+  }, [avatarDataUrl, labels, profile]);
 
   if (!open || !profile) {
     return null;
   }
 
-  const initials = profile.name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((name) => name[0])
-    .join('')
-    .toUpperCase();
-  const reportName = t('dashboard.report.generatedName', {
-    name: profile.name.replace(/\s+/g, '-'),
-  });
+  const fullDocument = buildDocumentShell(reportName, markup);
 
-  const handleDownloadWord = async () => {
-    if (!previewRef.current) {
-      return;
-    }
-
-    const html = buildExportDocument(reportName, previewRef.current.innerHTML);
-    const blob = new Blob(['\ufeff', html], {
+  const handleDownloadWord = () => {
+    const blob = new Blob(['\ufeff', fullDocument], {
       type: 'application/msword',
     });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${reportName}.doc`;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
+    downloadBlob(blob, `${reportName}.doc`);
   };
 
   const handleDownloadPdf = async () => {
-    if (!previewRef.current) {
-      return;
+    if (!exportRef.current) {
+      throw new Error('No se pudo preparar la vista del reporte.');
     }
 
-    const canvas = await html2canvas(previewRef.current, {
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+
+    const canvas = await html2canvas(exportRef.current, {
+      backgroundColor: '#edf3ff',
       scale: 2,
-      backgroundColor: '#f3f6ff',
       useCORS: true,
+      windowWidth: exportRef.current.scrollWidth,
     });
 
     const imageData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'pt', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const margin = 24;
-    const contentWidth = pdfWidth - margin * 2;
-    const contentHeight = (canvas.height * contentWidth) / canvas.width;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imageWidth = pageWidth - 28;
+    const imageHeight = (canvas.height * imageWidth) / canvas.width;
 
-    let remainingHeight = contentHeight;
-    let position = margin;
+    let heightLeft = imageHeight;
+    let position = 14;
 
-    pdf.addImage(imageData, 'PNG', margin, position, contentWidth, contentHeight);
-    remainingHeight -= pdfHeight - margin * 2;
+    pdf.addImage(imageData, 'PNG', 14, position, imageWidth, imageHeight, undefined, 'FAST');
+    heightLeft -= pageHeight - 28;
 
-    while (remainingHeight > 0) {
-      position = remainingHeight - contentHeight + margin;
+    while (heightLeft > 0) {
+      position = heightLeft - imageHeight + 14;
       pdf.addPage();
-      pdf.addImage(imageData, 'PNG', margin, position, contentWidth, contentHeight);
-      remainingHeight -= pdfHeight - margin * 2;
+      pdf.addImage(imageData, 'PNG', 14, position, imageWidth, imageHeight, undefined, 'FAST');
+      heightLeft -= pageHeight - 28;
     }
 
     pdf.save(`${reportName}.pdf`);
   };
 
   const handleExport = async () => {
-    if (!previewRef.current || isExporting) {
-      return;
-    }
-
     try {
       setIsExporting(true);
 
       if (format === 'pdf') {
         await handleDownloadPdf();
       } else {
-        await handleDownloadWord();
+        handleDownloadWord();
       }
 
-      await recordReportExport({
-        format,
-        name: reportName,
-        content_html: buildExportDocument(reportName, previewRef.current.innerHTML),
-      });
+      try {
+        await recordReportExport({
+          format,
+          name: reportName,
+        });
+      } catch {
+        // No bloquea la descarga si el tracking falla.
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'No se pudo generar el reporte.');
     } finally {
       setIsExporting(false);
     }
   };
 
-  const renderSkills = (items: Array<{ id: string; name: string; level: string; progress: number }>) => {
-    if (items.length === 0) {
-      return <p className="text-sm text-slate-500">{t('dashboard.report.emptySkills')}</p>;
-    }
-
-    return (
-      <div className="grid gap-4 md:grid-cols-2">
-        {items.map((skill) => (
-          <article key={skill.id} className="rounded-3xl border border-[#e5ebff] bg-white p-4">
-            <h4 className="text-sm font-semibold text-slate-900">{skill.name}</h4>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-              <span>{skill.level}</span>
-              <span>{skill.progress}%</span>
-            </div>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#e9edff]">
-              <span
-                className="block h-full rounded-full bg-gradient-to-r from-[#5048e5] to-[#6c63ff]"
-                style={{ width: `${skill.progress}%` }}
-              />
-            </div>
-          </article>
-        ))}
-      </div>
-    );
-  };
-
-  const renderRecords = (items: ExperienceRecord[]) => {
-    if (items.length === 0) {
-      return <p className="text-sm text-slate-500">{t('dashboard.report.emptyExperience')}</p>;
-    }
-
-    return (
-      <div className="grid gap-4">
-        {items.map((record) => (
-          <article key={record.id} className="rounded-3xl border border-[#e5ebff] bg-white p-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--umss-brand)]">
-              {record.recordType}
-            </p>
-            <h4 className="mt-2 text-sm font-semibold text-slate-900">{record.title}</h4>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{record.description}</p>
-            <p className="mt-3 text-xs font-medium text-slate-500">{record.footer}</p>
-          </article>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[32px] border border-[var(--umss-border)] bg-white shadow-[0_30px_90px_-30px_rgba(15,23,42,0.5)]">
+      <div className="flex h-[min(92vh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/30 bg-white shadow-[0_40px_120px_-36px_rgba(15,23,42,0.55)]">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--umss-border)] px-6 py-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--umss-brand)]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--umss-brand)]">
               {t('dashboard.report.preview')}
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-900">{t('dashboard.report.title')}</h2>
-            <p className="mt-2 text-sm text-slate-600">{t('dashboard.report.subtitle')}</p>
+            <p className="mt-2 text-sm text-slate-500">{t('dashboard.report.subtitle')}</p>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl border border-[var(--umss-border)] p-2 text-slate-500 transition hover:text-slate-900"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--umss-border)] text-slate-500 transition hover:border-[var(--umss-brand)] hover:text-[var(--umss-brand)]"
             aria-label={t('dashboard.report.close')}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="border-r border-[var(--umss-border)] bg-[var(--umss-surface)] p-6">
-            <div className="rounded-[28px] border border-[var(--umss-border)] bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgba(80,72,229,0.12)] text-[var(--umss-brand)]">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[280px,minmax(0,1fr)]">
+          <aside className="border-b border-[var(--umss-border)] bg-[linear-gradient(180deg,rgba(248,250,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 lg:border-r lg:border-b-0">
+            <div className="rounded-[28px] border border-[var(--umss-border)] bg-white p-5 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.35)]">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl bg-[var(--umss-lavender)] p-3 text-[var(--umss-brand)]">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{t('dashboard.report.selectFormat')}</p>
-                  <p className="text-xs text-slate-500">{t('dashboard.report.includePhoto')}</p>
+                  <h3 className="text-sm font-semibold text-slate-900">{t('dashboard.report.selectFormat')}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{t('dashboard.report.includePhoto')}</p>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3">
+              <div className="mt-5 space-y-3">
                 {([
-                  ['pdf', t('dashboard.report.pdf')],
-                  ['word', t('dashboard.report.word')],
-                ] as const).map(([value, label]) => (
+                  { value: 'pdf', icon: <ImageIcon className="h-4 w-4" />, subtitle: 'A4 / print-ready' },
+                  { value: 'word', icon: <FileText className="h-4 w-4" />, subtitle: 'Editable .doc compatible' },
+                ] as const).map((option) => (
                   <button
-                    key={value}
+                    key={option.value}
                     type="button"
-                    onClick={() => setFormat(value)}
-                    className={`rounded-2xl border px-4 py-3 text-left transition ${
-                      format === value
-                        ? 'border-[var(--umss-brand)] bg-[rgba(80,72,229,0.08)] text-[var(--umss-brand)]'
-                        : 'border-[var(--umss-border)] bg-white text-slate-600 hover:border-[rgba(80,72,229,0.25)]'
+                    onClick={() => setFormat(option.value)}
+                    className={`w-full rounded-3xl border p-4 text-left transition ${
+                      format === option.value
+                        ? 'border-[var(--umss-brand)] bg-[var(--umss-lavender)] shadow-[0_12px_24px_-20px_rgba(80,72,229,0.9)]'
+                        : 'border-[var(--umss-border)] bg-white hover:border-[rgba(80,72,229,0.3)]'
                     }`}
                   >
-                    <p className="font-semibold">{label}</p>
-                    <p className="mt-1 text-xs text-inherit">
-                      {value === 'pdf' ? 'A4 / print-ready' : 'Editable .doc compatible'}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-2xl bg-white/80 p-2 text-[var(--umss-brand)] shadow-sm">{option.icon}</div>
+                      <div>
+                        <p className="text-lg font-semibold text-[var(--umss-brand)]">
+                          {option.value === 'pdf' ? t('dashboard.report.pdf') : t('dashboard.report.word')}
+                        </p>
+                        <p className="text-xs text-slate-500">{option.subtitle}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -301,7 +532,7 @@ export function PortfolioReportModal({
                 type="button"
                 onClick={handleExport}
                 disabled={isExporting}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#2563EB] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--umss-brand)] via-[#5b63ff] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(80,72,229,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? t('dashboard.report.generating') : t('dashboard.report.download')}
@@ -309,104 +540,8 @@ export function PortfolioReportModal({
             </div>
           </aside>
 
-          <div className="min-h-0 overflow-y-auto bg-[#f3f6ff] p-6">
-            <div ref={previewRef} className="mx-auto max-w-4xl rounded-[32px] border border-[#dbe4ff] bg-white p-8 shadow-sm">
-              <section className="flex flex-col gap-6 border-b border-[#e8eeff] pb-8 md:flex-row md:items-center">
-                <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[28px] bg-gradient-to-br from-[#5048e5] to-[#6c63ff] text-3xl font-bold text-white shadow-lg">
-                  {profile.avatarUrl ? (
-                    <img
-                      src={profile.avatarUrl}
-                      alt={profile.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(80,72,229,0.16)] bg-[rgba(80,72,229,0.08)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--umss-brand)]">
-                    <Globe className="h-3.5 w-3.5" />
-                    {t('dashboard.report.profile')}
-                  </div>
-                  <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-slate-900">{profile.name}</h1>
-                  <p className="mt-2 text-lg font-semibold text-slate-600">{profile.role}</p>
-                  <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
-                    {profile.settings.bio || '—'}
-                  </p>
-                </div>
-              </section>
-
-              <section className="mt-8 grid gap-5 md:grid-cols-2">
-                <article className="rounded-[28px] border border-[#e5ebff] bg-[#fbfcff] p-5">
-                  <h3 className="text-sm font-semibold text-slate-900">{t('dashboard.report.contact')}</h3>
-                  <div className="mt-4 space-y-3 text-sm text-slate-600">
-                    <p><span className="font-semibold text-slate-900">{t('common.email')}:</span> {profile.settings.contactEmail || '—'}</p>
-                    <p><span className="font-semibold text-slate-900">{t('common.phone')}:</span> {profile.settings.phone || '—'}</p>
-                    <p><span className="font-semibold text-slate-900">{t('common.github')}:</span> {profile.settings.github || '—'}</p>
-                    <p><span className="font-semibold text-slate-900">{t('common.linkedin')}:</span> {profile.settings.linkedin || '—'}</p>
-                  </div>
-                </article>
-
-                <article className="rounded-[28px] border border-[#e5ebff] bg-[#fbfcff] p-5">
-                  <h3 className="text-sm font-semibold text-slate-900">{t('dashboard.overview.trajectorySummary')}</h3>
-                  <div className="mt-4">
-                    {[...profile.settings.titleHierarchy, ...profile.settings.roleHierarchy].map((item) => (
-                      <span
-                        key={item}
-                        className="mr-2 mt-2 inline-flex rounded-full border border-[#d8e0ff] bg-[#eef2ff] px-3 py-1 text-xs font-semibold text-[#3730a3]"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </article>
-              </section>
-
-              <section className="mt-8">
-                <h2 className="text-xl font-bold text-slate-900">{t('dashboard.report.technicalSkills')}</h2>
-                <div className="mt-4">{renderSkills(profile.skills.technical)}</div>
-              </section>
-
-              <section className="mt-8">
-                <h2 className="text-xl font-bold text-slate-900">{t('dashboard.report.softSkills')}</h2>
-                <div className="mt-4">{renderSkills(profile.skills.soft)}</div>
-              </section>
-
-              <section className="mt-8">
-                <h2 className="text-xl font-bold text-slate-900">{t('dashboard.report.projects')}</h2>
-                {profile.projects.length > 0 ? (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    {profile.projects.map((project) => (
-                      <article key={project.id} className="rounded-[28px] border border-[#e5ebff] bg-[#fbfcff] p-5">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--umss-brand)]">
-                          {project.status}
-                        </p>
-                        <h3 className="mt-2 text-base font-semibold text-slate-900">{project.title}</h3>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-600">{project.subtitle}</p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {project.tags.map((tag) => (
-                            <span
-                              key={`${project.id}-${tag}`}
-                              className="rounded-full border border-[#d8e0ff] bg-white px-3 py-1 text-xs font-semibold text-slate-700"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-slate-500">{t('dashboard.report.emptyProjects')}</p>
-                )}
-              </section>
-
-              <section className="mt-8">
-                <h2 className="text-xl font-bold text-slate-900">{t('dashboard.report.experience')}</h2>
-                <div className="mt-4">{renderRecords(profile.records)}</div>
-              </section>
-            </div>
+          <div className="min-h-0 overflow-auto bg-[linear-gradient(180deg,#f4f7ff_0%,#eef3ff_100%)] px-4 py-6 sm:px-6">
+            <div ref={exportRef} dangerouslySetInnerHTML={{ __html: markup }} />
           </div>
         </div>
       </div>
