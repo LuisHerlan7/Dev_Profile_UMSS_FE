@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
 import type { ProjectItem } from '@features/dashboard/components/ProjectsSection';
 import type {
   DeveloperDashboardPayload,
   ProyectoRow,
   HabilidadRow,
+  SkillLinkRow,
   ExperienciaRow,
   FormacionRow,
 } from '@features/dashboard/api/developerDashboard';
@@ -95,9 +95,84 @@ export type TechnicalSkillState = {
   name: string;
   level: string;
   progress: number;
+  links: TechnicalSkillReferenceState[];
 };
 
-export type SoftSkillState = { id: string; name: string; progress: number };
+export type SoftSkillState = {
+  id: string;
+  name: string;
+  level: string;
+  progress: number;
+  links: SoftSkillReferenceState[];
+};
+
+export type SkillReferenceState = {
+  id: string;
+  referenceType: 'project' | 'experience' | 'formation';
+  label: string;
+  referenceId: number;
+};
+
+export type TechnicalSkillReferenceState = SkillReferenceState & {
+  referenceType: 'project' | 'formation';
+};
+
+export type SoftSkillReferenceState = SkillReferenceState & {
+  referenceType: 'experience' | 'formation';
+};
+
+function parseJsonArray<T>(raw: unknown): T[] {
+  if (Array.isArray(raw)) {
+    return raw as T[];
+  }
+
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return Array.isArray(parsed) ? (parsed as T[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function resolveSkillProgress(skill: HabilidadRow): number {
+  const nivel = (skill.nivel_dominio ?? 'intermedio').toLowerCase();
+  const progress = skill.porcentaje_dominio ?? skill.porcentaje ?? NIVEL_PROGRESS[nivel] ?? 50;
+  return Math.max(0, Math.min(100, Number(progress) || 0));
+}
+
+function mapSkillLinks(rawLinks: HabilidadRow['vinculos']): SkillReferenceState[] {
+  const links = parseJsonArray<SkillLinkRow>(rawLinks);
+
+  return links
+    .map((link) => {
+      const type =
+        link.tipo_referencia === 'proyecto'
+          ? 'project'
+          : link.tipo_referencia === 'experiencia'
+            ? 'experience'
+            : 'formation';
+
+      return {
+        id: `link-${link.id}`,
+        referenceType: type,
+        label: String(link.etiqueta_referencia ?? ''),
+        referenceId: Number(link.referencia_id ?? 0),
+      } satisfies SkillReferenceState;
+    })
+    .filter((link) => link.referenceId > 0 && link.label);
+}
+
+function isTechnicalSkillLink(link: SkillReferenceState): link is TechnicalSkillReferenceState {
+  return link.referenceType === 'project' || link.referenceType === 'formation';
+}
+
+function isSoftSkillLink(link: SkillReferenceState): link is SoftSkillReferenceState {
+  return link.referenceType === 'experience' || link.referenceType === 'formation';
+}
 
 export function mapHabilidades(rows: HabilidadRow[]): {
   technical: TechnicalSkillState[];
@@ -113,13 +188,16 @@ export function mapHabilidades(rows: HabilidadRow[]): {
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
         level: NIVEL_ES[nivel] ?? 'Intermedio',
-        progress: h.porcentaje ?? NIVEL_PROGRESS[nivel] ?? 50,
+        progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos).filter(isTechnicalSkillLink),
       });
     } else {
       soft.push({
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
-        progress: h.porcentaje ?? 0,
+        level: NIVEL_ES[nivel] ?? 'Intermedio',
+        progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos).filter(isSoftSkillLink),
       });
     }
   }

@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BarChart3, Calendar, Code2, FileText, Plus, ShieldCheck } from 'lucide-react';
 import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
-import { saveExperience, saveFormation, deleteExperience, deleteFormation } from '@features/dashboard/api/developerDashboard';
+import {
+  saveExperience,
+  saveFormation,
+  updateExperience,
+  updateFormation,
+  deleteExperience,
+  deleteFormation,
+} from '@features/dashboard/api/developerDashboard';
 
 const initialExperienceEntries: ExperienceRecord[] = [
   {
@@ -284,13 +291,12 @@ export function ExperienceSection({
           formData.append('archivo', experienceForm.evidenceFile);
         }
 
-        // Si estamos editando un registro guardado (db-exp-...), enviamos su ID
-        if (editingRecordId && editingRecordId.startsWith('db-exp-')) {
-          const rawId = editingRecordId.replace('db-exp-', '');
-          formData.append('id_experiencia', rawId);
-        }
-
-        const res = await saveExperience(formData);
+        const editingExperienceId = editingRecordId?.startsWith('db-exp-')
+          ? editingRecordId.replace('db-exp-', '')
+          : null;
+        const res = editingExperienceId
+          ? await updateExperience(editingExperienceId, formData)
+          : await saveExperience(formData);
 
         const newRecord: ExperienceRecord = {
           id: `db-exp-${res.id}`, // MANTENER PREFIJO PARA EVITAR DUPLICADOS
@@ -330,13 +336,12 @@ export function ExperienceSection({
           formData.append('archivo', certificationForm.evidenceFile);
         }
 
-        // Si estamos editando un registro guardado (db-form-...), enviamos su ID
-        if (editingRecordId && editingRecordId.startsWith('db-form-')) {
-          const rawId = editingRecordId.replace('db-form-', '');
-          formData.append('id_formacion', rawId);
-        }
-
-        const res = await saveFormation(formData);
+        const editingFormationId = editingRecordId?.startsWith('db-form-')
+          ? editingRecordId.replace('db-form-', '')
+          : null;
+        const res = editingFormationId
+          ? await updateFormation(editingFormationId, formData)
+          : await saveFormation(formData);
 
         const newRecord: ExperienceRecord = {
           id: `db-form-${res.id}`, // MANTENER PREFIJO

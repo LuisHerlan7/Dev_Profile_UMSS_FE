@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Check, Edit3, Plus, Search, Trash2, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
 import type { SoftSkillState, TechnicalSkillState } from '@features/dashboard/utils/developerDashboardMappers';
 
 const initialTechnicalSkills = [
-  { id: 'tech-1', name: 'React.js', level: 'Avanzado', progress: 84 },
-  { id: 'tech-2', name: 'TypeScript', level: 'Intermedio', progress: 68 },
-  { id: 'tech-3', name: 'Node.js', level: 'Intermedio', progress: 58 },
-  { id: 'tech-4', name: 'PostgreSQL', level: 'Principiante', progress: 42 },
+  { id: 'tech-1', name: 'React.js', level: 'Avanzado', progress: 84, links: [] },
+  { id: 'tech-2', name: 'TypeScript', level: 'Intermedio', progress: 68, links: [] },
+  { id: 'tech-3', name: 'Node.js', level: 'Intermedio', progress: 58, links: [] },
+  { id: 'tech-4', name: 'PostgreSQL', level: 'Principiante', progress: 42, links: [] },
 ];
 
 const initialSoftSkills = [
-  { id: 'soft-1', name: 'Trabajo en equipo', progress: 85 },
-  { id: 'soft-2', name: 'Comunicación asertiva', progress: 75 },
-  { id: 'soft-3', name: 'Resolución de problemas', progress: 90 },
-  { id: 'soft-4', name: 'Liderazgo', progress: 70 },
+  { id: 'soft-1', name: 'Trabajo en equipo', level: 'Experto', progress: 85, links: [] },
+  { id: 'soft-2', name: 'Comunicación asertiva', level: 'Avanzado', progress: 75, links: [] },
+  { id: 'soft-3', name: 'Resolución de problemas', level: 'Experto', progress: 90, links: [] },
+  { id: 'soft-4', name: 'Liderazgo', level: 'Avanzado', progress: 70, links: [] },
 ];
-
-const levelOptions = ['Principiante', 'Intermedio', 'Avanzado', 'Experto'];
 
 export function SkillsSection({
   serverTechnical,
@@ -54,8 +52,6 @@ export function SkillsSection({
     }
   }, [serverTechnical, serverSoft]);
   const [newSoftSkill, setNewSoftSkill] = useState('');
-  const [editingSoftSkillId, setEditingSoftSkillId] = useState<string | null>(null);
-  const [editingSoftSkillName, setEditingSoftSkillName] = useState('');
   const [skillSearch, setSkillSearch] = useState('');
 
   const getLevelForProgress = (progress: number) => {
@@ -69,8 +65,6 @@ export function SkillsSection({
     setDraftTechnicalSkills(technicalSkills);
     setDraftSoftSkills(softSkills);
     setNewSoftSkill('');
-    setEditingSoftSkillId(null);
-    setEditingSoftSkillName('');
     setEditMode(true);
   };
 
@@ -78,8 +72,6 @@ export function SkillsSection({
     setDraftTechnicalSkills(technicalSkills);
     setDraftSoftSkills(softSkills);
     setNewSoftSkill('');
-    setEditingSoftSkillId(null);
-    setEditingSoftSkillName('');
     setEditMode(false);
   };
 
@@ -93,18 +85,19 @@ export function SkillsSection({
         technical: draftTechnicalSkills.map(t => ({
           name: t.name,
           level: t.level,
-          progress: t.progress
+          progress: t.progress,
+          links: t.links,
         })),
         soft: draftSoftSkills.map(s => ({
           name: s.name,
-          progress: s.progress
+          level: s.level,
+          progress: s.progress,
+          links: s.links,
         }))
       });
 
       setTechnicalSkills(draftTechnicalSkills);
       setSoftSkills(draftSoftSkills);
-      setEditingSoftSkillId(null);
-      setEditingSoftSkillName('');
       setEditMode(false);
 
       if (onDataDirty) onDataDirty();
@@ -147,9 +140,14 @@ export function SkillsSection({
         name: 'Nueva habilidad',
         level: 'Principiante',
         progress: 0,
+        links: [],
       },
       ...current,
     ]);
+  };
+
+  const handleDeleteTechnicalSkill = (skillId: string) => {
+    setDraftTechnicalSkills((current) => current.filter((skill) => skill.id !== skillId));
   };
 
   const handleDraftSoftSkillChange = (
@@ -160,9 +158,11 @@ export function SkillsSection({
     setDraftSoftSkills((current) =>
       current.map((skill) => {
         if (skill.id !== id) return skill;
+        const nextProgress = field === 'progress' ? Number(value) : skill.progress;
         return {
           ...skill,
           [field]: field === 'progress' ? Number(value) : value,
+          level: field === 'progress' ? getLevelForProgress(nextProgress) : skill.level,
         };
       })
     );
@@ -173,35 +173,13 @@ export function SkillsSection({
     if (!trimmed) return;
     setDraftSoftSkills((current) => [
       ...current,
-      { id: `soft-${Date.now()}`, name: trimmed, progress: 0 },
+      { id: `soft-${Date.now()}`, name: trimmed, level: 'Principiante', progress: 0, links: [] },
     ]);
     setNewSoftSkill('');
   };
 
-  const handleStartSoftSkillEdit = (skillId: string, currentName: string) => {
-    setEditingSoftSkillId(skillId);
-    setEditingSoftSkillName(currentName);
-  };
-
-  const handleSaveSoftSkill = () => {
-    if (!editingSoftSkillId) return;
-    const trimmed = editingSoftSkillName.trim();
-    if (!trimmed) return;
-    setDraftSoftSkills((current) =>
-      current.map((skill) =>
-        skill.id === editingSoftSkillId ? { ...skill, name: trimmed } : skill
-      )
-    );
-    setEditingSoftSkillId(null);
-    setEditingSoftSkillName('');
-  };
-
   const handleDeleteSoftSkill = (skillId: string) => {
     setDraftSoftSkills((current) => current.filter((skill) => skill.id !== skillId));
-    if (editingSoftSkillId === skillId) {
-      setEditingSoftSkillId(null);
-      setEditingSoftSkillName('');
-    }
   };
 
   const activeTechnicalSkills = editMode ? draftTechnicalSkills : technicalSkills;
@@ -495,8 +473,11 @@ export function SkillsSection({
               type="submit"
               form="skills-form"
               disabled={isSaving}
-              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${isSaving ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
-                }`}
+              className={`inline-flex h-11 items-center justify-center rounded-2xl px-6 text-sm font-semibold shadow-sm transition ${
+                isSaving
+                  ? 'cursor-not-allowed bg-slate-300 text-slate-500'
+                  : 'bg-[var(--umss-brand)] text-white hover:bg-[#4338CA]'
+              }`}
             >
               {isSaving ? 'Guardando...' : 'Guardar'}
             </button>

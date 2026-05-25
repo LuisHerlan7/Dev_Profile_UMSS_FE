@@ -34,12 +34,19 @@ interface PortfolioData {
     phone?: string;
   };
   social: Record<string, string>;
-  skills: { 
-    id_habilidad: number; 
-    nombre_habilidad: string; 
-    tipo_habilidad: string; 
+  skills: {
+    id_habilidad: number;
+    nombre_habilidad: string;
+    tipo_habilidad: string;
     nivel_dominio: string;
-    porcentaje: number;
+    porcentaje?: number | null;
+    porcentaje_dominio?: number | null;
+    vinculos?: Array<{
+      id: number;
+      tipo_referencia: string;
+      etiqueta_referencia: string;
+      referencia_id: number | null;
+    }> | string;
   }[];
   projects: Project[];
   timeline: TimelineItem[];
@@ -99,6 +106,8 @@ export function VisitantePortafolioPage() {
   }
 
   const { profile, social, skills, projects, timeline } = data;
+  const getSkillProgress = (skill: PortfolioData['skills'][number]) =>
+    skill.porcentaje ?? skill.porcentaje_dominio ?? 0;
 
   return (
     <main className="vp-landing">
@@ -265,11 +274,11 @@ export function VisitantePortafolioPage() {
                     <div key={skill.id_habilidad} className="vp-skill-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3>{skill.nivel_dominio || 'Habilidad'}</h3>
-                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{skill.porcentaje || 0}%</span>
+                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{getSkillProgress(skill)}%</span>
                       </div>
                       <p>{skill.nombre_habilidad}</p>
                       <div className="vp-skill-progress-bg">
-                        <div className="vp-skill-progress-fill" style={{ width: `${skill.porcentaje || 0}%` }}></div>
+                        <div className="vp-skill-progress-fill" style={{ width: `${getSkillProgress(skill)}%` }}></div>
                        </div>
                     </div>
                   ))}
@@ -283,11 +292,11 @@ export function VisitantePortafolioPage() {
                     <div key={skill.id_habilidad} className="vp-skill-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ opacity: 0 }}>-</h3>
-                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{skill.porcentaje || 0}%</span>
+                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{getSkillProgress(skill)}%</span>
                       </div>
                       <p>{skill.nombre_habilidad}</p>
                       <div className="vp-skill-progress-bg">
-                        <div className="vp-skill-progress-fill" style={{ width: `${skill.porcentaje || 0}%` }}></div>
+                        <div className="vp-skill-progress-fill" style={{ width: `${getSkillProgress(skill)}%` }}></div>
                        </div>
                     </div>
                   ))}
