@@ -271,7 +271,8 @@ export function PortfolioReportModal({
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
-  const exportRef = useRef<HTMLDivElement | null>(null);
+  const [previewReady, setPreviewReady] = useState(false);
+  const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   const profile = useMemo<ReportProfile | null>(() => {
     if (!dashboardData) {
@@ -322,6 +323,7 @@ export function PortfolioReportModal({
 
   useEffect(() => {
     let active = true;
+    setPreviewReady(false);
 
     async function loadAvatar() {
       if (!open || !profile?.avatarUrl) {
@@ -401,7 +403,10 @@ export function PortfolioReportModal({
   };
 
   const handleDownloadPdf = async () => {
-    if (!exportRef.current) {
+    const frameDocument = previewFrameRef.current?.contentDocument;
+    const exportNode = frameDocument?.querySelector('.doc-page') as HTMLElement | null;
+
+    if (!exportNode) {
       throw new Error('No se pudo preparar la vista del reporte.');
     }
 
@@ -410,11 +415,12 @@ export function PortfolioReportModal({
       import('jspdf'),
     ]);
 
-    const canvas = await html2canvas(exportRef.current, {
+    const canvas = await html2canvas(exportNode, {
       backgroundColor: '#edf3ff',
       scale: 2,
       useCORS: true,
-      windowWidth: exportRef.current.scrollWidth,
+      windowWidth: exportNode.scrollWidth,
+      windowHeight: exportNode.scrollHeight,
     });
 
     const imageData = canvas.toDataURL('image/png');
@@ -541,7 +547,18 @@ export function PortfolioReportModal({
           </aside>
 
           <div className="min-h-0 overflow-auto bg-[linear-gradient(180deg,#f4f7ff_0%,#eef3ff_100%)] px-4 py-6 sm:px-6">
-            <div ref={exportRef} dangerouslySetInnerHTML={{ __html: markup }} />
+            <div className="overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_24px_60px_-40px_rgba(15,23,42,0.35)]">
+              <iframe
+                ref={previewFrameRef}
+                title={t('dashboard.report.preview')}
+                srcDoc={fullDocument}
+                onLoad={() => setPreviewReady(true)}
+                className="h-[920px] w-full bg-[#edf3ff]"
+              />
+            </div>
+            {!previewReady ? (
+              <p className="mt-3 text-xs text-slate-500">{t('common.loading')}</p>
+            ) : null}
           </div>
         </div>
       </div>
