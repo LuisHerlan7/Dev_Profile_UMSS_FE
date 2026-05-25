@@ -1,4 +1,5 @@
-import { cloneElement, isValidElement, type ReactNode } from 'react';
+import { cloneElement, isValidElement, useEffect, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
 
 type DashboardLayoutProps = {
@@ -27,16 +28,39 @@ export function DashboardLayout({
       })
     : sidebar;
 
+  useEffect(() => {
+    if (!mobileSidebarOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [mobileSidebarOpen]);
+
   return (
     <div className="min-h-screen bg-[var(--umss-surface)]">
       <div className="flex min-h-screen w-full flex-col lg:flex-row">
         {mobileSidebarOpen ? (
           <div className="fixed inset-0 z-[80] bg-slate-950/45 backdrop-blur-sm lg:hidden" onClick={onCloseMobileSidebar}>
             <aside
-              className="h-full w-[280px] overflow-y-auto border-r border-[var(--umss-border)] bg-white shadow-2xl"
+              className="relative h-full w-[min(88vw,320px)] overflow-hidden border-r border-[var(--umss-border)] bg-white shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              {mobileSidebar}
+              <button
+                type="button"
+                onClick={onCloseMobileSidebar}
+                className="absolute top-4 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white/95 text-slate-500 shadow-sm transition hover:text-[var(--umss-brand)]"
+                aria-label="Cerrar menú"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="h-full overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+                {mobileSidebar}
+              </div>
             </aside>
           </div>
         ) : null}
