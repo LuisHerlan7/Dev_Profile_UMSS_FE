@@ -95,7 +95,12 @@ export function DashboardTopbar({
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder={searchPlaceholder}
-          className="h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] pr-10 pl-11 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgba(80,72,229,0.3)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
+          className="h-11 w-full rounded-2xl border pr-10 pl-11 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
+          style={{
+            backgroundColor: 'var(--dm-input)',
+            borderColor: 'var(--dm-border)',
+            color: 'var(--dm-text-primary)',
+          }}
           autoComplete="off"
         />
         {query && (
@@ -151,11 +156,12 @@ export function DashboardTopbar({
           <button
             type="button"
             onClick={() => setMenuOpen((value) => !value)}
-            className="flex items-center gap-3 rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 shadow-sm transition hover:border-[rgba(80,72,229,0.25)]"
+            className="flex items-center gap-3 rounded-2xl border px-3 py-2 shadow-sm transition hover:border-[rgba(80,72,229,0.25)]"
+            style={{ backgroundColor: 'var(--dm-card)', borderColor: 'var(--dm-border)' }}
           >
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-semibold text-slate-900">{profileName}</p>
-              <p className="text-xs text-slate-500">{profileRole}</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--dm-text-primary)' }}>{profileName}</p>
+              <p className="text-xs" style={{ color: 'var(--dm-text-muted)' }}>{profileRole}</p>
             </div>
             <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--umss-brand)] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-sm">
               {profileImageUrl && !imgError ? (
