@@ -75,7 +75,7 @@ export function OverviewSection({
             <p className="text-sm font-semibold text-[var(--umss-brand)]">
               {t('dashboard.overview.eyebrow')}
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 capitalize">
+            <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-900 capitalize sm:text-3xl">
               {t('dashboard.overview.title', { name: firstName })}
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
@@ -83,11 +83,11 @@ export function OverviewSection({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid w-full gap-3 sm:flex sm:flex-wrap xl:w-auto">
             <Button
               onClick={onOpenReport}
               variant="secondary"
-              className="h-11 rounded-2xl px-4 text-sm"
+              className="h-11 w-full justify-center rounded-2xl px-4 text-sm sm:w-auto"
             >
               <Download className="h-4 w-4" />
               {t('dashboard.overview.exportCv')}
@@ -95,7 +95,7 @@ export function OverviewSection({
             <Button 
               onClick={onOpenSettings}
               variant="secondary" 
-              className="h-11 rounded-2xl px-4 text-sm"
+              className="h-11 w-full justify-center rounded-2xl px-4 text-sm sm:w-auto"
             >
               <PencilLine className="h-4 w-4" />
               {t('dashboard.overview.editBio')}
@@ -103,7 +103,7 @@ export function OverviewSection({
 
             <Button
               onClick={onOpenProjectForm}
-              className="h-11 rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#2563EB] px-4 text-sm hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
+              className="h-11 w-full justify-center rounded-2xl bg-gradient-to-r from-[#6C63FF] via-[var(--umss-brand)] to-[#2563EB] px-4 text-sm sm:w-auto hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#2563EB]"
             >
               <Plus className="h-4 w-4" />
               {t('dashboard.overview.addProject')}
