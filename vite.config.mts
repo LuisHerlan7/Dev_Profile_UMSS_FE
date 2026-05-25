@@ -4,6 +4,17 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          pdfCanvas: ['html2canvas'],
+          pdfDoc: ['jspdf'],
+        },
+      },
+    },
+  },
   server: {
     port: 4200,
     proxy: {

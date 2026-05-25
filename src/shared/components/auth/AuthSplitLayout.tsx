@@ -1,6 +1,8 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { cn } from '@shared/utils/cn';
 import { ButtonBack } from '@shared/components/ui/ButtonBack';
+import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 function CheckIcon() {
   return (
@@ -30,20 +32,9 @@ type InfoItem = {
 
 export function AuthSplitLayout({
   children,
-  title = 'Construye tu futuro en la UMSS.',
-  description = 'Una red universitaria de desarrolladores donde estudiantes pueden conectar, colaborar en proyectos y descubrir oportunidades tecnológicas.',
-  items = [
-    {
-      title: 'Red verificada',
-      description:
-        'Conecta con estudiantes y egresados reales mediante autenticación universitaria.',
-    },
-    {
-      title: 'Red verificada',
-      description:
-        'Conecta con estudiantes y egresados reales mediante autenticación universitaria segura.',
-    },
-  ],
+  title,
+  description,
+  items,
   className,
 }: PropsWithChildren<{
   title?: string;
@@ -51,6 +42,22 @@ export function AuthSplitLayout({
   items?: InfoItem[];
   className?: string;
 }>) {
+  const { t } = useI18n();
+  const resolvedTitle = title ?? t('auth.layoutTitle');
+  const resolvedDescription = description ?? t('auth.layoutDescription');
+  const resolvedItems =
+    items ??
+    [
+      {
+        title: t('home.benefits.centralization.title'),
+        description: t('auth.verifiedNetwork'),
+      },
+      {
+        title: t('home.benefits.visibility.title'),
+        description: t('auth.backendValidation'),
+      },
+    ];
+
   return (
     <div className={cn('bg-[#F9FAFB]', className)}>
       <div className="grid lg:grid-cols-2">
@@ -69,14 +76,14 @@ export function AuthSplitLayout({
               </div>
 
               <h1 className="mt-6 text-4xl font-semibold tracking-tight">
-                {title}
+                {resolvedTitle}
               </h1>
               <p className="mt-5 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
-                {description}
+                {resolvedDescription}
               </p>
 
               <div className="mt-10 grid gap-4">
-                {items.map((it, idx) => (
+                {resolvedItems.map((it, idx) => (
                   <div
                     key={`${it.title}-${idx}`}
                     className="flex items-start gap-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15"
@@ -101,11 +108,10 @@ export function AuthSplitLayout({
                 <div className="h-12 w-12 rounded-full bg-white/20 ring-2 ring-white/25" />
                 <div>
                   <p className="text-sm leading-relaxed text-white/85">
-                    “Me ayudó a organizar mis proyectos y compartir mi perfil con empresas sin
-                    complicarme.”
+                    {t('home.ctaSubtitle')}
                   </p>
                   <p className="mt-2 text-xs font-semibold tracking-wide text-white/80">
-                    Estudiante UMSS · Ingeniería
+                    {t('common.appName')}
                   </p>
                 </div>
               </div>
@@ -118,6 +124,7 @@ export function AuthSplitLayout({
           <div className="w-full max-w-md">
             <div className="mb-4 flex items-center justify-between">
               <ButtonBack />
+              <LanguageSwitcher compact />
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6">
               {children}

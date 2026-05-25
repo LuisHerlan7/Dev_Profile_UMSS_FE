@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Search, X } from 'lucide-react';
+import { useI18n } from '@shared/i18n/I18nProvider';
+import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import type { AppLanguage } from '@shared/i18n/storage';
 
 export type SearchResultItem = {
   id: string;
@@ -19,6 +22,7 @@ type DashboardTopbarProps = {
   searchIndex?: SearchResultItem[];
   onNavigate?: (section: string, elementId?: string) => void;
   onLogout?: () => void;
+  onLanguageChange?: (language: AppLanguage) => void;
 };
 
 export function DashboardTopbar({
@@ -30,7 +34,9 @@ export function DashboardTopbar({
   searchIndex = [],
   onNavigate,
   onLogout,
+  onLanguageChange,
 }: DashboardTopbarProps) {
+  const { t } = useI18n();
   const [imgError, setImgError] = useState(false);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -129,7 +135,7 @@ export function DashboardTopbar({
             ))}
             <div className="border-t border-[var(--umss-border)] px-4 py-2">
               <p className="text-xs text-slate-400">
-                {results.length} resultado{results.length !== 1 ? 's' : ''} encontrado{results.length !== 1 ? 's' : ''}
+                {t('dashboard.topbar.resultsFound', { count: results.length })}
               </p>
             </div>
           </div>
@@ -173,8 +179,14 @@ export function DashboardTopbar({
           {menuOpen && (
             <div
               role="menu"
-              className="absolute right-0 z-50 mt-2 w-48 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]"
+              className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]"
             >
+              <div className="px-3 py-2">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                  {t('common.language')}
+                </p>
+                <LanguageSwitcher compact onSelect={onLanguageChange} />
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -183,7 +195,7 @@ export function DashboardTopbar({
                 }}
                 className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
               >
-                Cerrar sesión
+                {t('common.logout')}
               </button>
             </div>
           )}

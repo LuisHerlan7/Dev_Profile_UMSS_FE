@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Search, X } from 'lucide-react';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
+import { syncSkills } from '@features/dashboard/api/developerDashboard';
 import type {
   SkillReferenceState,
   SoftSkillState,
@@ -278,7 +279,6 @@ export function SkillsSection({
 
     setIsSaving(true);
     try {
-      const { syncSkills } = await import('@features/dashboard/api/developerDashboard');
       await syncSkills({
         technical: nextTechnicalSkills.map((skill) => ({
           name: skill.name,

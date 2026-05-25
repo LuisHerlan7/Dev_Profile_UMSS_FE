@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 import { fetchPublicPortfolioDetail } from '../../api/developerDashboard';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 interface Project {
   id: number;
@@ -75,6 +76,7 @@ function getSocialLink(social: Record<string, string>, key: 'github' | 'linkedin
 }
 
 export function VisitantePortafolioPage() {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -106,7 +108,7 @@ export function VisitantePortafolioPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <p className="text-xl font-semibold text-slate-500 animate-pulse">Cargando portafolio del desarrollador...</p>
+        <p className="text-xl font-semibold text-slate-500 animate-pulse">{t('visitor.portfolio.loading')}</p>
       </div>
     );
   }
@@ -114,13 +116,13 @@ export function VisitantePortafolioPage() {
   if (error || !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
-        <h2 className="text-3xl font-bold text-slate-800 mb-4">Ups! Ocurrió un error</h2>
-        <p className="text-lg text-slate-600 mb-8 max-w-md">{error || 'No pudimos encontrar el portafolio solicitado.'}</p>
+        <h2 className="text-3xl font-bold text-slate-800 mb-4">{t('visitor.portfolio.errorTitle')}</h2>
+        <p className="text-lg text-slate-600 mb-8 max-w-md">{error || t('visitor.portfolio.errorFallback')}</p>
         <button 
           onClick={() => navigate('/visitante')}
           className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
         >
-          Volver al Listado
+          {t('visitor.portfolio.backToList')}
         </button>
       </div>
     );
@@ -225,12 +227,12 @@ export function VisitantePortafolioPage() {
           <div className="vp-nav__brand">Dev Profile UMSS</div>
         </a>
         <ul className="vp-nav__list">
-          {skills.length > 0 && <li className="vp-nav__item"><a href="#skills">Habilidades</a></li>}
-          {projects.length > 0 && <li className="vp-nav__item"><a href="#projects">Proyectos</a></li>}
-          {timeline.length > 0 && <li className="vp-nav__item"><a href="#trajectory">Trayectoria</a></li>}
-          {hasVisibleContactBlock && <li className="vp-nav__item"><a href="#contact">Contacto</a></li>}
+          {skills.length > 0 && <li className="vp-nav__item"><a href="#skills">{t('visitor.portfolio.skills')}</a></li>}
+          {projects.length > 0 && <li className="vp-nav__item"><a href="#projects">{t('dashboard.sections.projects')}</a></li>}
+          {timeline.length > 0 && <li className="vp-nav__item"><a href="#trajectory">{t('visitor.portfolio.trajectory')}</a></li>}
+          {hasVisibleContactBlock && <li className="vp-nav__item"><a href="#contact">{t('common.contact')}</a></li>}
         </ul>
-        {profile.email ? <a className="vp-nav__cta" href={`mailto:${profile.email}`}>Contactar</a> : <span className="vp-nav__cta" style={{ opacity: 0.65 }}>Perfil publico</span>}
+        {profile.email ? <a className="vp-nav__cta" href={`mailto:${profile.email}`}>{t('visitor.portfolio.contactNow')}</a> : <span className="vp-nav__cta" style={{ opacity: 0.65 }}>{t('visitor.portfolio.publicProfile')}</span>}
       </header>
 
       <FadeInSection>
@@ -238,11 +240,11 @@ export function VisitantePortafolioPage() {
           <div className="vp-hero__info">
             <div className="vp-btn-group" style={{ marginBottom: '20px',marginTop: '-30px' }}>
               <button onClick={() => navigate('/visitante')} className="vp-btn--secondary">
-                Volver al listado
+                {t('visitor.portfolio.backToList')}
               </button>
             </div>
-            <span className="vp-tagline">Disponible para proyectos</span>
-            <h1 className="vp-hero__title">Hola, soy <span>{profile.name}</span></h1>
+            <span className="vp-tagline">{t('visitor.portfolio.available')}</span>
+            <h1 className="vp-hero__title">{t('visitor.portfolio.hello')} <span>{profile.name}</span></h1>
             <p className="vp-subtitle" style={{ fontWeight: 700, color: '#1c2d73' }}>{profile.title}</p>
             <p className="vp-subtitle">{profile.summary}</p>
             {Array.isArray(profile.titleHierarchy) && profile.titleHierarchy.length > 0 ? (
@@ -297,12 +299,12 @@ export function VisitantePortafolioPage() {
       {skills.length > 0 && (
         <FadeInSection>
           <section id="skills" className="vp-section">
-            <h2>Habilidades</h2>
-            <p>Competencias técnicas y blandas con su nivel de dominio.</p>
+            <h2>{t('visitor.portfolio.skills')}</h2>
+            <p>{t('visitor.portfolio.skillsSubtitle')}</p>
 
             {technicalSkills.length > 0 && (
               <>
-                <h3 style={{ textAlign: 'left', color: '#142d60', marginBottom: '14px', fontSize: '22px' }}>Habilidades Técnicas</h3>
+                <h3 style={{ textAlign: 'left', color: '#142d60', marginBottom: '14px', fontSize: '22px' }}>{t('visitor.portfolio.technicalSkills')}</h3>
                 <div className="vp-skills">
                   {technicalSkills.map((skill) => {
                     const progress =
@@ -314,7 +316,7 @@ export function VisitantePortafolioPage() {
                         <h3>{skill.nombre_habilidad}</h3>
                         <p>{skill.nivel_dominio || 'Intermedio'}</p>
                         <div className="vp-skill-card__meta">
-                          <span>Dominio</span>
+                          <span>{t('visitor.portfolio.domain')}</span>
                           <strong>{progress}%</strong>
                         </div>
                         <div className="vp-skill-card__bar">
@@ -338,7 +340,7 @@ export function VisitantePortafolioPage() {
 
             {softSkills.length > 0 && (
               <>
-                <h3 style={{ textAlign: 'left', color: '#142d60', margin: '26px 0 14px', fontSize: '22px' }}>Habilidades Blandas</h3>
+                <h3 style={{ textAlign: 'left', color: '#142d60', margin: '26px 0 14px', fontSize: '22px' }}>{t('visitor.portfolio.softSkills')}</h3>
                 <div className="vp-skills">
                   {softSkills.map((skill) => {
                     const progress =
@@ -350,7 +352,7 @@ export function VisitantePortafolioPage() {
                         <h3>{skill.nombre_habilidad}</h3>
                         <p>{skill.nivel_dominio || 'Intermedio'}</p>
                         <div className="vp-skill-card__meta">
-                          <span>Dominio</span>
+                          <span>{t('visitor.portfolio.domain')}</span>
                           <strong>{progress}%</strong>
                         </div>
                         <div className="vp-skill-card__bar">
@@ -378,8 +380,8 @@ export function VisitantePortafolioPage() {
       {projects.length > 0 && (
         <FadeInSection>
           <section id="projects" className="vp-section">
-            <h2>Proyectos Seleccionados</h2>
-            <p>Una muestra de mis trabajos más recientes y exitosos.</p>
+            <h2>{t('visitor.portfolio.selectedProjects')}</h2>
+            <p>{t('visitor.portfolio.selectedProjectsSubtitle')}</p>
             <div className="vp-projects">
               {projects.map((project) => (
                 <article key={project.id} className="vp-project">
@@ -398,10 +400,10 @@ export function VisitantePortafolioPage() {
                       className="vp-badge"
                       style={{ background: '#3949ff', color: '#fff', border: 'none', cursor: 'pointer' }}
                     >
-                      Ver Proyecto →
+                      {t('visitor.portfolio.viewProject')}
                     </button>
                     {project.repoUrl && (
-                      <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="vp-badge">Repositorio</a>
+                      <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="vp-badge">{t('visitor.portfolio.repository')}</a>
                     )}
                   </div>
                 </article>
@@ -414,8 +416,8 @@ export function VisitantePortafolioPage() {
       {timeline.length > 0 && (
         <FadeInSection>
           <section id="trajectory" className="vp-section">
-            <h2>Trayectoria Profesional</h2>
-            <p>Mi camino y evolución en el mundo de la tecnología.</p>
+            <h2>{t('visitor.portfolio.trajectory')}</h2>
+            <p>{t('visitor.portfolio.trajectorySubtitle')}</p>
             <div className="vp-timeline">
               {timeline.map((item) => (
                 <article key={item.id} className="vp-timeline-item">
@@ -433,10 +435,10 @@ export function VisitantePortafolioPage() {
       {hasVisibleContactBlock && (
         <FadeInSection>
           <section id="contact" className="vp-cta-section">
-            <h3>¿Alguna idea en mente?</h3>
-            <p>Estoy siempre abierto a colaborar en proyectos innovadores. Conectemos por los canales oficiales.</p>
+            <h3>{t('visitor.portfolio.contactCtaTitle')}</h3>
+            <p>{t('visitor.portfolio.contactCtaSubtitle')}</p>
             <div className="vp-cta-buttons">
-              {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">Contactar por Email</a> : null}
+              {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">{t('visitor.portfolio.emailCta')}</a> : null}
               {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
               {config?.mostrar_redes_sociales !== false && linkedinUrl && (
                 <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
@@ -449,7 +451,7 @@ export function VisitantePortafolioPage() {
         </FadeInSection>
       )}
 
-      <footer className="vp-footer">© 2026 Dev Profile UMSS. Todos los derechos reservados.</footer>
+      <footer className="vp-footer">© 2026 Dev Profile UMSS. {t('visitor.portfolio.rights')}</footer>
     </main>
   );
 }

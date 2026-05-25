@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@shared/utils/cn';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 export type DashboardSidebarItem = {
   id: string;
@@ -20,6 +21,7 @@ type DashboardSidebarProps = {
   navItems: DashboardSidebarItem[];
   footer?: ReactNode;
   collapsed?: boolean;
+  mobileDrawer?: boolean;
   onToggleCollapse?: () => void;
   onItemSelect?: (id: string) => void;
 };
@@ -34,9 +36,11 @@ export function DashboardSidebar({
   navItems,
   footer,
   collapsed = false,
+  mobileDrawer = false,
   onToggleCollapse,
   onItemSelect,
 }: DashboardSidebarProps) {
+  const { t } = useI18n();
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
@@ -69,21 +73,24 @@ export function DashboardSidebar({
   return (
     <div
       className={cn(
-        'flex h-full flex-col gap-5 overflow-hidden p-4 sm:p-5',
+        'flex flex-col gap-5 p-4 sm:p-5',
+        mobileDrawer ? 'w-full overflow-visible pb-24' : 'h-full overflow-hidden',
         collapsed && 'items-center px-2 py-4'
       )}
     >
       {collapsed ? (
         <div className="flex w-full flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-            aria-label="Expandir barra lateral"
-            title="Expandir barra lateral"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
+          {onToggleCollapse ? (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+              aria-label={t('common.expandSidebar')}
+              title={t('common.expandSidebar')}
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          ) : null}
 
           {renderAvatar()}
         </div>
@@ -99,15 +106,17 @@ export function DashboardSidebar({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-                aria-label="Colapsar barra lateral"
-                title="Colapsar barra lateral"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
+              {onToggleCollapse ? (
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+                  aria-label={t('common.collapseSidebar')}
+                  title={t('common.collapseSidebar')}
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </button>
+              ) : null}
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm">
@@ -168,7 +177,11 @@ export function DashboardSidebar({
         ))}
       </nav>
 
-      {footer ? <div className={cn('mt-auto w-full', collapsed && 'max-w-[56px]')}>{footer}</div> : null}
+      {footer ? (
+        <div className={cn(mobileDrawer ? 'w-full pt-6' : 'mt-auto w-full', collapsed && 'max-w-[56px]')}>
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ export type DeveloperDashboardPayload = {
     name: string;
     email: string;
     role: string;
+    preferred_language?: string;
   };
   usuario: Record<string, unknown> | null;
   portafolio: Record<string, unknown> | null;
@@ -392,6 +393,28 @@ export async function updateVisibilitySettings(payload: {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Error al guardar la visibilidad del perfil');
+  return res.json();
+}
+
+export async function recordReportExport(payload: {
+  format: 'pdf' | 'word';
+  name: string;
+}) {
+  const token = localStorage.getItem('auth_token');
+  const res = await fetch('/api/developer/reports', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error('Error al registrar la exportación del reporte');
+  }
+
   return res.json();
 }
 

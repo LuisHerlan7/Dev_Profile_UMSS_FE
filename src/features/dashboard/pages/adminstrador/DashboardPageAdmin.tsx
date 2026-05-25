@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
@@ -7,6 +7,7 @@ import {
   Flag,
   LayoutGrid,
   LogOut,
+  Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
@@ -18,10 +19,13 @@ import { DashboardLayout } from '@shared/components/dashboard/DashboardLayout';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { Button } from '@shared/components/ui/Button';
-import { logoutUser, resolveRoleLabel } from '@services/auth';
+import { logoutUser, resolveRoleLabel, updateUserLanguagePreference } from '@services/auth';
 import { fetchAdminDashboard, type AdminDashboardData } from '@services/dashboard';
 import { useAuthSession } from '@shared/hooks/useAuthSession';
 import { fetchAdminEvidences, updateEvidenceStatus, type EvidencePage } from '@services/admin';
+import { useI18n } from '@shared/i18n/I18nProvider';
+import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import type { AppLanguage } from '@shared/i18n/storage';
 
 type AdminSection = 'dashboard' | 'users' | 'moderation' | 'analytics' | 'settings' | 'security';
 
@@ -31,14 +35,16 @@ type SidebarItem = {
   icon: JSX.Element;
 };
 
-const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', label: 'Resumen del Sistema', icon: <LayoutGrid className="h-4 w-4" /> },
-  { id: 'users', label: 'Gestión de Usuarios', icon: <Users className="h-4 w-4" /> },
-  { id: 'moderation', label: 'Moderación de Contenido', icon: <Flag className="h-4 w-4" /> },
-  { id: 'analytics', label: 'Analíticas del Sistema', icon: <ClipboardCheck className="h-4 w-4" /> },
-  { id: 'settings', label: 'Configuración', icon: <Settings className="h-4 w-4" /> },
-  { id: 'security', label: 'Auditoría de Seguridad', icon: <ShieldCheck className="h-4 w-4" /> },
+const sidebarItemDefs: Array<{ id: AdminSection; icon: JSX.Element }> = [
+  { id: 'dashboard', icon: <LayoutGrid className="h-4 w-4" /> },
+  { id: 'users', icon: <Users className="h-4 w-4" /> },
+  { id: 'moderation', icon: <Flag className="h-4 w-4" /> },
+  { id: 'analytics', icon: <ClipboardCheck className="h-4 w-4" /> },
+  { id: 'settings', icon: <Settings className="h-4 w-4" /> },
+  { id: 'security', icon: <ShieldCheck className="h-4 w-4" /> },
 ];
+
+const ADMIN_ROLES = ['admin', 'administrador'];
 
 function clampRatio(value: number, total: number) {
   if (total <= 0) return 0;
@@ -71,8 +77,10 @@ function formatDateLabel(value?: string | null) {
 }
 
 export function DashboardPageAdmin() {
+  const { t, setLanguage, language } = useI18n();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<AdminDashboardData | null>(null);
   const [dashboardError, setDashboardError] = useState('');
   const [evidenceQueue, setEvidenceQueue] = useState<EvidencePage | null>(null);
@@ -81,9 +89,20 @@ export function DashboardPageAdmin() {
   const [evidenceError, setEvidenceError] = useState('');
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const { session, isLoading, error } = useAuthSession({
-    requiredRole: ['admin', 'administrador'],
+    requiredRole: ADMIN_ROLES,
     redirectTo: '/login',
   });
+  const sidebarItems = useMemo<SidebarItem[]>(
+    () => [
+      { ...sidebarItemDefs[0], label: t('admin.sidebar.dashboard') },
+      { ...sidebarItemDefs[1], label: t('admin.sidebar.users') },
+      { ...sidebarItemDefs[2], label: t('admin.sidebar.moderation') },
+      { ...sidebarItemDefs[3], label: t('admin.sidebar.analytics') },
+      { ...sidebarItemDefs[4], label: t('admin.sidebar.settings') },
+      { ...sidebarItemDefs[5], label: t('admin.sidebar.security') },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     const sessionToken = session?.token;
@@ -161,8 +180,17 @@ export function DashboardPageAdmin() {
   };
   const security = dashboardData?.security || [];
 
-  const profileName = session?.user.name || 'Administrador';
-  const profileRole = resolveRoleLabel(session?.user.role);
+  const profileName = session?.user.name || t('admin.role');
+  const profileRole = t('admin.role');
+
+  const handleLanguageChange = async (nextLanguage: AppLanguage) => {
+    setLanguage(nextLanguage);
+    try {
+      await updateUserLanguagePreference(nextLanguage);
+    } catch {
+      // Keep local language even if persistence fails; next dashboard refresh can recover.
+    }
+  };
 
   useEffect(() => {
     const sessionToken = session?.token;
@@ -242,6 +270,8 @@ export function DashboardPageAdmin() {
   return (
     <DashboardLayout
       sidebarCollapsed={isSidebarCollapsed}
+      mobileSidebarOpen={isMobileSidebarOpen}
+      onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
       sidebar={
         <aside className={`flex h-full flex-col gap-6 ${isSidebarCollapsed ? 'items-center px-3 py-4' : 'p-6'}`}>
           <div className={`flex w-full items-start ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -275,7 +305,10 @@ export function DashboardPageAdmin() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => {
+                  setActiveSection(item.id);
+                  setIsMobileSidebarOpen(false);
+                }}
                 title={isSidebarCollapsed ? item.label : undefined}
                 className={`flex w-full items-center rounded-2xl text-sm font-medium transition ${
                   isSidebarCollapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-3'
@@ -321,7 +354,7 @@ export function DashboardPageAdmin() {
               }`}
             >
               <LogOut className="h-4 w-4" />
-              {isSidebarCollapsed ? null : 'Cerrar Sesión'}
+              {isSidebarCollapsed ? null : t('common.logout')}
             </button>
           </div>
         </aside>
@@ -329,6 +362,14 @@ export function DashboardPageAdmin() {
       topbar={
         <div className="flex flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)] lg:hidden"
+              aria-label={t('common.expandSidebar')}
+            >
+              <Menu className="h-4 w-4" />
+            </button>
             <label className="relative w-full max-w-xl">
               <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -362,6 +403,7 @@ export function DashboardPageAdmin() {
             <AdminUserMenu
               name={profileName}
               role={profileRole}
+              onLanguageChange={handleLanguageChange}
               onLogout={async () => {
                 await logoutUser();
                 window.location.assign('/login');
@@ -414,7 +456,12 @@ export function DashboardPageAdmin() {
         <AdminAnalyticsSection stats={stats} system={system} analytics={analytics} />
       ) : null}
       {activeSection === 'settings' ? (
-        <AdminSettingsSection name={profileName} email={session.user.email} />
+        <AdminSettingsSection
+          name={profileName}
+          email={session.user.email}
+          language={language}
+          onLanguageChange={handleLanguageChange}
+        />
       ) : null}
       {activeSection === 'security' ? (
         <AdminSecuritySection events={security} searchQuery={adminSearchQuery} />
@@ -426,12 +473,15 @@ export function DashboardPageAdmin() {
 function AdminUserMenu({
   name,
   role,
+  onLanguageChange,
   onLogout,
 }: {
   name: string;
   role: string;
+  onLanguageChange: (language: AppLanguage) => void | Promise<void>;
   onLogout: () => void;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -457,7 +507,11 @@ function AdminUserMenu({
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-44 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.45)]">
+        <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.45)]">
+          <div className="px-3 py-2">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{t('common.language')}</p>
+            <LanguageSwitcher compact onSelect={onLanguageChange} />
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -466,7 +520,7 @@ function AdminUserMenu({
             }}
             className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
           >
-            Cerrar sesión
+            {t('common.logout')}
           </button>
         </div>
       ) : null}
@@ -931,39 +985,61 @@ function AdminAnalyticsSection({
   );
 }
 
-function AdminSettingsSection({ name, email }: { name: string; email: string }) {
+function AdminSettingsSection({
+  name,
+  email,
+  language,
+  onLanguageChange,
+}: {
+  name: string;
+  email: string;
+  language: AppLanguage;
+  onLanguageChange: (language: AppLanguage) => void | Promise<void>;
+}) {
+  const { t } = useI18n();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Configuración de Perfil</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('admin.settings.title')}</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Gestiona tu información personal, privacidad e integraciones externas.
+          {t('admin.settings.subtitle')}
         </p>
       </div>
 
       <DashboardCard>
         <div className="space-y-6">
           <div className="rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-            <p className="text-sm font-semibold text-slate-900">Información General</p>
+            <p className="text-sm font-semibold text-slate-900">{t('admin.settings.general')}</p>
             <div className="mt-3 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
               <div>
-                <p className="text-xs uppercase text-slate-400">Nombre</p>
+                <p className="text-xs uppercase text-slate-400">{t('admin.settings.name')}</p>
                 <p className="mt-1 font-semibold text-slate-900">{name}</p>
               </div>
               <div>
-                <p className="text-xs uppercase text-slate-400">Correo</p>
+                <p className="text-xs uppercase text-slate-400">{t('admin.settings.email')}</p>
                 <p className="mt-1 font-semibold text-slate-900">{email}</p>
               </div>
             </div>
           </div>
           <div className="rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
-            <p className="text-sm font-semibold text-slate-900">Privacidad y Visibilidad</p>
+            <p className="text-sm font-semibold text-slate-900">{t('admin.settings.privacy')}</p>
             <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
-              <span>Perfil administrativo visible en el sistema</span>
+              <span>{t('admin.settings.privacyHint')}</span>
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
-                Activo
+                {t('admin.settings.active')}
               </span>
             </div>
+          </div>
+          <div className="rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
+            <p className="text-sm font-semibold text-slate-900">{t('admin.settings.language')}</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+              <span>{t('admin.settings.languageHint')}</span>
+              <LanguageSwitcher compact onSelect={onLanguageChange} />
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              {t('admin.settings.currentLanguage', { language: language.toUpperCase() })}
+            </p>
           </div>
         </div>
       </DashboardCard>

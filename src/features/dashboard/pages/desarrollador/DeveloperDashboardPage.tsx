@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -8,6 +8,7 @@ import {
   FolderKanban,
   HelpCircle,
   LayoutDashboard,
+  Menu,
   Settings,
 } from 'lucide-react';
 import {
@@ -24,7 +25,7 @@ import { SettingsSection } from '@features/dashboard/components/SettingsSection'
 import { SidebarVisibilityCard } from '@features/dashboard/components/SidebarVisibilityCard';
 import { EvidenceSection } from '@features/dashboard/components/EvidenceSection';
 import { useAuthSession } from '@shared/hooks/useAuthSession';
-import { logoutUser } from '@services/auth';
+import { logoutUser, persistAuthSession, readStoredAuthSession, updateUserLanguagePreference } from '@services/auth';
 import { fetchDeveloperDashboard } from '@services/dashboard';
 import {
   buildOverviewMetrics,
@@ -41,48 +42,53 @@ import {
   welcomeFirstName,
 } from '@features/dashboard/utils/developerDashboardMappers';
 import { updateProjectVisibility, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
+import { useI18n } from '@shared/i18n/I18nProvider';
+import type { AppLanguage } from '@shared/i18n/storage';
 
 type SectionId = 'overview' | 'projects' | 'evidence' | 'skills' | 'experience' | 'settings';
 
-const baseNavItems: Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }> = [
+const PortfolioReportModal = lazy(() =>
+  import('@features/dashboard/components/PortfolioReportModal').then((module) => ({
+    default: module.PortfolioReportModal,
+  }))
+);
+
+const baseNavItemDefs: Array<{ id: SectionId; icon: JSX.Element }> = [
   {
     id: 'overview',
-    label: 'Informacion General',
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
     id: 'projects',
-    label: 'Proyectos',
     icon: <FolderKanban className="h-4 w-4" />,
   },
   {
     id: 'evidence',
-    label: 'Evidencias',
     icon: <FileText className="h-4 w-4" />,
   },
   {
     id: 'skills',
-    label: 'Habilidades',
     icon: <Code2 className="h-4 w-4" />,
   },
   {
     id: 'experience',
-    label: 'Experiencia',
     icon: <BriefcaseBusiness className="h-4 w-4" />,
   },
   {
     id: 'settings',
-    label: 'Configuracion',
     icon: <Settings className="h-4 w-4" />,
   },
 ];
 
 export function DeveloperDashboardPage() {
+  const { t, setLanguage } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   
   // Usar el nuevo sistema de sesión de dev para estabilidad en redirecciones
   const { session, isLoading: isSessionLoading } = useAuthSession({
@@ -109,9 +115,9 @@ export function DeveloperDashboardPage() {
       }
     } catch (requestError) {
       console.error('Error al cargar dashboard', requestError);
-      setDashboardError(requestError instanceof Error ? requestError.message : 'No se pudo cargar el dashboard.');
+      setDashboardError(requestError instanceof Error ? requestError.message : t('dashboard.errors.dashboardLoad'));
     }
-  }, [session?.token]);
+  }, [session?.token, t]);
 
   useEffect(() => {
     if (session?.token) {
@@ -137,6 +143,28 @@ export function DeveloperDashboardPage() {
     navigate('/nuevo-proyecto');
   };
 
+  const handleLanguageChange = async (language: AppLanguage) => {
+    setLanguage(language);
+
+    const storedSession = readStoredAuthSession();
+    if (storedSession?.user) {
+      persistAuthSession({
+        ...storedSession,
+        user: {
+          ...storedSession.user,
+          preferred_language: language,
+        },
+      });
+    }
+
+    try {
+      await updateUserLanguagePreference(language);
+      await fetchDashboardData();
+    } catch (error) {
+      setDashboardError(error instanceof Error ? error.message : 'No se pudo guardar la preferencia de idioma.');
+    }
+  };
+
   const handleToggleVisibility = async (projectId: string) => {
     const targetProject = projects.find((project) => project.id === projectId);
     if (!targetProject) return;
@@ -159,7 +187,7 @@ export function DeveloperDashboardPage() {
         )
       );
       setDashboardError(
-        error instanceof Error ? error.message : 'No se pudo actualizar la visibilidad del proyecto.'
+        error instanceof Error ? error.message : t('dashboard.errors.projectVisibility')
       );
     }
   };
@@ -182,6 +210,17 @@ export function DeveloperDashboardPage() {
   const completionPercentage = dashboardData ? estimateProfileCompletion(dashboardData) : 0;
   const firstName = dashboardData ? welcomeFirstName(dashboardData) : (session?.user?.name?.split(' ')[0] || 'desarrollador');
   const experienceRecords = dashboardData ? mapExperienciaYFormacion(dashboardData.experiencias || dashboardData.experience || [], dashboardData.formaciones || []) : [];
+  const baseNavItems = useMemo<Array<Omit<DashboardSidebarItem, 'active'> & { id: SectionId }>>(
+    () => [
+      { ...baseNavItemDefs[0], label: t('dashboard.sections.overview') },
+      { ...baseNavItemDefs[1], label: t('dashboard.sections.projects') },
+      { ...baseNavItemDefs[2], label: t('dashboard.sections.evidence') },
+      { ...baseNavItemDefs[3], label: t('dashboard.sections.skills') },
+      { ...baseNavItemDefs[4], label: t('dashboard.sections.experience') },
+      { ...baseNavItemDefs[5], label: t('dashboard.sections.settings') },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     if (visibilitySettings) {
@@ -196,7 +235,7 @@ export function DeveloperDashboardPage() {
       label: p.title,
       sublabel: p.subtitle || p.tags.join(', '),
       section: 'projects' as const,
-      sectionLabel: 'Proyectos',
+      sectionLabel: t('dashboard.sections.projects'),
       elementId: `project-card-${p.id}`,
     })),
     ...technicalAndSoft.technical.map((s) => ({
@@ -204,7 +243,7 @@ export function DeveloperDashboardPage() {
       label: s.name,
       sublabel: s.level,
       section: 'skills' as const,
-      sectionLabel: 'Habilidades',
+      sectionLabel: t('dashboard.sections.skills'),
       elementId: `skill-${s.id}`,
     })),
     ...experienceRecords.map((e) => ({
@@ -212,7 +251,7 @@ export function DeveloperDashboardPage() {
       label: e.title,
       sublabel: e.recordType,
       section: 'experience' as const,
-      sectionLabel: 'Experiencia',
+      sectionLabel: t('dashboard.sections.experience'),
       elementId: `experience-${e.id}`,
     })),
   ];
@@ -233,9 +272,14 @@ export function DeveloperDashboardPage() {
     }
   };
 
-  const sectionLabels = Object.fromEntries(
-    (session?.dashboard?.sections || []).map((section: any) => [section.id, section.label])
-  );
+  const sectionLabels = {
+    overview: t('dashboard.sections.overview'),
+    projects: t('dashboard.sections.projects'),
+    evidence: t('dashboard.sections.evidence'),
+    skills: t('dashboard.sections.skills'),
+    experience: t('dashboard.sections.experience'),
+    settings: t('dashboard.sections.settings'),
+  };
 
   const navItems = baseNavItems.map((item) => ({
     ...item,
@@ -247,8 +291,8 @@ export function DeveloperDashboardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--umss-surface)] p-6">
         <div className="w-full max-w-xl rounded-[28px] border border-[var(--umss-border)] bg-white p-6 text-center shadow-[0_18px_40_rgba(15,23,42,0.28)]">
-          <p className="text-sm font-semibold text-[var(--umss-brand)]">Cargando dashboard</p>
-          <p className="mt-2 text-sm text-slate-600">Preparando tu panel de desarrollador...</p>
+          <p className="text-sm font-semibold text-[var(--umss-brand)]">{t('dashboard.loadingTitle')}</p>
+          <p className="mt-2 text-sm text-slate-600">{t('dashboard.loadingSubtitle')}</p>
         </div>
       </div>
     );
@@ -259,18 +303,23 @@ export function DeveloperDashboardPage() {
   return (
     <DashboardLayout
       sidebarCollapsed={isSidebarCollapsed}
+      mobileSidebarOpen={isMobileSidebarOpen}
+      onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
       sidebar={
         <DashboardSidebar
-          brand="Perfil Dev UMSS"
-          subtitle={session.dashboard?.title || "Panel del desarrollador"}
+          brand={t('dashboard.brand')}
+          subtitle={t('dashboard.subtitle')}
           profileName={profileName}
           profileRole={profileRole}
           profileImageUrl={profileAvatar}
-          profileBadge={session.dashboard?.profile_badge || "perfil activo"}
+          profileBadge={t('dashboard.badge')}
           navItems={navItems}
           collapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
-          onItemSelect={(id) => setActiveSection(id as SectionId)}
+          onItemSelect={(id) => {
+            setActiveSection(id as SectionId);
+            setIsMobileSidebarOpen(false);
+          }}
           footer={
           <SidebarVisibilityCard
               collapsed={isSidebarCollapsed}
@@ -296,7 +345,7 @@ export function DeveloperDashboardPage() {
                 } catch (error) {
                   setIsPublicProfile(!nextPublicState);
                   setDashboardError(
-                    error instanceof Error ? error.message : 'No se pudo cambiar la visibilidad del perfil.'
+                    error instanceof Error ? error.message : t('dashboard.errors.profileVisibility')
                   );
                 }
               }}
@@ -306,12 +355,13 @@ export function DeveloperDashboardPage() {
       }
       topbar={
         <DashboardTopbar
-          searchPlaceholder="Buscar proyectos, habilidades..."
+          searchPlaceholder={t('dashboard.searchPlaceholder')}
           profileName={profileName}
           profileRole={profileRole}
           profileImageUrl={profileAvatar}
           searchIndex={searchIndex}
           onNavigate={handleGlobalNavigate}
+          onLanguageChange={handleLanguageChange}
           onLogout={async () => {
             await logoutUser();
             window.location.assign('/login');
@@ -320,15 +370,23 @@ export function DeveloperDashboardPage() {
             <>
               <button
                 type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)] lg:hidden"
+                aria-label={t('common.expandSidebar')}
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-                aria-label="Notificaciones"
+                aria-label={t('dashboard.notifications')}
               >
                 <Bell className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-                aria-label="Ayuda"
+                aria-label={t('dashboard.help')}
               >
                 <HelpCircle className="h-4 w-4" />
               </button>
@@ -347,7 +405,7 @@ export function DeveloperDashboardPage() {
         <OverviewSection
           firstName={firstName}
           completionPercentage={dashboardData?.profile?.completion ?? completionPercentage}
-          nextStep={dashboardData?.profile?.next_step ?? 'Completa tu perfil para destacar mas.'}
+          nextStep={dashboardData?.profile?.next_step ?? t('dashboard.overview.completeHint')}
           metrics={overviewMetrics}
           recentProjects={recentProjects}
           topSkills={topSkills}
@@ -357,6 +415,7 @@ export function DeveloperDashboardPage() {
           roleHierarchy={settingsProfile?.roleHierarchy ?? []}
           onOpenProjects={() => setActiveSection('projects')}
           onOpenProjectForm={handleOpenProjectForm}
+          onOpenReport={() => setIsReportModalOpen(true)}
           onOpenSkills={() => setActiveSection('skills')}
           onOpenSettings={() => setActiveSection('settings')}
         />
@@ -422,6 +481,14 @@ export function DeveloperDashboardPage() {
           setPendingAvatarFile={setPendingAvatarFile}
         />
       )}
+
+      <Suspense fallback={null}>
+        <PortfolioReportModal
+          open={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          dashboardData={dashboardData}
+        />
+      </Suspense>
     </DashboardLayout>
   );
 }

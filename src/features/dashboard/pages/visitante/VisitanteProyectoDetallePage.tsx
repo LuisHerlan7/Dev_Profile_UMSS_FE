@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, FileText, FolderOpen, Github, Link as LinkIcon } from 'lucide-react';
 import { fetchPublicProjectDetail } from '@features/dashboard/api/developerDashboard';
 import { renderMarkdownToHtml } from '@shared/utils/markdown';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 type PublicProjectResponse = {
   project: {
@@ -42,6 +43,7 @@ type PublicProjectResponse = {
 };
 
 export function VisitanteProyectoDetallePage() {
+  const { t } = useI18n();
   const { portfolioId, projectId } = useParams<{ portfolioId: string; projectId: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<PublicProjectResponse | null>(null);
@@ -51,7 +53,7 @@ export function VisitanteProyectoDetallePage() {
   useEffect(() => {
     async function load() {
       if (!portfolioId || !projectId) {
-        setError('Proyecto no proporcionado.');
+        setError(t('visitor.project.missing'));
         setIsLoading(false);
         return;
       }
@@ -78,7 +80,7 @@ export function VisitanteProyectoDetallePage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm font-semibold text-slate-500">Cargando proyecto...</p>
+        <p className="text-sm font-semibold text-slate-500">{t('visitor.project.loading')}</p>
       </div>
     );
   }
@@ -87,14 +89,14 @@ export function VisitanteProyectoDetallePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <div className="max-w-md text-center">
-          <h2 className="text-2xl font-bold text-slate-900">No se pudo abrir el proyecto</h2>
-          <p className="mt-3 text-sm text-slate-500">{error || 'Proyecto no encontrado.'}</p>
+          <h2 className="text-2xl font-bold text-slate-900">{t('visitor.project.errorTitle')}</h2>
+          <p className="mt-3 text-sm text-slate-500">{error || t('visitor.project.notFound')}</p>
           <button
             type="button"
             onClick={() => navigate(`/portafolio/${portfolioId}`)}
             className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white"
           >
-            Volver al portafolio
+            {t('visitor.project.backToPortfolio')}
           </button>
         </div>
       </div>
@@ -113,7 +115,7 @@ export function VisitanteProyectoDetallePage() {
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver al portafolio
+            {t('visitor.project.backToPortfolio')}
           </button>
 
           <div className="flex flex-wrap gap-3">
@@ -125,7 +127,7 @@ export function VisitanteProyectoDetallePage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
               >
                 <ExternalLink className="h-4 w-4" />
-                Abrir demo
+                {t('visitor.project.openDemo')}
               </a>
             ) : null}
             {project.repoUrl ? (
@@ -136,7 +138,7 @@ export function VisitanteProyectoDetallePage() {
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 <Github className="h-4 w-4" />
-                Repositorio
+                {t('visitor.project.repository')}
               </a>
             ) : null}
           </div>
@@ -160,7 +162,7 @@ export function VisitanteProyectoDetallePage() {
           <section className="rounded-[28px] border border-slate-200 bg-white p-8 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <FileText className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-lg font-bold text-slate-900">Descripcion del proyecto</h2>
+              <h2 className="text-lg font-bold text-slate-900">{t('visitor.project.description')}</h2>
             </div>
 
             {project.description ? (
@@ -169,13 +171,13 @@ export function VisitanteProyectoDetallePage() {
                 dangerouslySetInnerHTML={{ __html: markdownHtml }}
               />
             ) : (
-              <p className="text-sm text-slate-500">No hay documentacion detallada disponible para este proyecto.</p>
+              <p className="text-sm text-slate-500">{t('visitor.project.noDocumentation')}</p>
             )}
           </section>
 
           <aside className="space-y-6">
             <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Desarrollador</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">{t('visitor.project.developer')}</p>
               <h3 className="mt-3 text-xl font-bold text-slate-900">{owner.name}</h3>
               <p className="mt-1 text-sm font-medium text-indigo-600">{owner.title}</p>
               <p className="mt-4 text-sm text-slate-500">{owner.summary}</p>
@@ -184,7 +186,7 @@ export function VisitanteProyectoDetallePage() {
             <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3">
                 <FolderOpen className="h-5 w-5 text-indigo-500" />
-                <h3 className="text-base font-bold text-slate-900">Evidencias</h3>
+                <h3 className="text-base font-bold text-slate-900">{t('visitor.project.evidences')}</h3>
               </div>
 
               {project.evidences.length > 0 ? (
@@ -203,7 +205,7 @@ export function VisitanteProyectoDetallePage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">Este proyecto aun no tiene evidencias publicas.</p>
+                <p className="text-sm text-slate-500">{t('visitor.project.noEvidences')}</p>
               )}
             </section>
           </aside>

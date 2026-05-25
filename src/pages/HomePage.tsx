@@ -5,6 +5,7 @@ import { FadeInSection } from './home/components/FadeInSection';
 import { HeroMock } from './home/components/HeroMock';
 import { BenefitCard } from './home/components/BenefitCard';
 import { StepItem } from './home/components/StepItem';
+import { useI18n } from '@shared/i18n/I18nProvider';
 
 function IconStack() {
   return (
@@ -88,6 +89,8 @@ function IconGitHub() {
 }
 
 export function HomePage() {
+  const { t } = useI18n();
+
   return (
     <div className="min-h-dvh bg-[#F9FAFB]">
       <Navbar />
@@ -105,33 +108,32 @@ export function HomePage() {
               <FadeInSection>
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-[#6C63FF]" />
-                  EXCLUSIVO PARA LA COMUNIDAD UMSS
+                  {t('home.badge')}
                 </div>
 
                 <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                  Crea tu portafolio digital de{' '}
-                  <span className="text-[#6C63FF]">proyectos de software</span>
+                  {t('home.titleStart')}{' '}
+                  <span className="text-[#6C63FF]">{t('home.titleAccent')}</span>
                 </h1>
 
                 <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-                  La plataforma definitiva para desarrolladores UMSS: automatiza tu portafolio
-                  y destaca en el mercado global.
+                  {t('home.subtitle')}
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <Link to="/register">
-                    <Button className="w-full sm:w-auto">Empezar</Button>
+                    <Button className="w-full sm:w-auto">{t('home.start')}</Button>
                   </Link>
                   <Link to="/visitante">
                     <Button variant="secondary" className="w-full sm:w-auto">
-                      Ver directorio
+                      {t('home.viewDirectory')}
                     </Button>
                   </Link>
                 </div>
 
                 <p className="mt-4 text-sm text-slate-500">
-                  Únete a más de <span className="font-semibold text-slate-700">500</span>{' '}
-                  estudiantes activos
+                  {t('home.activeStudentsPrefix')} <span className="font-semibold text-slate-700">500</span>{' '}
+                  {t('home.activeStudentsSuffix')}
                 </p>
               </FadeInSection>
 
@@ -147,11 +149,10 @@ export function HomePage() {
           <FadeInSection>
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                ¿Por qué elegir Dev Profile UMSS?
+                {t('home.whyTitle')}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-slate-600">
-                Diseñado específicamente para la comunidad tecnológica de San Simón,
-                ofreciendo herramientas de nivel profesional.
+                {t('home.whySubtitle')}
               </p>
             </div>
           </FadeInSection>
@@ -159,22 +160,22 @@ export function HomePage() {
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             <FadeInSection>
               <BenefitCard
-                title="Centralización"
-                description="Todos tus proyectos, certificados y habilidades en un solo lugar."
+                title={t('home.benefits.centralization.title')}
+                description={t('home.benefits.centralization.description')}
                 icon={<IconStack />}
               />
             </FadeInSection>
             <FadeInSection>
               <BenefitCard
-                title="Visibilidad"
-                description="Conecta con reclutadores y empresas a nivel local e internacional."
+                title={t('home.benefits.visibility.title')}
+                description={t('home.benefits.visibility.description')}
                 icon={<IconGlobe />}
               />
             </FadeInSection>
             <FadeInSection>
               <BenefitCard
-                title="Integración con GitHub"
-                description="Sincroniza tus repositorios automáticamente y mantén tu perfil actualizado."
+                title={t('home.benefits.github.title')}
+                description={t('home.benefits.github.description')}
                 icon={<IconGitHub />}
               />
             </FadeInSection>
@@ -187,7 +188,7 @@ export function HomePage() {
             <FadeInSection>
               <div className="mx-auto max-w-2xl text-center">
                 <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                  Tu carrera en tres pasos
+                  {t('home.stepsTitle')}
                 </h2>
               </div>
             </FadeInSection>
@@ -196,22 +197,22 @@ export function HomePage() {
               <FadeInSection>
                 <StepItem
                   number={1}
-                  title="Registro institucional"
-                  description="Valida tu identidad con tu correo UMSS."
+                  title={t('home.steps.registration.title')}
+                  description={t('home.steps.registration.description')}
                 />
               </FadeInSection>
               <FadeInSection>
                 <StepItem
                   number={2}
-                  title="Sincronización con GitHub"
-                  description="Conecta tu cuenta para importar proyectos automáticamente."
+                  title={t('home.steps.github.title')}
+                  description={t('home.steps.github.description')}
                 />
               </FadeInSection>
               <FadeInSection>
                 <StepItem
                   number={3}
-                  title="Comparte tu perfil"
-                  description="Personaliza tu portafolio y compártelo con empresas."
+                  title={t('home.steps.share.title')}
+                  description={t('home.steps.share.description')}
                 />
               </FadeInSection>
             </div>
@@ -221,19 +222,19 @@ export function HomePage() {
                 <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-                      ¿Listo para construir tu portafolio?
+                      {t('home.ctaTitle')}
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Empieza en minutos y mantén todo sincronizado automáticamente.
+                      {t('home.ctaSubtitle')}
                     </p>
                   </div>
                   <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                     <Link to="/register" className="w-full sm:w-auto">
-                      <Button className="w-full sm:w-auto">Registrarse</Button>
+                      <Button className="w-full sm:w-auto">{t('common.register')}</Button>
                     </Link>
                     <Link to="/login" className="w-full sm:w-auto">
                       <Button variant="secondary" className="w-full sm:w-auto">
-                        Iniciar sesión
+                        {t('common.login')}
                       </Button>
                     </Link>
                   </div>
@@ -247,11 +248,10 @@ export function HomePage() {
           <div className="container-page py-10">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">Dev Profile UMSS</span> · Hecho
-                para la comunidad UMSS
+                <span className="font-semibold text-slate-900">{t('common.appName')}</span> · {t('home.footerMadeFor')}
               </div>
               <div className="text-sm text-slate-500">
-                © {new Date().getFullYear()} Dev Profile UMSS
+                © {new Date().getFullYear()} {t('common.appName')}
               </div>
             </div>
           </div>

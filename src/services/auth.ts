@@ -1,3 +1,5 @@
+import { persistStoredLanguage } from '@shared/i18n/storage';
+
 export type UserRole = 'desarrollador' | 'visitante' | 'admin' | 'administrador' | string;
 
 export type AuthUser = {
@@ -7,6 +9,7 @@ export type AuthUser = {
   role: UserRole;
   avatar?: string | null;
   provider?: string | null;
+  preferred_language?: 'es' | 'en' | string | null;
 };
 
 export type DashboardSection = {
@@ -142,6 +145,10 @@ export function persistAuthSession(session: AuthSession) {
 
   storage.setItem(USER_STORAGE_KEY, JSON.stringify(session.user));
 
+  if (session.user.preferred_language === 'es' || session.user.preferred_language === 'en') {
+    persistStoredLanguage(session.user.preferred_language);
+  }
+
   if (session.dashboard) {
     storage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(session.dashboard));
   }
@@ -233,6 +240,42 @@ export async function logoutUser(token = getStoredAuthToken()) {
   } finally {
     clearStoredAuthSession();
   }
+}
+
+export async function updateUserLanguagePreference(language: 'es' | 'en', token = getStoredAuthToken()) {
+  if (!token) {
+    throw new Error('No existe una sesión activa.');
+  }
+
+  const response = await fetch(buildApiUrl('/api/auth/language'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ language }),
+  });
+
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(data, 'No se pudo actualizar el idioma.'));
+  }
+
+  const storedSession = readStoredAuthSession();
+  if (storedSession?.user) {
+    persistAuthSession({
+      ...storedSession,
+      user: {
+        ...storedSession.user,
+        preferred_language: language,
+      },
+    });
+    window.dispatchEvent(new Event('app-language-sync'));
+  }
+
+  return data;
 }
 
 export async function fetchDashboardSession(token = getStoredAuthToken()) {
