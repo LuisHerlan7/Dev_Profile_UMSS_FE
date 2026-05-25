@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* ========================================
+   Light mode (default)
+======================================== */
 :root {
   --umss-brand: #5048e5;
   --umss-lavender: #f0f0ff;
@@ -9,6 +12,48 @@
   --umss-danger: #ef4444;
   --umss-warning: #f59e0b;
   --umss-success: #10b981;
+
+  /* Dark mode tokens (light values) */
+  --dm-bg: #ffffff;
+  --dm-surface: #f9fafc;
+  --dm-surface-2: #f1f5f9;
+  --dm-border: #e5e7eb;
+  --dm-text-primary: #0f172a;
+  --dm-text-secondary: #64748b;
+  --dm-text-muted: #94a3b8;
+  --dm-card: #ffffff;
+  --dm-input: #ffffff;
+  --dm-hover: #f8fafc;
+  --dm-topbar: rgba(255, 255, 255, 0.9);
+  --dm-sidebar: #ffffff;
+  --dm-dropdown: #ffffff;
+  --dm-shadow: rgba(15, 23, 42, 0.45);
+  --dm-overlay: rgba(15, 23, 42, 0.45);
+}
+
+/* ========================================
+   Dark mode — activado añadiendo .dark al <html>
+======================================== */
+.dark {
+  --umss-lavender: rgba(80, 72, 229, 0.15);
+  --umss-surface: #0f172a;
+  --umss-border: #1e293b;
+
+  --dm-bg: #0f172a;
+  --dm-surface: #0f172a;
+  --dm-surface-2: #1e293b;
+  --dm-border: #334155;
+  --dm-text-primary: #f1f5f9;
+  --dm-text-secondary: #94a3b8;
+  --dm-text-muted: #64748b;
+  --dm-card: #1e293b;
+  --dm-input: #1e293b;
+  --dm-hover: #263040;
+  --dm-topbar: rgba(15, 23, 42, 0.92);
+  --dm-sidebar: #1e293b;
+  --dm-dropdown: #1e293b;
+  --dm-shadow: rgba(0, 0, 0, 0.7);
+  --dm-overlay: rgba(0, 0, 0, 0.6);
 }
 
 @layer base {
@@ -18,11 +63,26 @@
   }
 
   body {
-    @apply text-slate-900 antialiased;
+    @apply antialiased;
+    color: var(--dm-text-primary);
+    background-color: var(--dm-bg);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Light body gradient */
+  html:not(.dark) body {
     background:
       radial-gradient(circle at top left, rgba(240, 240, 255, 0.9), transparent 22%),
       radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 24%),
       var(--umss-surface);
+  }
+
+  /* Dark body gradient */
+  html.dark body {
+    background:
+      radial-gradient(circle at top left, rgba(80, 72, 229, 0.08), transparent 22%),
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.04), transparent 24%),
+      var(--dm-bg);
   }
 }
 
@@ -30,11 +90,26 @@
   .container-page {
     @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
   }
+
+  /* ---- Dark mode helpers usados en componentes ---- */
+  .dm-bg          { background-color: var(--dm-bg); }
+  .dm-surface     { background-color: var(--dm-surface); }
+  .dm-surface-2   { background-color: var(--dm-surface-2); }
+  .dm-card        { background-color: var(--dm-card); }
+  .dm-border      { border-color: var(--dm-border); }
+  .dm-text        { color: var(--dm-text-primary); }
+  .dm-text-sec    { color: var(--dm-text-secondary); }
+  .dm-text-muted  { color: var(--dm-text-muted); }
+  .dm-input       { background-color: var(--dm-input); }
+  .dm-hover:hover { background-color: var(--dm-hover); }
+  .dm-sidebar     { background-color: var(--dm-sidebar); }
+  .dm-topbar      { background-color: var(--dm-topbar); }
+  .dm-dropdown    { background-color: var(--dm-dropdown); }
 }
 
 /* Custom date picker styles */
 .date-input-custom {
-  cursor: text; /* Allow text cursor for manual input */
+  cursor: text;
 }
 
 /* Enhanced calendar icon styling */
@@ -61,5 +136,247 @@ input[type="text"] + button {
   background: none;
   border: none;
   outline: none;
+}
+
+/* ================================================
+   Dark mode overrides — sobrescriben bg-white,
+   border-slate-*, text-slate-* de Tailwind
+   sin tocar clases que no necesiten cambiar
+================================================ */
+.dark .bg-white {
+  background-color: var(--dm-card) !important;
+}
+
+.dark .bg-white\/70,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: color-mix(in srgb, var(--dm-card) 90%, transparent) !important;
+}
+
+.dark .border-slate-200,
+.dark .border-slate-200\/70 {
+  border-color: var(--dm-border) !important;
+}
+
+.dark .text-slate-900 {
+  color: var(--dm-text-primary) !important;
+}
+
+.dark .text-slate-700 {
+  color: var(--dm-text-secondary) !important;
+}
+
+.dark .text-slate-600 {
+  color: var(--dm-text-secondary) !important;
+}
+
+.dark .text-slate-500 {
+  color: var(--dm-text-muted) !important;
+}
+
+.dark .text-slate-400 {
+  color: #475569 !important;
+}
+
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-50:hover {
+  background-color: var(--dm-hover) !important;
+}
+
+.dark .hover\:text-slate-900:hover {
+  color: var(--dm-text-primary) !important;
+}
+
+.dark [class*="bg-\[var(--umss-surface)\]"] {
+  background-color: var(--dm-surface-2) !important;
+}
+
+.dark .backdrop-blur,
+.dark .backdrop-blur-md,
+.dark .backdrop-blur-xl {
+  backdrop-filter: blur(12px);
+}
+
+/* Inputs y search en dark */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--dm-input) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border) !important;
+}
+
+/* Placeholder en dark */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--dm-text-muted) !important;
+}
+
+/* Dropdown menus en dark */
+.dark [role="menu"] {
+  background-color: var(--dm-dropdown) !important;
+  border-color: var(--dm-border) !important;
+}
+
+/* ====================================================
+   Overrides más específicos — Dark Mode
+   Apuntan a bg-slate-*, bg-indigo-*, border-* usados
+   en EvidenceSection, SkillsSection, etc.
+==================================================== */
+
+/* bg-slate-50 y bg-slate-100 en dark */
+.dark .bg-slate-50,
+.dark .bg-slate-100 {
+  background-color: var(--dm-surface-2) !important;
+}
+
+/* bg-indigo-50/20 — drop zone background */
+.dark .bg-indigo-50\/20,
+.dark .bg-indigo-50\/10 {
+  background-color: rgba(80, 72, 229, 0.06) !important;
+}
+
+/* Borders indigo en dark */
+.dark .border-indigo-100,
+.dark .border-slate-100 {
+  border-color: var(--dm-border) !important;
+}
+
+/* Textos especiales en dark */
+.dark .text-slate-800 {
+  color: var(--dm-text-primary) !important;
+}
+
+/* focus dentro de contenedores search dark */
+.dark .focus-within\:bg-white:focus-within {
+  background-color: var(--dm-surface-2) !important;
+}
+
+/* File input custom styles en dark */
+.dark input[type="file"] {
+  color: var(--dm-text-secondary) !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+.dark input[type="file"]::file-selector-button {
+  background-color: var(--umss-brand) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 8px 18px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.dark input[type="file"]::file-selector-button:hover {
+  background-color: #4338ca !important;
+}
+
+/* Article cards en evidencia — bg-white inline */
+.dark article.group {
+  background-color: var(--dm-surface-2) !important;
+  border-color: var(--dm-border) !important;
+}
+
+.dark article.group:hover {
+  box-shadow: 0 20px 60px -20px rgba(80, 72, 229, 0.25) !important;
+}
+
+/* Hover en botón edit dentro de card en dark */
+.dark article.group button.hover\:bg-indigo-50:hover {
+  background-color: rgba(80, 72, 229, 0.1) !important;
+}
+
+/* Icono de tipo evidencia en dark */
+.dark article.group .bg-slate-50 {
+  background-color: rgba(80, 72, 229, 0.08) !important;
+}
+
+/* Estado items en evidence legend */
+.dark .border-slate-100.bg-white {
+  background-color: var(--dm-surface-2) !important;
+  border-color: var(--dm-border) !important;
+}
+
+/* Badge inactivo en dark */
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+
+/* Modal overlay en dark (ya es oscuro, solo mejoramos el card) */
+.dark .bg-slate-900\/60 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Select options en dark */
+.dark select option {
+  background-color: var(--dm-input) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* Input bg-slate-50 (edit modal) */
+.dark input.bg-slate-50,
+.dark input.bg-slate-100 {
+  background-color: var(--dm-surface-2) !important;
+  color: var(--dm-text-primary) !important;
+}
+
+/* Div readOnly en dark (status display) */
+.dark .flex.h-12.items-center.rounded-2xl.border {
+  background-color: var(--dm-surface-2) !important;
+  border-color: var(--dm-border) !important;
+  color: var(--dm-text-secondary) !important;
+}
+
+/* Search container en repositorio */
+.dark .focus-within\:ring-indigo-50:focus-within {
+  --tw-ring-color: rgba(80, 72, 229, 0.2) !important;
+}
+
+/* Hover de items en busqueda dropdown */
+.dark .hover\:bg-\[var\(--umss-surface\)\]:hover {
+  background-color: var(--dm-hover) !important;
+}
+
+/* Empty state folder icon */
+.dark .bg-slate-50.text-slate-200 {
+  background-color: var(--dm-surface-2) !important;
+  color: var(--dm-text-muted) !important;
+}
+
+/* Sidebar visibility card */
+.dark .bg-\[var\(--umss-lavender\)\] {
+  background-color: rgba(80, 72, 229, 0.15) !important;
+}
+
+/* Navbar (modo visitante) dark */
+.dark header.sticky {
+  background-color: var(--dm-topbar) !important;
+  border-color: var(--dm-border) !important;
+}
+
+/* Transition suave al cambiar tema */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Excluir animaciones de svg de la transición global */
+svg *,
+.no-theme-transition * {
+  transition-property: none !important;
 }
 
