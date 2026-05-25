@@ -274,6 +274,19 @@ export function PortfolioReportModal({
   const [previewReady, setPreviewReady] = useState(false);
   const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+    };
+  }, [open]);
+
   const profile = useMemo<ReportProfile | null>(() => {
     if (!dashboardData) {
       return null;
@@ -423,24 +436,52 @@ export function PortfolioReportModal({
       windowHeight: exportNode.scrollHeight,
     });
 
-    const imageData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const imageWidth = pageWidth - 28;
-    const imageHeight = (canvas.height * imageWidth) / canvas.width;
+    const margin = 24;
+    const innerWidth = pageWidth - margin * 2;
+    const innerHeight = pageHeight - margin * 2;
+    const sliceHeight = Math.floor((innerHeight * canvas.width) / innerWidth);
 
-    let heightLeft = imageHeight;
-    let position = 14;
+    let offsetY = 0;
+    let pageIndex = 0;
 
-    pdf.addImage(imageData, 'PNG', 14, position, imageWidth, imageHeight, undefined, 'FAST');
-    heightLeft -= pageHeight - 28;
+    while (offsetY < canvas.height) {
+      const currentSliceHeight = Math.min(sliceHeight, canvas.height - offsetY);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = currentSliceHeight;
 
-    while (heightLeft > 0) {
-      position = heightLeft - imageHeight + 14;
-      pdf.addPage();
-      pdf.addImage(imageData, 'PNG', 14, position, imageWidth, imageHeight, undefined, 'FAST');
-      heightLeft -= pageHeight - 28;
+      const pageContext = pageCanvas.getContext('2d');
+      if (!pageContext) {
+        throw new Error('No se pudo preparar una página del PDF.');
+      }
+
+      pageContext.fillStyle = '#edf3ff';
+      pageContext.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      pageContext.drawImage(
+        canvas,
+        0,
+        offsetY,
+        canvas.width,
+        currentSliceHeight,
+        0,
+        0,
+        canvas.width,
+        currentSliceHeight
+      );
+
+      const pageImage = pageCanvas.toDataURL('image/png');
+      const renderedHeight = (currentSliceHeight * innerWidth) / canvas.width;
+
+      if (pageIndex > 0) {
+        pdf.addPage();
+      }
+
+      pdf.addImage(pageImage, 'PNG', margin, margin, innerWidth, renderedHeight, undefined, 'FAST');
+      offsetY += currentSliceHeight;
+      pageIndex += 1;
     }
 
     pdf.save(`${reportName}.pdf`);
@@ -473,7 +514,10 @@ export function PortfolioReportModal({
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
-      <div className="flex h-[min(92vh,900px)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/30 bg-white shadow-[0_40px_120px_-36px_rgba(15,23,42,0.55)]">
+      <div
+        className="flex h-[min(92vh,920px)] w-full max-w-6xl flex-col overflow-hidden rounded-[30px] border border-white/30 bg-white shadow-[0_40px_120px_-36px_rgba(15,23,42,0.55)]"
+        onWheel={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--umss-border)] px-6 py-5">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--umss-brand)]">
@@ -493,8 +537,8 @@ export function PortfolioReportModal({
           </button>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[280px,minmax(0,1fr)]">
-          <aside className="border-b border-[var(--umss-border)] bg-[linear-gradient(180deg,rgba(248,250,255,0.98),rgba(255,255,255,0.98))] px-6 py-6 lg:border-r lg:border-b-0">
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(280px,0.34fr)_minmax(0,0.66fr)]">
+          <aside className="overflow-y-auto border-b border-[var(--umss-border)] bg-[linear-gradient(180deg,rgba(248,250,255,0.98),rgba(255,255,255,0.98))] px-5 py-5 lg:border-r lg:border-b-0 lg:px-6 lg:py-6">
             <div className="rounded-[28px] border border-[var(--umss-border)] bg-white p-5 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.35)]">
               <div className="flex items-start gap-3">
                 <div className="rounded-2xl bg-[var(--umss-lavender)] p-3 text-[var(--umss-brand)]">
@@ -515,11 +559,11 @@ export function PortfolioReportModal({
                     key={option.value}
                     type="button"
                     onClick={() => setFormat(option.value)}
-                    className={`w-full rounded-3xl border p-4 text-left transition ${
+                    className={`rounded-3xl border p-4 text-left transition ${
                       format === option.value
                         ? 'border-[var(--umss-brand)] bg-[var(--umss-lavender)] shadow-[0_12px_24px_-20px_rgba(80,72,229,0.9)]'
                         : 'border-[var(--umss-border)] bg-white hover:border-[rgba(80,72,229,0.3)]'
-                    }`}
+                    } w-full`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-white/80 p-2 text-[var(--umss-brand)] shadow-sm">{option.icon}</div>
@@ -546,14 +590,14 @@ export function PortfolioReportModal({
             </div>
           </aside>
 
-          <div className="min-h-0 overflow-auto bg-[linear-gradient(180deg,#f4f7ff_0%,#eef3ff_100%)] px-4 py-6 sm:px-6">
+          <div className="min-h-0 overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,#f4f7ff_0%,#eef3ff_100%)] px-4 py-5 sm:px-6 lg:px-7">
             <div className="overflow-hidden rounded-[28px] border border-[var(--umss-border)] bg-white shadow-[0_24px_60px_-40px_rgba(15,23,42,0.35)]">
               <iframe
                 ref={previewFrameRef}
                 title={t('dashboard.report.preview')}
                 srcDoc={fullDocument}
                 onLoad={() => setPreviewReady(true)}
-                className="h-[920px] w-full bg-[#edf3ff]"
+                className="h-[66vh] min-h-[520px] w-full bg-[#edf3ff] lg:h-[calc(92vh-200px)]"
               />
             </div>
             {!previewReady ? (
