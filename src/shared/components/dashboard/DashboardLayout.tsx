@@ -24,6 +24,7 @@ export function DashboardLayout({
   const mobileSidebar = isValidElement(sidebar)
     ? cloneElement(sidebar, {
         collapsed: false,
+        mobileDrawer: true,
         onToggleCollapse: undefined,
       })
     : sidebar;
@@ -47,7 +48,7 @@ export function DashboardLayout({
         {mobileSidebarOpen ? (
           <div className="fixed inset-0 z-[80] bg-slate-950/45 backdrop-blur-sm lg:hidden" onClick={onCloseMobileSidebar}>
             <aside
-              className="relative h-full w-[min(88vw,320px)] overflow-hidden border-r border-[var(--umss-border)] bg-white shadow-2xl"
+              className="relative flex h-[100dvh] w-[min(88vw,320px)] flex-col overflow-hidden border-r border-[var(--umss-border)] bg-white shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <button
@@ -58,7 +59,10 @@ export function DashboardLayout({
               >
                 <X className="h-5 w-5" />
               </button>
-              <div className="h-full overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+              <div
+                className="min-h-0 flex-1 overflow-y-scroll overscroll-contain [scrollbar-gutter:stable] [touch-action:pan-y] [-webkit-overflow-scrolling:touch]"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
                 {mobileSidebar}
               </div>
             </aside>
