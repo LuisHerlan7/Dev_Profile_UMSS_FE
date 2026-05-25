@@ -77,15 +77,17 @@ export function DashboardSidebar({
     >
       {collapsed ? (
         <div className="flex w-full flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-            aria-label={t('common.expandSidebar')}
-            title={t('common.expandSidebar')}
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
+          {onToggleCollapse ? (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+              aria-label={t('common.expandSidebar')}
+              title={t('common.expandSidebar')}
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          ) : null}
 
           {renderAvatar()}
         </div>
@@ -101,15 +103,17 @@ export function DashboardSidebar({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
-                aria-label={t('common.collapseSidebar')}
-                title={t('common.collapseSidebar')}
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
+              {onToggleCollapse ? (
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+                  aria-label={t('common.collapseSidebar')}
+                  title={t('common.collapseSidebar')}
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </button>
+              ) : null}
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm">
