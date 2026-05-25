@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Search, X } from 'lucide-react';
+import { Moon, Search, Sun, X } from 'lucide-react';
 import { useI18n } from '@shared/i18n/I18nProvider';
 import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import { useTheme } from '@shared/theme/ThemeProvider';
 import type { AppLanguage } from '@shared/i18n/storage';
 
 export type SearchResultItem = {
@@ -37,6 +38,7 @@ export function DashboardTopbar({
   onLanguageChange,
 }: DashboardTopbarProps) {
   const { t } = useI18n();
+  const { isDark, toggleTheme } = useTheme();
   const [imgError, setImgError] = useState(false);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -179,7 +181,8 @@ export function DashboardTopbar({
           {menuOpen && (
             <div
               role="menu"
-              className="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-[var(--umss-border)] bg-white p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]"
+              className="absolute right-0 z-50 mt-2 w-64 rounded-2xl border p-2 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]"
+              style={{ backgroundColor: 'var(--dm-dropdown)', borderColor: 'var(--dm-border)' }}
             >
               <div className="px-3 py-2">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -187,16 +190,53 @@ export function DashboardTopbar({
                 </p>
                 <LanguageSwitcher compact onSelect={onLanguageChange} />
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onLogout?.();
-                }}
-                className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
-              >
-                {t('common.logout')}
-              </button>
+
+              {/* Dark mode toggle */}
+              <div className="border-t border-[var(--umss-border)] px-3 py-2">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                  {isDark ? 'Modo oscuro' : 'Modo claro'}
+                </p>
+                <button
+                  type="button"
+                  id="dark-mode-toggle"
+                  onClick={toggleTheme}
+                  aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+                  aria-pressed={isDark}
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
+                >
+                  <span className="flex items-center gap-2">
+                    {isDark ? (
+                      <Moon className="h-4 w-4 text-[var(--umss-brand)]" />
+                    ) : (
+                      <Sun className="h-4 w-4 text-amber-500" />
+                    )}
+                    <span>{isDark ? 'Oscuro' : 'Claro'}</span>
+                  </span>
+                  {/* Toggle switch */}
+                  <span
+                    className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300"
+                    style={{ backgroundColor: isDark ? 'var(--umss-brand)' : '#cbd5e1' }}
+                  >
+                    <span
+                      className="inline-block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-white shadow transition-transform duration-300"
+                      style={{ transform: isDark ? 'translateX(18px)' : 'translateX(2px)' }}
+                    />
+                  </span>
+                </button>
+              </div>
+
+              <div className="border-t border-[var(--umss-border)] pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onLogout?.();
+                  }}
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
+                >
+                  {t('common.logout')}
+                </button>
+              </div>
             </div>
           )}
         </div>

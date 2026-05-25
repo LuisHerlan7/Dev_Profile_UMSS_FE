@@ -84,7 +84,8 @@ export function DashboardSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border transition hover:text-[var(--umss-brand)]"
+              style={{ backgroundColor: 'var(--dm-card)', borderColor: 'var(--dm-border)', color: 'var(--dm-text-secondary)' }}
               aria-label={t('common.expandSidebar')}
               title={t('common.expandSidebar')}
             >
@@ -96,7 +97,10 @@ export function DashboardSidebar({
         </div>
       ) : (
         <div className="w-full space-y-4">
-          <div className="rounded-[28px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]">
+          <div
+            className="rounded-[28px] border p-4 shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]"
+            style={{ backgroundColor: 'var(--dm-surface-2)', borderColor: 'var(--dm-border)' }}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 {renderAvatar()}
@@ -110,7 +114,8 @@ export function DashboardSidebar({
                 <button
                   type="button"
                   onClick={onToggleCollapse}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition hover:text-[var(--umss-brand)]"
+                  style={{ backgroundColor: 'var(--dm-card)', borderColor: 'var(--dm-border)', color: 'var(--dm-text-secondary)' }}
                   aria-label={t('common.collapseSidebar')}
                   title={t('common.collapseSidebar')}
                 >
@@ -119,9 +124,12 @@ export function DashboardSidebar({
               ) : null}
             </div>
 
-            <div className="mt-4 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm">
-              <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
-              <p className="mt-1 text-xs text-slate-500">{profileRole}</p>
+            <div
+              className="mt-4 rounded-2xl border px-4 py-3 shadow-sm"
+              style={{ backgroundColor: 'var(--dm-card)', borderColor: 'var(--dm-border)' }}
+            >
+              <p className="truncate text-sm font-semibold" style={{ color: 'var(--dm-text-primary)' }}>{profileName}</p>
+              <p className="mt-1 text-xs" style={{ color: 'var(--dm-text-muted)' }}>{profileRole}</p>
               {profileBadge ? (
                 <span className="mt-3 inline-flex rounded-full bg-[var(--umss-lavender)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--umss-brand)]">
                   {profileBadge}
@@ -143,17 +151,21 @@ export function DashboardSidebar({
                 collapsed ? 'justify-center px-0 py-3' : 'justify-between px-3 py-3',
                 item.active
                   ? 'bg-[var(--umss-lavender)] text-[var(--umss-brand)] shadow-sm'
-                  : 'text-slate-600 hover:bg-white hover:text-slate-900'
+                  : 'hover:text-slate-900'
               )}
+              style={!item.active ? { color: 'var(--dm-text-secondary)' } : undefined}
               aria-label={item.label}
               title={collapsed ? item.label : undefined}
             >
               <span className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-3')}>
                 <span
                   className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-xl',
-                    item.active ? 'bg-white text-[var(--umss-brand)]' : 'bg-[var(--umss-surface)]'
+                    'flex h-9 w-9 items-center justify-center rounded-xl'
                   )}
+                  style={{
+                    backgroundColor: item.active ? 'var(--dm-card)' : 'var(--dm-surface-2)',
+                    color: item.active ? 'var(--umss-brand)' : 'var(--dm-text-secondary)'
+                  }}
                 >
                   {item.icon}
                 </span>
