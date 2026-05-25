@@ -21,6 +21,7 @@ type DashboardSidebarProps = {
   navItems: DashboardSidebarItem[];
   footer?: ReactNode;
   collapsed?: boolean;
+  mobileDrawer?: boolean;
   onToggleCollapse?: () => void;
   onItemSelect?: (id: string) => void;
 };
@@ -35,6 +36,7 @@ export function DashboardSidebar({
   navItems,
   footer,
   collapsed = false,
+  mobileDrawer = false,
   onToggleCollapse,
   onItemSelect,
 }: DashboardSidebarProps) {
@@ -71,7 +73,8 @@ export function DashboardSidebar({
   return (
     <div
       className={cn(
-        'flex h-full flex-col gap-5 overflow-hidden p-4 sm:p-5',
+        'flex flex-col gap-5 p-4 sm:p-5',
+        mobileDrawer ? 'w-full overflow-visible pb-24' : 'h-full overflow-hidden',
         collapsed && 'items-center px-2 py-4'
       )}
     >
@@ -174,7 +177,11 @@ export function DashboardSidebar({
         ))}
       </nav>
 
-      {footer ? <div className={cn('mt-auto w-full', collapsed && 'max-w-[56px]')}>{footer}</div> : null}
+      {footer ? (
+        <div className={cn(mobileDrawer ? 'w-full pt-6' : 'mt-auto w-full', collapsed && 'max-w-[56px]')}>
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }
