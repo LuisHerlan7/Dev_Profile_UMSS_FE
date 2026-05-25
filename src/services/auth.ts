@@ -263,6 +263,18 @@ export async function updateUserLanguagePreference(language: 'es' | 'en', token 
     throw new Error(extractErrorMessage(data, 'No se pudo actualizar el idioma.'));
   }
 
+  const storedSession = readStoredAuthSession();
+  if (storedSession?.user) {
+    persistAuthSession({
+      ...storedSession,
+      user: {
+        ...storedSession.user,
+        preferred_language: language,
+      },
+    });
+    window.dispatchEvent(new Event('app-language-sync'));
+  }
+
   return data;
 }
 
