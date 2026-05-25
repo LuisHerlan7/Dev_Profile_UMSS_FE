@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { cn } from '@shared/utils/cn';
 
 type DashboardLayoutProps = {
@@ -20,6 +20,13 @@ export function DashboardLayout({
   mobileSidebarOpen = false,
   onCloseMobileSidebar,
 }: DashboardLayoutProps) {
+  const mobileSidebar = isValidElement(sidebar)
+    ? cloneElement(sidebar, {
+        collapsed: false,
+        onToggleCollapse: undefined,
+      })
+    : sidebar;
+
   return (
     <div className="min-h-screen bg-[var(--umss-surface)]">
       <div className="flex min-h-screen w-full flex-col lg:flex-row">
@@ -29,7 +36,7 @@ export function DashboardLayout({
               className="h-full w-[280px] overflow-y-auto border-r border-[var(--umss-border)] bg-white shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              {sidebar}
+              {mobileSidebar}
             </aside>
           </div>
         ) : null}
