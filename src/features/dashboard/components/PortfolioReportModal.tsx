@@ -124,7 +124,7 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
     items.length > 0
       ? `<table class="doc-skills">${items
           .map(
-            (item, index) => `${index % 2 === 0 ? '<tr>' : ''}<td>
+            (item, index) => `${index % 2 === 0 ? '<tr class="doc-skill-row">' : ''}<td>
                 <div class="doc-skill">
                   <div class="doc-skill-name">${escapeHtml(item.name)}</div>
                   <div class="doc-skill-meta">
@@ -417,7 +417,11 @@ export function PortfolioReportModal({
 
   const handleDownloadPdf = async () => {
     const frameDocument = previewFrameRef.current?.contentDocument;
-    const exportNode = frameDocument?.querySelector('.doc-page') as HTMLElement | null;
+    if (!frameDocument) {
+      throw new Error('No se pudo preparar la vista del reporte.');
+    }
+
+    const exportNode = frameDocument.querySelector('.doc-page') as HTMLElement | null;
 
     if (!exportNode) {
       throw new Error('No se pudo preparar la vista del reporte.');
@@ -442,13 +446,45 @@ export function PortfolioReportModal({
     const margin = 24;
     const innerWidth = pageWidth - margin * 2;
     const innerHeight = pageHeight - margin * 2;
-    const sliceHeight = Math.floor((innerHeight * canvas.width) / innerWidth);
+    const maxPageCssHeight = (innerHeight * exportNode.scrollWidth) / innerWidth;
+    const cssToCanvasRatio = canvas.height / exportNode.scrollHeight;
+    const breakCandidates = Array.from(
+      frameDocument.querySelectorAll('.doc-section, .doc-item, .doc-skill-row, .doc-card, .doc-footer')
+    )
+      .map((element) => {
+        const node = element as HTMLElement;
+        return Math.round(node.offsetTop);
+      })
+      .filter((value, index, array) => value > 0 && array.indexOf(value) === index)
+      .sort((left, right) => left - right);
 
-    let offsetY = 0;
+    const pageBreaksCss: number[] = [];
+    let pageStartCss = 0;
+    const documentCssHeight = exportNode.scrollHeight;
+
+    while (pageStartCss < documentCssHeight) {
+      const targetBreak = Math.min(documentCssHeight, pageStartCss + maxPageCssHeight);
+      const safeBreak =
+        breakCandidates
+          .filter((value) => value > pageStartCss + maxPageCssHeight * 0.4 && value <= targetBreak)
+          .pop() ?? targetBreak;
+
+      if (safeBreak <= pageStartCss) {
+        pageBreaksCss.push(documentCssHeight);
+        break;
+      }
+
+      pageBreaksCss.push(safeBreak);
+      pageStartCss = safeBreak;
+    }
+
+    let previousBreakCss = 0;
     let pageIndex = 0;
 
-    while (offsetY < canvas.height) {
-      const currentSliceHeight = Math.min(sliceHeight, canvas.height - offsetY);
+    for (const nextBreakCss of pageBreaksCss) {
+      const startPixel = Math.floor(previousBreakCss * cssToCanvasRatio);
+      const endPixel = Math.min(canvas.height, Math.ceil(nextBreakCss * cssToCanvasRatio));
+      const currentSliceHeight = Math.max(1, endPixel - startPixel);
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = canvas.width;
       pageCanvas.height = currentSliceHeight;
@@ -463,7 +499,7 @@ export function PortfolioReportModal({
       pageContext.drawImage(
         canvas,
         0,
-        offsetY,
+        startPixel,
         canvas.width,
         currentSliceHeight,
         0,
@@ -480,7 +516,7 @@ export function PortfolioReportModal({
       }
 
       pdf.addImage(pageImage, 'PNG', margin, margin, innerWidth, renderedHeight, undefined, 'FAST');
-      offsetY += currentSliceHeight;
+      previousBreakCss = nextBreakCss;
       pageIndex += 1;
     }
 
