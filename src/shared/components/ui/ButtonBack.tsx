@@ -24,12 +24,7 @@ export function ButtonBack({ className, fallbackTo = '/', ...props }: ButtonBack
       onClick={(e) => {
         props.onClick?.(e);
         if (e.defaultPrevented) return;
-        navigate(-1);
-        window.setTimeout(() => {
-          if (window.location.pathname === '/login' || window.location.pathname === '/register') {
-            navigate(fallbackTo);
-          }
-        }, 0);
+        navigate(fallbackTo);
       }}
       {...props}
     >
