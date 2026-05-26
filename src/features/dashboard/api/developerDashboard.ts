@@ -42,9 +42,16 @@ export type HabilidadRow = {
   descripcion: string | null;
   nivel_dominio: string | null;
   porcentaje: number | null;
+  porcentaje_dominio?: number | null;
   anos_experiencia: number | null;
   fecha_adquisicion: string | null;
   estado: string | null;
+  vinculos?: Array<{
+    id: number;
+    tipo_referencia: string;
+    etiqueta_referencia: string;
+    referencia_id: number | null;
+  }> | string;
 };
 
 export type ExperienciaRow = {
@@ -186,6 +193,14 @@ export async function updateProject(id: string | number, formData: FormData) {
   return fetchWithFormData(`/api/developer/proyecto/${id}`, 'POST', formData);
 }
 
+export async function updateExperience(id: string | number, formData: FormData) {
+  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'POST', formData);
+}
+
+export async function updateFormation(id: string | number, formData: FormData) {
+  return fetchWithFormData(`/api/developer/formacion/${id}`, 'POST', formData);
+}
+
 export async function deleteProject(id: string | number) {
   const token = localStorage.getItem('auth_token');
   const res = await fetch(`/api/developer/proyecto/${id}`, {
@@ -222,8 +237,18 @@ export async function updateProfile(payload: {
 }
 
 export async function syncSkills(payload: {
-  technical: { name: string; level: string; progress: number }[];
-  soft: { name: string; progress: number }[];
+  technical: {
+    name: string;
+    level: string;
+    progress: number;
+    links?: { referenceType: 'project' | 'formation'; referenceId: number; label: string }[];
+  }[];
+  soft: {
+    name: string;
+    level?: string;
+    progress: number;
+    links?: { referenceType: 'experience' | 'formation'; referenceId: number; label: string }[];
+  }[];
 }) {
   const token = localStorage.getItem('auth_token');
   if (!token) throw new Error('No hay sesión.');

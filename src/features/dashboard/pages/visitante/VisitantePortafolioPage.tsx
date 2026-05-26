@@ -34,19 +34,61 @@ interface PortfolioData {
     phone?: string;
   };
   social: Record<string, string>;
-  skills: { 
-    id_habilidad: number; 
-    nombre_habilidad: string; 
-    tipo_habilidad: string; 
+  skills: {
+    id_habilidad: number;
+    nombre_habilidad: string;
+    tipo_habilidad: string;
     nivel_dominio: string;
-    porcentaje: number;
+    porcentaje_dominio?: number | null;
+    vinculos?: Array<{
+      id: number;
+      tipo_referencia: string;
+      etiqueta_referencia: string;
+      referencia_id: number | null;
+    }> | string;
   }[];
   projects: Project[];
   timeline: TimelineItem[];
   config: any;
 }
 
+const skillProgressByLevel: Record<string, number> = {
+  basico: 25,
+  principiante: 25,
+  intermedio: 50,
+  avanzado: 75,
+  experto: 100,
+};
+
+function parseLinks(raw: unknown): any[] {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function useTranslation() {
+  const t = (key: string) => {
+    const translations: Record<string, string> = {
+      'visitor.portfolio.skills': 'Habilidades',
+      'visitor.portfolio.skillsSubtitle': 'Competencias técnicas y blandas',
+      'visitor.portfolio.technicalSkills': 'Habilidades Técnicas',
+      'visitor.portfolio.softSkills': 'Habilidades Blandas',
+      'visitor.portfolio.domain': 'Dominio',
+    };
+    return translations[key] || key;
+  };
+  return { t };
+}
+
 export function VisitantePortafolioPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -132,12 +174,13 @@ export function VisitantePortafolioPage() {
         .vp-section p {text-align: center; max-width: 760px; margin: 12px auto 30px; color: #4b5f84;}
 
         .vp-skills {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;}
-        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; text-align: center; min-height: 96px; transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center;}
+        .vp-skill-card {background: #fff; border: 1px solid #e3ebff; border-radius: 13px; padding: 16px; text-align: left; min-height: 96px; transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: center;}
         .vp-skill-card:hover {transform: scale(1.03);}
-        .vp-skill-card h3 {margin: 0; font-size: 11px; color: #5565a8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;}
-        .vp-skill-card p {margin: 4px 0 8px; font-size: 15px; font-weight: 700; color: #233675;}
-        .vp-skill-progress-bg {height: 6px; background: #eaefff; border-radius: 999px; overflow: hidden; margin-top: auto;}
-        .vp-skill-progress-fill {height: 100%; background: linear-gradient(90deg, #3b50ff 0%, #6872f2 100%); border-radius: 999px;}
+        .vp-skill-card h3 {margin: 0; font-size: 16px; color: #233675; font-weight: 700;}
+        .vp-skill-card p {margin: 8px 0 0; font-size: 12px; font-weight: 700; color: #5565a8; text-transform: uppercase; letter-spacing: 0.05em;}
+        .vp-skill-card__meta {display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; font-size: 13px; color: #55617b;}
+        .vp-skill-card__bar {margin-top: 10px; height: 10px; border-radius: 999px; background: #eef2ff; overflow: hidden;}
+        .vp-skill-card__bar span {display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f45ff 0%, #6c63ff 100%);}
 
         .vp-projects {display: grid; grid-template-columns: 1fr; gap: 18px;}
         .vp-project {background: #fff; border: 1px solid #e5edff; border-radius: 16px; padding: 18px; transition: transform 0.3s ease; display: flex; flex-direction: column;}
@@ -256,44 +299,80 @@ export function VisitantePortafolioPage() {
       {skills.length > 0 && (
         <FadeInSection>
           <section id="skills" className="vp-section">
-            <div className="grid gap-8 md:grid-cols-2">
-              <div>
-                <h2 style={{ textAlign: 'left' }}>Habilidades Técnicas</h2>
-                <p style={{ textAlign: 'left', marginLeft: 0 }}>Basadas en mi stack tecnológico principal.</p>
-                <div className="vp-skills" style={{ gridTemplateColumns: '1fr' }}>
-                  {skills.filter(s => s.tipo_habilidad === 'tecnica').map(skill => (
-                    <div key={skill.id_habilidad} className="vp-skill-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3>{skill.nivel_dominio || 'Habilidad'}</h3>
-                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{skill.porcentaje || 0}%</span>
+            <h2>{t('visitor.portfolio.skills')}</h2>
+            <p>{t('visitor.portfolio.skillsSubtitle')}</p>
+
+            {skills.filter(s => s.tipo_habilidad === 'tecnica').length > 0 && (
+              <>
+                <h3 style={{ textAlign: 'left', color: '#142d60', marginBottom: '14px', fontSize: '22px' }}>{t('visitor.portfolio.technicalSkills')}</h3>
+                <div className="vp-skills">
+                  {skills.filter(s => s.tipo_habilidad === 'tecnica').map((skill) => {
+                    const progress =
+                      typeof skill.porcentaje_dominio === 'number'
+                        ? Math.max(0, Math.min(100, skill.porcentaje_dominio))
+                        : skillProgressByLevel[(skill.nivel_dominio || 'intermedio').toLowerCase()] ?? 50;
+                    return (
+                      <div key={skill.id_habilidad} className="vp-skill-card">
+                        <h3>{skill.nombre_habilidad}</h3>
+                        <p>{skill.nivel_dominio || 'Intermedio'}</p>
+                        <div className="vp-skill-card__meta">
+                          <span>{t('visitor.portfolio.domain')}</span>
+                          <strong>{progress}%</strong>
+                        </div>
+                        <div className="vp-skill-card__bar">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                        {skill.vinculos ? (
+                          <div className="vp-project-tags" style={{ marginTop: '12px' }}>
+                            {parseLinks(skill.vinculos).map((link: any) => (
+                              <span key={`tech-link-${skill.id_habilidad}-${link.id}`} className="vp-badge">
+                                {link.etiqueta_referencia}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <p>{skill.nombre_habilidad}</p>
-                      <div className="vp-skill-progress-bg">
-                        <div className="vp-skill-progress-fill" style={{ width: `${skill.porcentaje || 0}%` }}></div>
-                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              </div>
-              <div>
-                <h2 style={{ textAlign: 'left' }}>Habilidades Blandas</h2>
-                <p style={{ textAlign: 'left', marginLeft: 0 }}>Atributos personales y competencias sociales.</p>
-                <div className="vp-skills" style={{ gridTemplateColumns: '1fr' }}>
-                  {skills.filter(s => s.tipo_habilidad === 'blanda').map(skill => (
-                    <div key={skill.id_habilidad} className="vp-skill-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ opacity: 0 }}>-</h3>
-                        <span style={{ fontSize: '10px', color: '#5565a8', fontWeight: 600 }}>{skill.porcentaje || 0}%</span>
+              </>
+            )}
+
+            {skills.filter(s => s.tipo_habilidad === 'blanda').length > 0 && (
+              <>
+                <h3 style={{ textAlign: 'left', color: '#142d60', margin: '26px 0 14px', fontSize: '22px' }}>{t('visitor.portfolio.softSkills')}</h3>
+                <div className="vp-skills">
+                  {skills.filter(s => s.tipo_habilidad === 'blanda').map((skill) => {
+                    const progress =
+                      typeof skill.porcentaje_dominio === 'number'
+                        ? Math.max(0, Math.min(100, skill.porcentaje_dominio))
+                        : skillProgressByLevel[(skill.nivel_dominio || 'intermedio').toLowerCase()] ?? 50;
+                    return (
+                      <div key={skill.id_habilidad} className="vp-skill-card">
+                        <h3>{skill.nombre_habilidad}</h3>
+                        <p>{skill.nivel_dominio || 'Intermedio'}</p>
+                        <div className="vp-skill-card__meta">
+                          <span>{t('visitor.portfolio.domain')}</span>
+                          <strong>{progress}%</strong>
+                        </div>
+                        <div className="vp-skill-card__bar">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                        {skill.vinculos ? (
+                          <div className="vp-project-tags" style={{ marginTop: '12px' }}>
+                            {parseLinks(skill.vinculos).map((link: any) => (
+                              <span key={`soft-link-${skill.id_habilidad}-${link.id}`} className="vp-badge">
+                                {link.etiqueta_referencia}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                      <p>{skill.nombre_habilidad}</p>
-                      <div className="vp-skill-progress-bg">
-                        <div className="vp-skill-progress-fill" style={{ width: `${skill.porcentaje || 0}%` }}></div>
-                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </section>
         </FadeInSection>
       )}

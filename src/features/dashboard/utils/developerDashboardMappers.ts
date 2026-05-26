@@ -97,7 +97,70 @@ export type TechnicalSkillState = {
   progress: number;
 };
 
-export type SoftSkillState = { id: string; name: string; progress: number };
+export type SoftSkillState = {
+  id: string;
+  name: string;
+  level: string;
+  progress: number;
+  links: SkillReferenceState[];
+};
+
+export type SkillReferenceState = {
+  id: string;
+  referenceType: 'project' | 'experience' | 'formation';
+  label: string;
+  referenceId: number;
+};
+
+type SkillLinkRow = {
+  id: number;
+  tipo_referencia: string;
+  etiqueta_referencia: string | null;
+  referencia_id: number | null;
+};
+
+function parseJsonArray<T>(raw: unknown): T[] {
+  if (Array.isArray(raw)) return raw as T[];
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function mapSkillLinks(rawLinks: HabilidadRow['vinculos']): SkillReferenceState[] {
+  const links = parseJsonArray<SkillLinkRow>(rawLinks);
+
+  return links
+    .map((link) => {
+      const type =
+        link.tipo_referencia === 'proyecto'
+          ? 'project'
+          : link.tipo_referencia === 'experiencia'
+            ? 'experience'
+            : 'formation';
+
+      return {
+        id: `link-${link.id}`,
+        referenceType: type,
+        label: String(link.etiqueta_referencia ?? ''),
+        referenceId: Number(link.referencia_id ?? 0),
+      } satisfies SkillReferenceState;
+    })
+    .filter((link) => link.referenceId > 0 && link.label);
+}
+
+function resolveSkillProgress(h: HabilidadRow): number {
+  if (typeof h.porcentaje === 'number' && h.porcentaje >= 0) {
+    return Math.max(0, Math.min(100, h.porcentaje));
+  }
+  const nivel = (h.nivel_dominio ?? 'intermedio').toLowerCase();
+  return NIVEL_PROGRESS[nivel] ?? 50;
+}
 
 export function mapHabilidades(rows: HabilidadRow[]): {
   technical: TechnicalSkillState[];
@@ -113,13 +176,16 @@ export function mapHabilidades(rows: HabilidadRow[]): {
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
         level: NIVEL_ES[nivel] ?? 'Intermedio',
-        progress: h.porcentaje ?? NIVEL_PROGRESS[nivel] ?? 50,
+        progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos),
       });
     } else {
       soft.push({
         id: `db-hab-${h.id_habilidad}`,
         name: h.nombre_habilidad,
-        progress: h.porcentaje ?? 0,
+        level: NIVEL_ES[nivel] ?? 'Intermedio',
+        progress: resolveSkillProgress(h),
+        links: mapSkillLinks(h.vinculos),
       });
     }
   }

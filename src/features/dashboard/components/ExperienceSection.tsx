@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, BarChart3, Calendar, Code2, FileText, Plus, ShieldCheck } from 'lucide-react';
 import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
-import { saveExperience, saveFormation, deleteExperience, deleteFormation } from '@features/dashboard/api/developerDashboard';
+import { saveExperience, saveFormation, deleteExperience, deleteFormation, updateExperience, updateFormation } from '@features/dashboard/api/developerDashboard';
 
 const initialExperienceEntries: ExperienceRecord[] = [
   {
