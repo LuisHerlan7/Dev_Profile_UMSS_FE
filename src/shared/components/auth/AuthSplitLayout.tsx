@@ -123,7 +123,7 @@ export function AuthSplitLayout({
         <section className="flex items-start justify-center p-6 pt-10 sm:p-8 sm:pt-12 lg:py-12">
           <div className="w-full max-w-md">
             <div className="mb-4 flex items-center justify-between">
-              <ButtonBack />
+              <ButtonBack to="/" />
               <LanguageSwitcher compact />
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.45)] sm:p-6">

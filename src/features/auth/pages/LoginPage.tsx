@@ -1,16 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Github, Linkedin, LockKeyhole, Mail } from 'lucide-react';
+import { LockKeyhole, Mail } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
-import { SocialButton } from '@shared/components/auth/SocialButton';
+import { SocialAuthButtons } from '@shared/components/auth/SocialAuthButtons';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
-import {
-  getRedirectPathForRole,
-  loginUser,
-  persistAuthSession,
-  readStoredAuthSession,
-} from '@services/auth';
+import { loginUser, persistAuthSession, readStoredAuthSession } from '@services/auth';
 import { useI18n } from '@shared/i18n/I18nProvider';
 
 export function LoginPage() {
@@ -20,10 +15,6 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-
-  const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
-  const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
-  const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -60,22 +51,7 @@ export function LoginPage() {
         {t('auth.loginSubtitle')}
       </p>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <SocialButton
-          icon={<Github className="h-4 w-4" />}
-          aria-label="Continuar con GitHub"
-          onClick={() => window.location.assign(githubOauthUrl)}
-        >
-          GitHub
-        </SocialButton>
-        <SocialButton
-          icon={<Linkedin className="h-4 w-4" />}
-          aria-label="Continuar con LinkedIn"
-          onClick={() => window.location.assign(linkedinOauthUrl)}
-        >
-          LinkedIn
-        </SocialButton>
-      </div>
+      <SocialAuthButtons mode="login" />
 
       <div className="my-6 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />

@@ -150,7 +150,8 @@ export async function saveExperience(formData: FormData) {
 }
 
 export async function updateExperience(id: string | number, formData: FormData) {
-  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'PUT', formData);
+  formData.append('_method', 'PUT');
+  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'POST', formData);
 }
 
 export async function deleteExperience(id: string | number) {
@@ -168,7 +169,8 @@ export async function saveFormation(formData: FormData) {
 }
 
 export async function updateFormation(id: string | number, formData: FormData) {
-  return fetchWithFormData(`/api/developer/formacion/${id}`, 'PUT', formData);
+  formData.append('_method', 'PUT');
+  return fetchWithFormData(`/api/developer/formacion/${id}`, 'POST', formData);
 }
 
 export async function deleteFormation(id: string | number) {
