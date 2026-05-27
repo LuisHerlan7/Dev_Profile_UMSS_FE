@@ -67,6 +67,7 @@ export type ExperienciaRow = {
   es_trabajo_actual: boolean;
   ubicacion: string | null;
   tipo_contrato: string | null;
+  tipo_experiencia: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;
@@ -82,6 +83,7 @@ export type FormacionRow = {
   fecha_fin: string | null;
   actualmente_estudiante: boolean;
   descripcion: string | null;
+  tipo_formacion: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;

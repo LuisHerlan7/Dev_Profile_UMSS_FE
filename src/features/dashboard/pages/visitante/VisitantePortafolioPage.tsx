@@ -21,6 +21,7 @@ interface TimelineItem {
   company: string;
   detail: string;
   type: 'experience' | 'education';
+  duration?: string;
 }
 
 interface PortfolioData {
@@ -273,6 +274,20 @@ export function VisitantePortafolioPage() {
                 <a className="vp-btn--secondary" href={websiteUrl} target="_blank" rel="noopener noreferrer">Website</a>
               )}
             </div>
+            {social.google && (
+  <div 
+    className="vp-btn-group" 
+    style={{ 
+      marginTop: '8px', 
+      justifyContent: 'center',  // 👈 centra horizontalmente
+      width: '100%' 
+    }} 
+  >
+    <a className="vp-btn--secondary vp-btn-unified" href={social.google} target="_blank" rel="noopener noreferrer">
+      Google
+    </a>
+  </div>
+)}
           </div>
 
           <div className="vp-hero__hero-box">
@@ -420,11 +435,36 @@ export function VisitantePortafolioPage() {
             <p>{t('visitor.portfolio.trajectorySubtitle')}</p>
             <div className="vp-timeline">
               {timeline.map((item) => (
-                <article key={item.id} className="vp-timeline-item">
-                  <p className="period">{item.period}</p>
-                  <h4>{item.title}</h4>
-                  <strong style={{ color: '#2b4cff', fontSize: '0.9rem' }}>{item.company}</strong>
-                  <p>{item.detail}</p>
+                <article key={item.id} className="vp-timeline-item" style={{ background: 'white', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 4px 12px -2px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '10px', color: item.type === 'experience' ? '#6366f1' : '#a855f7', fontWeight: 800, background: item.type === 'experience' ? '#f5f7ff' : '#fdf4ff', padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase', border: item.type === 'experience' ? '1px solid #e0e7ff' : '1px solid #f5d0fe' }}>
+                        {item.type === 'experience' ? 'TIPO EXP' : 'TIPO CERT'}: {item.badge || (item.type === 'experience' ? 'Experiencia' : 'Formación')}
+                      </span>
+                      {item.duration && (
+                        <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 800, background: '#ecfdf5', padding: '4px 10px', borderRadius: '20px', border: '1px solid #d1fae5', width: 'fit-content' }}>
+                           {item.duration} totales
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>{item.period}</p>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <p style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '2px' }}>{item.type === 'experience' ? 'ROL / PUESTO' : 'CERTIFICACIÓN / ESTUDIO'}</p>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>{item.title}</h4>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8', letterSpacing: '0.05em', marginBottom: '2px' }}>{item.type === 'experience' ? 'EMPRESA' : 'INSTITUCIÓN'}</p>
+                      <strong style={{ color: item.type === 'experience' ? '#6366f1' : '#a855f7', fontSize: '0.9rem', fontWeight: 700 }}>{item.company}</strong>
+                    </div>
+                    {item.detail && (
+                      <div style={{ marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                         <p style={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.6 }}>{item.detail}</p>
+                      </div>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
