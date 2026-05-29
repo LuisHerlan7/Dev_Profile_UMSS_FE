@@ -8,11 +8,13 @@ import {
   LayoutGrid,
   LogOut,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
   Settings,
   ShieldCheck,
+  Sun,
   Users,
 } from 'lucide-react';
 import { DashboardLayout } from '@shared/components/dashboard/DashboardLayout';
@@ -26,6 +28,7 @@ import { fetchAdminEvidences, updateEvidenceStatus, type EvidencePage } from '@s
 import { useI18n } from '@shared/i18n/I18nProvider';
 import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
 import type { AppLanguage } from '@shared/i18n/storage';
+import { useTheme } from '@shared/theme/ThemeProvider';
 
 type AdminSection = 'dashboard' | 'users' | 'moderation' | 'analytics' | 'settings' | 'security';
 
@@ -228,6 +231,23 @@ export function DashboardPageAdmin() {
     };
   }, [activeSection, evidenceStatus, evidencePage, session?.token]);
 
+  useEffect(() => {
+    const query = adminSearchQuery.trim().toLocaleLowerCase('es');
+    if (query.length < 2) return;
+
+    if (/(anal[ií]tica|m[ée]trica|crecimiento|tecnolog)/.test(query)) {
+      setActiveSection('analytics');
+    } else if (/(auditor|seguridad|sesi[oó]n|contrase|evento)/.test(query)) {
+      setActiveSection('security');
+    } else if (/(evidencia|moderaci[oó]n|contenido|rechaz|verific|revisi[oó]n)/.test(query)) {
+      setActiveSection('moderation');
+    } else if (/(usuario|admin|desarrollador|reclutador|suspend)/.test(query)) {
+      setActiveSection('users');
+    } else if (/(config|idioma|perfil|modo|tema)/.test(query)) {
+      setActiveSection('settings');
+    }
+  }, [adminSearchQuery]);
+
   const refreshEvidenceQueue = async () => {
     if (!session?.token) {
       return;
@@ -374,7 +394,7 @@ export function DashboardPageAdmin() {
               <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
-                placeholder="Buscar reportes..."
+                placeholder="Buscar usuarios, evidencias, analíticas, auditoría..."
                 value={adminSearchQuery}
                 onChange={(event) => setAdminSearchQuery(event.target.value)}
                 className="h-11 w-full rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] pr-4 pl-11 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[rgba(80,72,229,0.3)] focus:ring-2 focus:ring-[rgba(80,72,229,0.15)]"
@@ -482,6 +502,7 @@ function AdminUserMenu({
   onLogout: () => void;
 }) {
   const { t } = useI18n();
+  const { isDark, toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
   return (
@@ -511,6 +532,25 @@ function AdminUserMenu({
           <div className="px-3 py-2">
             <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{t('common.language')}</p>
             <LanguageSwitcher compact onSelect={onLanguageChange} />
+          </div>
+          <div className="border-t border-[var(--umss-border)] px-3 py-2">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+              {isDark ? 'Modo oscuro' : 'Modo claro'}
+            </p>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-[var(--umss-surface)] hover:text-slate-900"
+              aria-pressed={isDark}
+            >
+              <span className="flex items-center gap-2">
+                {isDark ? <Moon className="h-4 w-4 text-[var(--umss-brand)]" /> : <Sun className="h-4 w-4 text-amber-500" />}
+                {isDark ? 'Oscuro' : 'Claro'}
+              </span>
+              <span className="relative inline-flex h-5 w-9 items-center rounded-full" style={{ backgroundColor: isDark ? 'var(--umss-brand)' : '#cbd5e1' }}>
+                <span className="inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform" style={{ transform: isDark ? 'translateX(18px)' : 'translateX(2px)' }} />
+              </span>
+            </button>
           </div>
           <button
             type="button"
