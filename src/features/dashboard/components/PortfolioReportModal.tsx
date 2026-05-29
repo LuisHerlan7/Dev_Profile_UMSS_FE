@@ -270,6 +270,13 @@ export function PortfolioReportModal({
   const { t } = useI18n();
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
+  const [showContentSettings, setShowContentSettings] = useState(false);
+  const [contentSettings, setContentSettings] = useState({
+    contact: true,
+    skills: true,
+    projects: true,
+    experience: true,
+  });
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
@@ -399,8 +406,19 @@ export function PortfolioReportModal({
       return '';
     }
 
-    return buildMarkup(profile, labels, avatarDataUrl);
-  }, [avatarDataUrl, labels, profile]);
+    return buildMarkup({
+      ...profile,
+      contactEmail: contentSettings.contact ? profile.contactEmail : '',
+      phone: contentSettings.contact ? profile.phone : '',
+      github: contentSettings.contact ? profile.github : '',
+      linkedin: contentSettings.contact ? profile.linkedin : '',
+      website: contentSettings.contact ? profile.website : '',
+      technicalSkills: contentSettings.skills ? profile.technicalSkills : [],
+      softSkills: contentSettings.skills ? profile.softSkills : [],
+      projects: contentSettings.projects ? profile.projects : [],
+      records: contentSettings.experience ? profile.records : [],
+    }, labels, avatarDataUrl);
+  }, [avatarDataUrl, contentSettings, labels, profile]);
 
   if (!open || !profile) {
     return null;
@@ -613,6 +631,33 @@ export function PortfolioReportModal({
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowContentSettings((value) => !value)}
+                className="mt-4 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[var(--umss-brand)] hover:text-[var(--umss-brand)]"
+              >
+                Configuración de contenido
+              </button>
+
+              {showContentSettings ? (
+                <div className="mt-3 space-y-2 rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-3">
+                  {([
+                    ['contact', 'Contacto'],
+                    ['skills', 'Habilidades'],
+                    ['projects', 'Proyectos'],
+                    ['experience', 'Experiencia y formación'],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
+                      <span>{label}</span>
+                      <input
+                        type="checkbox"
+                        checked={contentSettings[key]}
+                        onChange={(event) => setContentSettings((current) => ({ ...current, [key]: event.target.checked }))}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
 
               <button
                 type="button"
