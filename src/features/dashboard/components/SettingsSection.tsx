@@ -411,7 +411,7 @@ export function SettingsSection({
             <div>
               <FormField label="Telefono de contacto" value={profile.phone} onChange={(value) => updateField('phone', value)} />
               <p className="mt-2 text-xs text-slate-500">
-                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de verificación externa por WhatsApp'}.
+                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de revisión'}.
               </p>
             </div>
           </div>
@@ -527,7 +527,7 @@ export function SettingsSection({
             <FormField label="LinkedIn" value={profile.linkedin} onChange={(value) => updateField('linkedin', value)} />
             <FormField label="Personal Website" value={profile.website} onChange={(value) => updateField('website', value)} />
             <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 text-sm text-slate-600">
-              Si el numero cambia, queda marcado como pendiente para una futura verificacion por WhatsApp mediante proveedor externo.
+              Si el numero cambia, queda marcado como pendiente de revisión.
             </div>
           </div>
         </DashboardCard>
