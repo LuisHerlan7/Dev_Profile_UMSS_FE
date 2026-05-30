@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { AppRouter } from './app/AppRouter';
 import { I18nProvider } from './shared/i18n/I18nProvider';
 import { ThemeProvider } from './shared/theme/ThemeProvider';
+import { registerServiceWorker } from './registerServiceWorker';
 import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
@@ -14,4 +15,6 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     </ThemeProvider>
   </React.StrictMode>
 );
+
+registerServiceWorker();
 
