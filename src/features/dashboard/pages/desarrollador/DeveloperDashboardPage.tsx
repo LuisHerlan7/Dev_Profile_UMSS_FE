@@ -89,6 +89,15 @@ export function DeveloperDashboardPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [activeQuickPanel, setActiveQuickPanel] = useState<'notifications' | 'settings' | null>(null);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('developer_read_notifications') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [hideCompletionCard, setHideCompletionCard] = useState(() => localStorage.getItem('hide_profile_completion') === 'true');
   
   // Usar el nuevo sistema de sesión de dev para estabilidad en redirecciones
   const { session, isLoading: isSessionLoading } = useAuthSession({
@@ -280,6 +289,10 @@ export function DeveloperDashboardPage() {
     experience: t('dashboard.sections.experience'),
     settings: t('dashboard.sections.settings'),
   };
+  const evidenceNotifications = (dashboardData?.evidences ?? [])
+    .filter((item: any) => ['verificado', 'rechazado'].includes(String(item.estado || item.status || '').toLowerCase()))
+    .slice(0, 5);
+  const unreadEvidenceNotifications = evidenceNotifications.filter((item: any) => !readNotificationIds.includes(String(item.id ?? item.titulo ?? item.title)));
 
   const navItems = baseNavItems.map((item) => ({
     ...item,
@@ -378,6 +391,7 @@ export function DeveloperDashboardPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveQuickPanel((value) => value === 'notifications' ? null : 'notifications')}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
                 aria-label={t('dashboard.notifications')}
               >
@@ -385,6 +399,7 @@ export function DeveloperDashboardPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveQuickPanel((value) => value === 'settings' ? null : 'settings')}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--umss-border)] bg-white text-slate-500 transition hover:text-[var(--umss-brand)]"
                 aria-label={t('dashboard.help')}
               >
@@ -400,6 +415,58 @@ export function DeveloperDashboardPage() {
           {dashboardError}
         </div>
       )}
+      {activeQuickPanel ? (
+        <div className="fixed top-24 right-4 z-[80] w-[min(92vw,360px)] rounded-3xl border border-[var(--umss-border)] bg-white p-4 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.45)]">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">
+              {activeQuickPanel === 'notifications' ? 'Notificaciones' : 'Ayuda rápida'}
+            </h2>
+            <button type="button" onClick={() => setActiveQuickPanel(null)} className="rounded-full px-2 py-1 text-slate-400 hover:bg-slate-100">×</button>
+          </div>
+          {activeQuickPanel === 'notifications' ? (
+            <div className="mt-3 space-y-2">
+              {evidenceNotifications.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ids = evidenceNotifications.map((item: any) => String(item.id ?? item.titulo ?? item.title));
+                    localStorage.setItem('developer_read_notifications', JSON.stringify(ids));
+                    setReadNotificationIds(ids);
+                  }}
+                  className="w-full rounded-2xl border border-[var(--umss-border)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-[var(--umss-surface)]"
+                >
+                  Marcar todo como leído
+                </button>
+              ) : null}
+              {unreadEvidenceNotifications.length > 0 ? unreadEvidenceNotifications.map((item: any) => {
+                const status = String(item.estado || item.status || '').toLowerCase();
+                return (
+                  <div key={item.id ?? item.titulo ?? item.title} className="rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-surface)] p-3 text-sm">
+                    <p className="font-semibold text-slate-900">{item.titulo || item.title || 'Contenido evaluado'}</p>
+                    <p className={status === 'verificado' ? 'text-emerald-600' : 'text-rose-600'}>
+                      Un administrador {status === 'verificado' ? 'aceptó' : 'rechazó'} este contenido.
+                    </p>
+                  </div>
+                );
+              }) : (
+                <p className="rounded-2xl bg-[var(--umss-surface)] p-3 text-sm text-slate-500">
+                  {evidenceNotifications.length > 0 ? 'Todas las notificaciones están leídas.' : 'No hay decisiones administrativas recientes.'}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 grid gap-2">
+              <p className="rounded-2xl bg-[var(--umss-surface)] p-3 text-sm text-slate-600">
+                Accesos rápidos para resolver tareas frecuentes del panel.
+              </p>
+              <button type="button" onClick={() => { setActiveSection('evidence'); setActiveQuickPanel(null); }} className="rounded-2xl border border-[var(--umss-border)] px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-[var(--umss-surface)]">Revisar evidencias y estados</button>
+              <button type="button" onClick={() => { setActiveSection('settings'); setActiveQuickPanel(null); }} className="rounded-2xl border border-[var(--umss-border)] px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-[var(--umss-surface)]">Configurar perfil y visibilidad</button>
+              <button type="button" onClick={() => { setIsReportModalOpen(true); setActiveQuickPanel(null); }} className="rounded-2xl border border-[var(--umss-border)] px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-[var(--umss-surface)]">Exportar CV y personalizar contenido</button>
+              <button type="button" onClick={refreshDashboard} className="rounded-2xl border border-[var(--umss-border)] px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-[var(--umss-surface)]">Sincronizar datos</button>
+            </div>
+          )}
+        </div>
+      ) : null}
       
       {activeSection === 'overview' && (
         <OverviewSection
@@ -413,6 +480,11 @@ export function DeveloperDashboardPage() {
           contactPhone={settingsProfile?.phone ?? ''}
           titleHierarchy={settingsProfile?.titleHierarchy ?? []}
           roleHierarchy={settingsProfile?.roleHierarchy ?? []}
+          showCompletionCard={!hideCompletionCard}
+          onDismissCompletion={() => {
+            localStorage.setItem('hide_profile_completion', 'true');
+            setHideCompletionCard(true);
+          }}
           onOpenProjects={() => setActiveSection('projects')}
           onOpenProjectForm={handleOpenProjectForm}
           onOpenReport={() => setIsReportModalOpen(true)}

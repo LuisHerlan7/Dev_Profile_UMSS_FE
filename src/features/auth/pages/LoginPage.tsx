@@ -111,7 +111,7 @@ export function LoginPage() {
           className="mt-1 h-12 w-full bg-gradient-to-r from-[#6C63FF] via-[#4F46E5] to-[#0EA5E9] hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#0284C7]"
         >
           <span>{isSubmitting ? t('auth.loggingIn') : t('auth.loginAction')}</span>
-          <span className="sr-only">en UMSS Dev Network</span>
+          <span className="sr-only">en Dev Profile UMSS</span>
         </Button>
 
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}

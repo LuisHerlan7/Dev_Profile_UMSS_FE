@@ -83,7 +83,7 @@ export const messages = {
         'Una red universitaria de desarrolladores donde estudiantes pueden conectar, colaborar en proyectos y descubrir oportunidades tecnológicas.',
       loginTitle: 'Iniciar sesión',
       loginSubtitle:
-        'Bienvenido de vuelta. Accede a UMSS Dev Network para continuar construyendo tu perfil.',
+        'Bienvenido de vuelta. Accede a Dev Profile UMSS para continuar construyendo tu perfil.',
       loginDivider: 'O ingresa con correo',
       institutionalEmail: 'Correo institucional',
       password: 'Contraseña',
@@ -105,7 +105,7 @@ export const messages = {
       passwordMismatch: 'Las contraseñas no coinciden.',
       registerSuccess: 'Cuenta creada correctamente. Ahora puedes iniciar sesión con tu rol asignado.',
       callbackTitle: 'Validando tu acceso',
-      callbackSubtitle: 'Estamos conectando tu cuenta social con tu dashboard de UMSS Dev Network.',
+      callbackSubtitle: 'Estamos conectando tu cuenta social con tu dashboard de Dev Profile UMSS.',
       callbackLoading: 'Estamos obteniendo tu perfil, rol y datos iniciales del dashboard.',
       callbackBack: 'Volver a iniciar sesión',
     },
@@ -135,7 +135,7 @@ export const messages = {
         eyebrow: 'Dashboard del desarrollador',
         title: 'Bienvenido de nuevo, {name}!',
         subtitle:
-          'Gestiona tu portafolio profesional y realiza un seguimiento del crecimiento de tu perfil dentro de UMSS Dev Network.',
+          'Gestiona tu portafolio profesional y realiza un seguimiento del crecimiento de tu perfil dentro de Dev Profile UMSS.',
         editBio: 'Editar bio',
         addProject: 'Añadir proyecto',
         exportCv: 'Exportar CV',
@@ -352,7 +352,7 @@ export const messages = {
         'A university network for developers where students can connect, collaborate on projects, and discover technology opportunities.',
       loginTitle: 'Sign in',
       loginSubtitle:
-        'Welcome back. Access UMSS Dev Network to keep building your profile.',
+        'Welcome back. Access Dev Profile UMSS to keep building your profile.',
       loginDivider: 'Or sign in with email',
       institutionalEmail: 'Institutional email',
       password: 'Password',
@@ -374,7 +374,7 @@ export const messages = {
       passwordMismatch: 'Passwords do not match.',
       registerSuccess: 'Account created successfully. You can now sign in with your assigned role.',
       callbackTitle: 'Validating your access',
-      callbackSubtitle: 'We are connecting your social account with your UMSS Dev Network dashboard.',
+      callbackSubtitle: 'We are connecting your social account with your Dev Profile UMSS dashboard.',
       callbackLoading: 'We are fetching your profile, role, and initial dashboard data.',
       callbackBack: 'Back to sign in',
     },
@@ -404,7 +404,7 @@ export const messages = {
         eyebrow: 'Developer dashboard',
         title: 'Welcome back, {name}!',
         subtitle:
-          'Manage your professional portfolio and track your profile growth inside UMSS Dev Network.',
+          'Manage your professional portfolio and track your profile growth inside Dev Profile UMSS.',
         editBio: 'Edit bio',
         addProject: 'Add project',
         exportCv: 'Export resume',

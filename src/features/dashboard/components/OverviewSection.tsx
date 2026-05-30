@@ -24,6 +24,7 @@ export function OverviewSection({
   onOpenReport,
   onOpenSkills,
   onOpenSettings,
+  onDismissCompletion,
   metrics = [],
   recentProjects = [],
   topSkills = [],
@@ -34,12 +35,14 @@ export function OverviewSection({
   contactPhone = '',
   titleHierarchy = [],
   roleHierarchy = [],
+  showCompletionCard = true,
 }: {
   onOpenProjects: () => void;
   onOpenProjectForm: () => void;
   onOpenReport: () => void;
   onOpenSkills: () => void;
   onOpenSettings: () => void;
+  onDismissCompletion?: () => void;
   metrics?: OverviewMetric[];
   recentProjects?: OverviewRecentProject[];
   topSkills?: string[];
@@ -50,6 +53,7 @@ export function OverviewSection({
   contactPhone?: string;
   titleHierarchy?: string[];
   roleHierarchy?: string[];
+  showCompletionCard?: boolean;
 }) {
   const { t } = useI18n();
 
@@ -111,7 +115,7 @@ export function OverviewSection({
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 sm:p-5">
+        {showCompletionCard ? <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 sm:p-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[var(--umss-brand)] shadow-sm">
@@ -124,7 +128,17 @@ export function OverviewSection({
                 </p>
               </div>
             </div>
-            <span className="text-sm font-semibold text-[var(--umss-brand)]">{completionPercentage}%</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-[var(--umss-brand)]">{completionPercentage}%</span>
+              <button
+                type="button"
+                onClick={onDismissCompletion}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-white hover:text-slate-700"
+                aria-label="Ocultar progreso de perfil"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 h-3 rounded-full bg-white p-1 shadow-inner">
@@ -150,7 +164,7 @@ export function OverviewSection({
               </button>
             )}
           </div>
-        </div>
+        </div> : null}
       </DashboardCard>
 
       <section className="grid gap-4 xl:grid-cols-3">

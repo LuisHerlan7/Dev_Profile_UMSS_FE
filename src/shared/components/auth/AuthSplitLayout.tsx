@@ -72,7 +72,7 @@ export function AuthSplitLayout({
           <div className="relative flex h-full flex-col justify-between p-10">
             <div>
               <div className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide ring-1 ring-white/20">
-                UMSS Dev Network
+                Dev Profile UMSS
               </div>
 
               <h1 className="mt-6 text-4xl font-semibold tracking-tight">

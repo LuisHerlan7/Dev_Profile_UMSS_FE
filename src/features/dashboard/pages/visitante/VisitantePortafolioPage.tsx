@@ -439,7 +439,7 @@ export function VisitantePortafolioPage() {
             <p>{t('visitor.portfolio.contactCtaSubtitle')}</p>
             <div className="vp-cta-buttons">
               {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">{t('visitor.portfolio.emailCta')}</a> : null}
-              {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
+              {profile.phone ? <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className="vp-cta-btn vp-cta-btn--outline">Teléfono</a> : null}
               {config?.mostrar_redes_sociales !== false && linkedinUrl && (
                 <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
               )}
