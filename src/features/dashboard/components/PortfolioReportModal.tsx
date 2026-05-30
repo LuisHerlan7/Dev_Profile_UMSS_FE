@@ -36,6 +36,15 @@ type ReportProfile = {
   avatarUrl: string | null;
 };
 
+type ReportContentSettings = {
+  contact: boolean;
+  trajectory: boolean;
+  technicalSkills: boolean;
+  softSkills: boolean;
+  projects: boolean;
+  experience: boolean;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -111,7 +120,12 @@ function buildDocumentShell(title: string, body: string) {
   </html>`;
 }
 
-function buildMarkup(profile: ReportProfile, labels: Record<string, string>, avatarDataUrl: string | null) {
+function buildMarkup(
+  profile: ReportProfile,
+  labels: Record<string, string>,
+  avatarDataUrl: string | null,
+  contentSettings: ReportContentSettings
+) {
   const initials = profile.name
     .split(' ')
     .filter(Boolean)
@@ -200,9 +214,9 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
       </div>
 
       <div class="doc-main">
-        <table class="doc-grid">
+        ${contentSettings.contact || contentSettings.trajectory ? `<table class="doc-grid">
           <tr>
-            <td>
+            ${contentSettings.contact ? `<td>
               <div class="doc-card">
                 <p class="doc-card-title">${escapeHtml(labels.contact)}</p>
                 <p class="doc-meta"><strong>${escapeHtml(labels.email)}:</strong> ${escapeHtml(profile.contactEmail || labels.notConfigured)}</p>
@@ -211,8 +225,8 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
                 <p class="doc-meta"><strong>LinkedIn:</strong> ${escapeHtml(profile.linkedin || labels.notConfigured)}</p>
                 <p class="doc-meta"><strong>${escapeHtml(labels.website)}:</strong> ${escapeHtml(profile.website || labels.notConfigured)}</p>
               </div>
-            </td>
-            <td>
+            </td>` : ''}
+            ${contentSettings.trajectory ? `<td>
               <div class="doc-card">
                 <p class="doc-card-title">${escapeHtml(labels.trajectory)}</p>
                 <div class="doc-tags">
@@ -220,29 +234,29 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
                   ${profile.roleHierarchy.map((item) => `<span class="doc-tag">${escapeHtml(item)}</span>`).join('')}
                 </div>
               </div>
-            </td>
+            </td>` : ''}
           </tr>
-        </table>
+        </table>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.technicalSkills ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.technicalSkills)}</p>
           ${skillMarkup(profile.technicalSkills)}
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.softSkills ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.softSkills)}</p>
           ${skillMarkup(profile.softSkills)}
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.projects ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.projects)}</p>
           <div class="doc-list">${projectMarkup}</div>
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.experience ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.experience)}</p>
           <div class="doc-list">${recordMarkup}</div>
-        </div>
+        </div>` : ''}
 
         <div class="doc-footer">${escapeHtml(labels.footer)}</div>
       </div>
@@ -271,9 +285,11 @@ export function PortfolioReportModal({
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
   const [showContentSettings, setShowContentSettings] = useState(false);
-  const [contentSettings, setContentSettings] = useState({
+  const [contentSettings, setContentSettings] = useState<ReportContentSettings>({
     contact: true,
-    skills: true,
+    trajectory: true,
+    technicalSkills: true,
+    softSkills: true,
     projects: true,
     experience: true,
   });
@@ -406,18 +422,7 @@ export function PortfolioReportModal({
       return '';
     }
 
-    return buildMarkup({
-      ...profile,
-      contactEmail: contentSettings.contact ? profile.contactEmail : '',
-      phone: contentSettings.contact ? profile.phone : '',
-      github: contentSettings.contact ? profile.github : '',
-      linkedin: contentSettings.contact ? profile.linkedin : '',
-      website: contentSettings.contact ? profile.website : '',
-      technicalSkills: contentSettings.skills ? profile.technicalSkills : [],
-      softSkills: contentSettings.skills ? profile.softSkills : [],
-      projects: contentSettings.projects ? profile.projects : [],
-      records: contentSettings.experience ? profile.records : [],
-    }, labels, avatarDataUrl);
+    return buildMarkup(profile, labels, avatarDataUrl, contentSettings);
   }, [avatarDataUrl, contentSettings, labels, profile]);
 
   if (!open || !profile) {
@@ -643,7 +648,9 @@ export function PortfolioReportModal({
                 <div className="mt-3 space-y-2 rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-3">
                   {([
                     ['contact', 'Contacto'],
-                    ['skills', 'Habilidades'],
+                    ['trajectory', 'Trayectoria resumida'],
+                    ['technicalSkills', 'Habilidades técnicas'],
+                    ['softSkills', 'Habilidades blandas'],
                     ['projects', 'Proyectos'],
                     ['experience', 'Experiencia y formación'],
                   ] as const).map(([key, label]) => (
