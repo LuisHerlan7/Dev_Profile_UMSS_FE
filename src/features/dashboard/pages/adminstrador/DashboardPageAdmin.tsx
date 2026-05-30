@@ -79,6 +79,13 @@ function formatDateLabel(value?: string | null) {
   });
 }
 
+function isPastOrPresentDate(value?: string | null) {
+  if (!value) return true;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return true;
+  return parsed.getTime() <= Date.now();
+}
+
 export function DashboardPageAdmin() {
   const { t, setLanguage, language } = useI18n();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
@@ -235,7 +242,19 @@ export function DashboardPageAdmin() {
     const query = adminSearchQuery.trim().toLocaleLowerCase('es');
     if (query.length < 2) return;
 
-    if (/(anal[ií]tica|m[ée]trica|crecimiento|tecnolog)/.test(query)) {
+    if (/(aprobad|aceptad|verificad|revisad)/.test(query)) {
+      setActiveSection('moderation');
+      setEvidenceStatus('verificado');
+      setEvidencePage(1);
+    } else if (/(rechazad|denegad)/.test(query)) {
+      setActiveSection('moderation');
+      setEvidenceStatus('rechazado');
+      setEvidencePage(1);
+    } else if (/(pendiente|revisi[oó]n|revisar)/.test(query)) {
+      setActiveSection('moderation');
+      setEvidenceStatus('en_revision');
+      setEvidencePage(1);
+    } else if (/(anal[ií]tica|m[ée]trica|crecimiento|tecnolog)/.test(query)) {
       setActiveSection('analytics');
     } else if (/(auditor|seguridad|sesi[oó]n|contrase|evento)/.test(query)) {
       setActiveSection('security');
@@ -1094,7 +1113,8 @@ function AdminSecuritySection({
   events: AdminDashboardData['security'];
   searchQuery: string;
 }) {
-  const filteredEvents = events.filter((item) => {
+  const realEvents = events.filter((item) => isPastOrPresentDate(item.date));
+  const filteredEvents = realEvents.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('es');
     if (!query) return true;
 
