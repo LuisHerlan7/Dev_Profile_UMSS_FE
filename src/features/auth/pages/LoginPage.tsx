@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Github, Linkedin, LockKeyhole, Mail } from 'lucide-react';
+import { Github, LockKeyhole, Mail } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
+import { IconGoogle } from '@shared/components/auth/IconGoogle';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
@@ -23,7 +24,7 @@ export function LoginPage() {
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
-  const linkedinOauthUrl = `${apiBase || ''}/api/auth/linkedin/redirect`;
+  const googleOauthUrl = `${apiBase || ''}/api/auth/google/redirect`;
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -69,11 +70,11 @@ export function LoginPage() {
           GitHub
         </SocialButton>
         <SocialButton
-          icon={<Linkedin className="h-4 w-4" />}
-          aria-label="Continuar con LinkedIn"
-          onClick={() => window.location.assign(linkedinOauthUrl)}
+          icon={<IconGoogle />}
+          aria-label="Continuar con Google"
+          onClick={() => window.location.assign(googleOauthUrl)}
         >
-          LinkedIn
+          Gmail
         </SocialButton>
       </div>
 
