@@ -92,6 +92,7 @@ export function LoginPage() {
           inputMode="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          maxLength={50}
           required
         />
 
@@ -102,6 +103,7 @@ export function LoginPage() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
+          maxLength={50}
           required
         />
 

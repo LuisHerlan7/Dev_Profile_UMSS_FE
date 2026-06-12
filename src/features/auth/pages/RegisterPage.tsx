@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Github, Linkedin } from 'lucide-react';
+import { Github, Linkedin, AlertTriangle } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
@@ -18,6 +18,7 @@ export function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
   const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
@@ -34,6 +35,7 @@ export function RegisterPage() {
     event.preventDefault();
     setError('');
     setSuccess('');
+    setNameError('');
 
     if (password !== passwordConfirmation) {
       setError(t('auth.passwordMismatch'));
@@ -52,7 +54,12 @@ export function RegisterPage() {
       setTimeout(() => navigate('/login'), 800);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'Ocurrió un error al registrar.';
-      setError(message);
+      // Detect duplicate name error specifically
+      if (message.toLowerCase().includes('ya existe un usuario registrado con ese nombre')) {
+        setNameError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -92,14 +99,24 @@ export function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
-        <TextField
-          label={t('auth.fullName')}
-          type="text"
-          placeholder="Tu nombre y apellido"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
-        />
+        <div className="grid gap-1">
+          <TextField
+            label={t('auth.fullName')}
+            type="text"
+            placeholder="Tu nombre y apellido"
+            value={name}
+            onChange={(event) => { setName(event.target.value); setNameError(''); }}
+            maxLength={50}
+            required
+            style={nameError ? { borderColor: '#f59e0b', boxShadow: '0 0 0 3px rgba(245,158,11,0.15)' } : {}}
+          />
+          {nameError && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800" role="alert">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <span>{nameError}</span>
+            </div>
+          )}
+        </div>
         <TextField
           label={t('auth.institutionalEmail')}
           type="email"
@@ -108,6 +125,7 @@ export function RegisterPage() {
           inputMode="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          maxLength={50}
           required
         />
         <TextField
@@ -118,6 +136,7 @@ export function RegisterPage() {
           value={password}
           onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
           minLength={8}
+          maxLength={50}
           required
         />
         <TextField
@@ -128,6 +147,7 @@ export function RegisterPage() {
           value={passwordConfirmation}
           onChange={(event) => setPasswordConfirmation(event.target.value.replace(/\s/g, ''))}
           minLength={8}
+          maxLength={50}
           required
         />
 
