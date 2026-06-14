@@ -36,6 +36,15 @@ type ReportProfile = {
   avatarUrl: string | null;
 };
 
+type ReportContentSettings = {
+  contact: boolean;
+  trajectory: boolean;
+  technicalSkills: boolean;
+  softSkills: boolean;
+  projects: boolean;
+  experience: boolean;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -111,7 +120,12 @@ function buildDocumentShell(title: string, body: string) {
   </html>`;
 }
 
-function buildMarkup(profile: ReportProfile, labels: Record<string, string>, avatarDataUrl: string | null) {
+function buildMarkup(
+  profile: ReportProfile,
+  labels: Record<string, string>,
+  avatarDataUrl: string | null,
+  contentSettings: ReportContentSettings
+) {
   const initials = profile.name
     .split(' ')
     .filter(Boolean)
@@ -200,9 +214,9 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
       </div>
 
       <div class="doc-main">
-        <table class="doc-grid">
+        ${contentSettings.contact || contentSettings.trajectory ? `<table class="doc-grid">
           <tr>
-            <td>
+            ${contentSettings.contact ? `<td>
               <div class="doc-card">
                 <p class="doc-card-title">${escapeHtml(labels.contact)}</p>
                 <p class="doc-meta"><strong>${escapeHtml(labels.email)}:</strong> ${escapeHtml(profile.contactEmail || labels.notConfigured)}</p>
@@ -211,8 +225,8 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
                 <p class="doc-meta"><strong>LinkedIn:</strong> ${escapeHtml(profile.linkedin || labels.notConfigured)}</p>
                 <p class="doc-meta"><strong>${escapeHtml(labels.website)}:</strong> ${escapeHtml(profile.website || labels.notConfigured)}</p>
               </div>
-            </td>
-            <td>
+            </td>` : ''}
+            ${contentSettings.trajectory ? `<td>
               <div class="doc-card">
                 <p class="doc-card-title">${escapeHtml(labels.trajectory)}</p>
                 <div class="doc-tags">
@@ -220,29 +234,29 @@ function buildMarkup(profile: ReportProfile, labels: Record<string, string>, ava
                   ${profile.roleHierarchy.map((item) => `<span class="doc-tag">${escapeHtml(item)}</span>`).join('')}
                 </div>
               </div>
-            </td>
+            </td>` : ''}
           </tr>
-        </table>
+        </table>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.technicalSkills ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.technicalSkills)}</p>
           ${skillMarkup(profile.technicalSkills)}
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.softSkills ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.softSkills)}</p>
           ${skillMarkup(profile.softSkills)}
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.projects ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.projects)}</p>
           <div class="doc-list">${projectMarkup}</div>
-        </div>
+        </div>` : ''}
 
-        <div class="doc-section">
+        ${contentSettings.experience ? `<div class="doc-section">
           <p class="doc-section-title">${escapeHtml(labels.experience)}</p>
           <div class="doc-list">${recordMarkup}</div>
-        </div>
+        </div>` : ''}
 
         <div class="doc-footer">${escapeHtml(labels.footer)}</div>
       </div>
@@ -270,6 +284,15 @@ export function PortfolioReportModal({
   const { t } = useI18n();
   const [format, setFormat] = useState<ReportFormat>('pdf');
   const [isExporting, setIsExporting] = useState(false);
+  const [showContentSettings, setShowContentSettings] = useState(false);
+  const [contentSettings, setContentSettings] = useState<ReportContentSettings>({
+    contact: true,
+    trajectory: true,
+    technicalSkills: true,
+    softSkills: true,
+    projects: true,
+    experience: true,
+  });
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const previewFrameRef = useRef<HTMLIFrameElement | null>(null);
@@ -399,8 +422,8 @@ export function PortfolioReportModal({
       return '';
     }
 
-    return buildMarkup(profile, labels, avatarDataUrl);
-  }, [avatarDataUrl, labels, profile]);
+    return buildMarkup(profile, labels, avatarDataUrl, contentSettings);
+  }, [avatarDataUrl, contentSettings, labels, profile]);
 
   if (!open || !profile) {
     return null;
@@ -613,6 +636,35 @@ export function PortfolioReportModal({
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowContentSettings((value) => !value)}
+                className="mt-4 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[var(--umss-brand)] hover:text-[var(--umss-brand)]"
+              >
+                Configuración de contenido
+              </button>
+
+              {showContentSettings ? (
+                <div className="mt-3 space-y-2 rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-3">
+                  {([
+                    ['contact', 'Contacto'],
+                    ['trajectory', 'Trayectoria resumida'],
+                    ['technicalSkills', 'Habilidades técnicas'],
+                    ['softSkills', 'Habilidades blandas'],
+                    ['projects', 'Proyectos'],
+                    ['experience', 'Experiencia y formación'],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
+                      <span>{label}</span>
+                      <input
+                        type="checkbox"
+                        checked={contentSettings[key]}
+                        onChange={(event) => setContentSettings((current) => ({ ...current, [key]: event.target.checked }))}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
 
               <button
                 type="button"

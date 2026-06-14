@@ -4,6 +4,7 @@ import { cn } from '@shared/utils/cn';
 import { Button } from '@shared/components/ui/Button';
 import { useI18n } from '@shared/i18n/I18nProvider';
 import { LanguageSwitcher } from '@shared/i18n/LanguageSwitcher';
+import { useTheme } from '@shared/theme/ThemeProvider';
 
 function LogoMark({ className }: { className?: string }) {
   return (
@@ -67,6 +68,7 @@ type NavItem = { label: string; href: string; kind: 'hash' | 'route' };
 
 export function Navbar() {
   const { t } = useI18n();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -134,6 +136,14 @@ export function Navbar() {
 
           <div className="hidden items-center gap-2 md:flex">
             <LanguageSwitcher compact />
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
+            >
+              {isDark ? '☾' : '☀'}
+            </button>
             <Link to="/login" className="rounded-lg px-2 py-1 text-sm font-medium text-slate-700 hover:bg-slate-100">
               {t('common.login')}
             </Link>
@@ -180,6 +190,9 @@ export function Navbar() {
                 <div className="mb-1">
                   <LanguageSwitcher compact className="w-full justify-center" />
                 </div>
+                <Button type="button" variant="secondary" className="w-full" onClick={toggleTheme}>
+                  {isDark ? 'Modo claro' : 'Modo oscuro'}
+                </Button>
                 <Link to="/login" onClick={() => setOpen(false)}>
                   <Button variant="secondary" className="w-full">
                     {t('common.login')}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Calendar, FileText, Plus, ShieldCheck } from 'lucide-react';
 import type { ExperienceRecord } from '@features/dashboard/utils/developerDashboardMappers';
 import { saveExperience, saveFormation, deleteExperience, deleteFormation, updateExperience, updateFormation } from '@features/dashboard/api/developerDashboard';
+import { StatusModal } from '@shared/components/modals/StatusModal';
 
 const recordTypes = ['Experiencia', 'Certificación'] as const;
 const filters = ['Todos', 'Documentos', 'Certificaciones', 'Codigo', 'Reportes'] as const;
@@ -52,6 +53,23 @@ export function ExperienceSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<typeof filters[number]>('Todos');
   const [records, setRecords] = useState<ExperienceRecord[]>(() => initialFromServer ?? []);
+
+  // Estado para el modal de estado (éxito/error)
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const showStatus = (type: 'success' | 'error', title: string, message: string) => {
+    setStatusModal({ isOpen: true, type, title, message });
+  };
   
   useEffect(() => {
     if (initialFromServer) {
@@ -161,11 +179,11 @@ export function ExperienceSection({
 
   const handleFileUpload = (file: File) => {
     if (!['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
-      alert('Formato no soportado. Por favor sube un PDF, PNG o JPG.');
+      showStatus('error', 'Formato no soportado', 'Por favor sube un PDF, PNG o JPG.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert('El archivo es demasiado grande. Máx. 5MB.');
+      showStatus('error', 'Archivo demasiado grande', 'El tamaño máximo permitido es de 5MB.');
       return;
     }
     
@@ -288,8 +306,9 @@ export function ExperienceSection({
       setShowAddRecordForm(false);
       resetForm();
       if (onDataDirty) onDataDirty();
+      showStatus('success', '¡Registro Exitoso!', 'La información se ha guardado correctamente en tu historial.');
     } catch (e: any) {
-      alert(e.message || 'Error al guardar');
+      showStatus('error', 'Error al Guardar', e.message || 'No se pudo guardar la información. Intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
@@ -316,8 +335,9 @@ export function ExperienceSection({
         setEditingRecordId(null);
       }
       if (onDataDirty) onDataDirty();
+      showStatus('success', 'Eliminado', 'El registro ha sido removido de tu perfil.');
     } catch (e: any) {
-      alert(e.message || 'Error al eliminar registro');
+      showStatus('error', 'Error al eliminar', e.message || 'No se pudo eliminar el registro seleccionado.');
     }
   };
 
@@ -763,7 +783,7 @@ export function ExperienceSection({
                     if (entry.evidenceUrl) {
                       window.open(entry.evidenceUrl, '_blank');
                     } else {
-                      alert('No hay documento adjunto para este registro.');
+                      showStatus('error', 'Sin Evidencia', 'No hay documento adjunto para este registro.');
                     }
                   }}
                   className={`inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-sm transition ${
@@ -785,7 +805,7 @@ export function ExperienceSection({
                       a.download = entry.title || 'documento';
                       a.click();
                     } else {
-                      alert('No hay documento adjunto para este registro.');
+                      showStatus('error', 'Sin Evidencia', 'No hay documento adjunto para este registro.');
                     }
                   }}
                   className={`inline-flex h-11 items-center justify-center rounded-2xl border px-4 text-sm font-semibold shadow-sm transition ${

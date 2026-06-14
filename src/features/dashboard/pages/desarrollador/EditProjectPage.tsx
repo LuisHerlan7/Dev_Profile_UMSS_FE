@@ -538,7 +538,25 @@ export function EditProjectPage() {
                 ))}
                 <button type="button" onClick={() => techInputRef.current?.focus()} className="flex items-center gap-1.5 rounded-xl border border-dashed border-indigo-200 px-3 py-1.5 text-xs font-bold text-indigo-500 hover:bg-white">+ Añadir Tech</button>
               </div>
-              <input ref={techInputRef} type="text" value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTechnology(); } }} placeholder="Presiona enter para añadir" className="mt-3 h-12 w-full rounded-2xl bg-[#F8FAFC] px-6 text-xs font-medium text-slate-600 outline-none ring-1 ring-slate-100 border-none" />
+              <div className="relative mt-3">
+                <input 
+                  ref={techInputRef} 
+                  type="text" 
+                  value={techInput} 
+                  onChange={e => setTechInput(e.target.value)} 
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTechnology(); } }} 
+                  placeholder="Presiona enter para añadir" 
+                  className="h-12 w-full rounded-2xl bg-[#F8FAFC] px-6 text-xs font-medium text-slate-600 outline-none ring-1 ring-slate-100 border-none pr-12" 
+                />
+                <button 
+                  type="button" 
+                  onClick={handleAddTechnology}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 sm:hidden hover:bg-indigo-700 transition-colors"
+                  aria-label="Añadir tecnología"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </section>
 

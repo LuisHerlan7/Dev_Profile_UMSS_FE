@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Github, Linkedin, Globe, Mail, Phone, ExternalLink } from 'lucide-react';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 import { fetchPublicPortfolioDetail } from '../../api/developerDashboard';
 import { useI18n } from '@shared/i18n/I18nProvider';
@@ -204,8 +205,12 @@ export function VisitantePortafolioPage() {
         .vp-cta-section p {font-size: 16px; max-width: 600px; margin: 0 auto 22px; color: rgba(255,255,255,.95);}
         .vp-cta-buttons {display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;}
         .vp-cta-btn {border-radius: 12px; font-weight: 700; border: none; padding: 12px 22px; min-width: 160px; cursor: pointer; text-decoration: none;}
-        .vp-cta-btn--white {background: #fff; color: #2c44ff;}
-        .vp-cta-btn--outline {background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.5);}
+        .vp-cta-btn--white {background: #fff; color: #2c44ff; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .vp-cta-btn--outline {background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.5); display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .vp-social-icon-btn {width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #fff; border: 1px solid #dfe9ff; color: #334155; transition: all 0.2s;}
+        .vp-social-icon-btn:hover {background: #f8fbff; transform: translateY(-2px); border-color: #2b4cff; color: #2b4cff;}
+        .vp-social-icon-btn.github:hover {color: #000; border-color: #000;}
+        .vp-social-icon-btn.linkedin:hover {color: #0077b5; border-color: #0077b5;}
 
         .vp-footer {background: #fff; border-top: 1px solid #e4ecff; padding: 20px 24px; text-align: center; color: #6b7c9e;}
 
@@ -265,13 +270,24 @@ export function VisitantePortafolioPage() {
             
             <div className="vp-btn-group">
               {config?.mostrar_redes_sociales !== false && githubUrl && (
-                <a className="vp-btn--primary" href={githubUrl} target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a className="vp-social-icon-btn github" href={githubUrl} target="_blank" rel="noopener noreferrer" title="GitHub">
+                  <Github size={20} />
+                </a>
               )}
               {config?.mostrar_redes_sociales !== false && linkedinUrl && (
-                <a className="vp-btn--secondary" href={linkedinUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                <a className="vp-social-icon-btn linkedin" href={linkedinUrl} target="_blank" rel="noopener noreferrer" title="LinkedIn">
+                  <Linkedin size={20} />
+                </a>
               )}
               {config?.mostrar_redes_sociales !== false && websiteUrl && (
-                <a className="vp-btn--secondary" href={websiteUrl} target="_blank" rel="noopener noreferrer">Website</a>
+                <a className="vp-social-icon-btn" href={websiteUrl} target="_blank" rel="noopener noreferrer" title={t('visitor.portfolio.website')}>
+                  <Globe size={20} />
+                </a>
+              )}
+              {profile.email && (
+                <a className="vp-social-icon-btn" href={`mailto:${profile.email}`} title={t('common.contact')}>
+                  <Mail size={20} />
+                </a>
               )}
             </div>
             {social.google && (
@@ -478,14 +494,36 @@ export function VisitantePortafolioPage() {
             <h3>{t('visitor.portfolio.contactCtaTitle')}</h3>
             <p>{t('visitor.portfolio.contactCtaSubtitle')}</p>
             <div className="vp-cta-buttons">
-              {profile.email ? <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">{t('visitor.portfolio.emailCta')}</a> : null}
-              {profile.phone ? <a href={`https://wa.me/${profile.phone.replace(/\\D/g, '')}`} className="vp-cta-btn vp-cta-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
-              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
-                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">LinkedIn</a>
-              )}
-              {config?.mostrar_redes_sociales !== false && githubUrl && !profile.email && !profile.phone ? (
-                <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">GitHub</a>
+              {profile.email ? (
+                <a href={`mailto:${profile.email}`} className="vp-cta-btn vp-cta-btn--white">
+                  <Mail size={18} />
+                  {t('visitor.portfolio.emailCta')}
+                </a>
               ) : null}
+              {profile.phone ? (
+                <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className="vp-cta-btn vp-cta-btn--outline">
+                  <Phone size={18} />
+                  {profile.phone}
+                </a>
+              ) : null}
+              {config?.mostrar_redes_sociales !== false && linkedinUrl && (
+                <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">
+                  <Linkedin size={18} />
+                  LinkedIn
+                </a>
+              )}
+              {config?.mostrar_redes_sociales !== false && githubUrl && (
+                <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">
+                  <Github size={18} />
+                  GitHub
+                </a>
+              )}
+              {config?.mostrar_redes_sociales !== false && websiteUrl && (
+                <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="vp-cta-btn vp-cta-btn--outline">
+                  <Globe size={18} />
+                  {t('visitor.portfolio.website')}
+                </a>
+              )}
             </div>
           </section>
         </FadeInSection>

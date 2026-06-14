@@ -3,6 +3,7 @@ import { ArrowRight, ChevronDown, ChevronUp, Lock, Pencil, Trash2, X, Plus, Uplo
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { SectionHeading } from './SectionHeading';
 import { updateAvatar, updateProfile, updateSocialLinks, updateEmail, updatePassword, syncHighlights, updateVisibilitySettings } from '@features/dashboard/api/developerDashboard';
+import { StatusModal } from '@shared/components/modals/StatusModal';
 import type {
   SettingsProfileState,
   VisibilityHighlightsState,
@@ -84,6 +85,7 @@ export function SettingsSection({
 
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasRemovedAvatar, setHasRemovedAvatar] = useState(false);
 
   // Estado del bloque Correo y Contraseña
   const [showSecurityPanel, setShowSecurityPanel] = useState(false);
@@ -92,6 +94,23 @@ export function SettingsSection({
   const [currentPwVerified, setCurrentPwVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [newEmail, setNewEmail] = useState(''); // Estado separado para nuevo email
+
+  // Estado para el modal de estado (éxito/error)
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const showStatus = (type: 'success' | 'error', title: string, message: string) => {
+    setStatusModal({ isOpen: true, type, title, message });
+  };
 
   const updateField = (
     field: keyof typeof profile,
@@ -169,11 +188,11 @@ export function SettingsSection({
         setCurrentPwVerified(true);
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.message || 'Contraseña incorrecta. Intenta de nuevo.');
+        showStatus('error', 'Identificación Fallida', err.message || 'Contraseña incorrecta. Intenta de nuevo.');
         setCurrentPwVerified(false);
       }
     } catch {
-      alert('Error de conexión al verificar la contraseña.');
+      showStatus('error', 'Error de Conexión', 'No pudimos verificar tu contraseña. Revisa tu conexión a internet.');
     } finally {
       setIsVerifying(false);
     }
@@ -185,13 +204,13 @@ export function SettingsSection({
         if (JSON.stringify(prev) === JSON.stringify(serverProfile)) return prev;
         return { ...prev, ...serverProfile };
       });
-      // Solo actualizamos avatarUrl si NO hay un archivo pendiente (cambio local)
-      if (!pendingAvatarFile) {
+      // Solo actualizamos avatarUrl si NO hay un archivo pendiente (cambio local) Y no se marcó para eliminar
+      if (!pendingAvatarFile && !hasRemovedAvatar) {
         setAvatarUrl(serverProfile.avatar || null);
         originalServerAvatar.current = serverProfile.avatar || null;
       }
     }
-  }, [serverProfile, isSaving, pendingAvatarFile]);
+  }, [serverProfile, isSaving, pendingAvatarFile, hasRemovedAvatar]);
 
   // Sincronizar highlights cuando cambian desde el servidor
   useEffect(() => {
@@ -216,12 +235,11 @@ export function SettingsSection({
     setIsSaving(true);
     try {
       // 1. Guardar Avatar si ha cambiado
-      const hasRemovedAvatar = avatarUrl === null && originalServerAvatar.current !== null;
       if (pendingAvatarFile !== null || hasRemovedAvatar) {
         const fd = new FormData();
         if (pendingAvatarFile) {
           fd.append('avatar', pendingAvatarFile);
-        } else {
+        } else if (hasRemovedAvatar) {
           fd.append('remove_avatar', '1');
         }
         const res = await updateAvatar(fd);
@@ -229,6 +247,7 @@ export function SettingsSection({
         if (onLocalUpdate) onLocalUpdate({ avatar: newAvatarUrl });
         setAvatarUrl(newAvatarUrl);
         originalServerAvatar.current = newAvatarUrl;
+        setHasRemovedAvatar(false);
         if (setPendingAvatarFile) setPendingAvatarFile(null);
       }
 
@@ -288,9 +307,9 @@ export function SettingsSection({
       await updateVisibilitySettings(visibility);
 
       if (onDataDirty) onDataDirty();
-      alert('Configuración guardada correctamente.');
+      showStatus('success', '¡Perfil Actualizado!', 'Tus cambios se han guardado correctamente en el sistema.');
     } catch (e: any) {
-      alert(e.message || 'Error al guardar configuración.');
+      showStatus('error', 'Error al Guardar', e.message || 'Ocurrió un problema inesperado al intentar guardar tus cambios.');
     } finally {
       setIsSaving(false);
     }
@@ -411,7 +430,7 @@ export function SettingsSection({
             <div>
               <FormField label="Telefono de contacto" value={profile.phone} onChange={(value) => updateField('phone', value)} />
               <p className="mt-2 text-xs text-slate-500">
-                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de verificación externa por WhatsApp'}.
+                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de revisión'}.
               </p>
             </div>
           </div>
@@ -527,7 +546,7 @@ export function SettingsSection({
             <FormField label="LinkedIn" value={profile.linkedin} onChange={(value) => updateField('linkedin', value)} />
             <FormField label="Personal Website" value={profile.website} onChange={(value) => updateField('website', value)} />
             <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4 text-sm text-slate-600">
-              Si el numero cambia, queda marcado como pendiente para una futura verificacion por WhatsApp mediante proveedor externo.
+              Si el numero cambia, queda marcado como pendiente de revisión.
             </div>
           </div>
         </DashboardCard>
@@ -713,11 +732,20 @@ export function SettingsSection({
           onConfirm={(file, url) => {
             if (setPendingAvatarFile) setPendingAvatarFile(file);
             setAvatarUrl(url); // Actualización local inmediata
+            setHasRemovedAvatar(url === null);
             if (onLocalUpdate) onLocalUpdate({ avatar: url }); // Sync Sidebar/Topbar
             setShowAvatarUpload(false);
           }}
         />
       )}
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        onClose={() => setStatusModal(prev => ({ ...prev, isOpen: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 }
@@ -1070,7 +1098,6 @@ function AvatarUploadTray({
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Por favor selecciona una imagen válida.');
       return;
     }
     setSelectedFile(file);
