@@ -6,8 +6,14 @@ import { IconGoogle } from '@shared/components/auth/IconGoogle';
 import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
-import { getRedirectPathForRole, readStoredAuthSession, registerUser } from '@services/auth';
+import { readStoredAuthSession, registerUser } from '@services/auth';
 import { useI18n } from '@shared/i18n/I18nProvider';
+
+function GoogleIcon() {
+  return (
+    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">G</span>
+  );
+}
 
 export function RegisterPage() {
   const { t } = useI18n();

@@ -67,6 +67,7 @@ export type ExperienciaRow = {
   es_trabajo_actual: boolean;
   ubicacion: string | null;
   tipo_contrato: string | null;
+  tipo_experiencia: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;
@@ -82,6 +83,7 @@ export type FormacionRow = {
   fecha_fin: string | null;
   actualmente_estudiante: boolean;
   descripcion: string | null;
+  tipo_formacion: string | null;
   visibilidad: string | null;
   evidenceUrl?: string;
   fileSize?: string;
@@ -150,7 +152,8 @@ export async function saveExperience(formData: FormData) {
 }
 
 export async function updateExperience(id: string | number, formData: FormData) {
-  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'PUT', formData);
+  formData.append('_method', 'PUT');
+  return fetchWithFormData(`/api/developer/experiencia/${id}`, 'POST', formData);
 }
 
 export async function deleteExperience(id: string | number) {
@@ -168,7 +171,8 @@ export async function saveFormation(formData: FormData) {
 }
 
 export async function updateFormation(id: string | number, formData: FormData) {
-  return fetchWithFormData(`/api/developer/formacion/${id}`, 'PUT', formData);
+  formData.append('_method', 'PUT');
+  return fetchWithFormData(`/api/developer/formacion/${id}`, 'POST', formData);
 }
 
 export async function deleteFormation(id: string | number) {

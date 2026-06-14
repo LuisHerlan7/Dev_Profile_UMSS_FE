@@ -205,7 +205,31 @@ export type ExperienceRecord = {
   footer: string;
   fileSize?: string;
   evidenceUrl?: string;
+  isCurrent?: boolean;
+  durationYears?: string;
+  position?: string;
+  company?: string;
+  startDate?: string;
+  endDate?: string;
 };
+
+function calculateDurationYears(start: string | null | undefined, end: string | null | undefined, isCurrent: boolean): string {
+  if (!start) return '';
+  const startDate = new Date(start);
+  if (isNaN(startDate.getTime())) return '';
+  
+  const endDate = isCurrent ? new Date() : (end ? new Date(end) : new Date());
+  if (isNaN(endDate.getTime())) return '';
+
+  let years = endDate.getFullYear() - startDate.getFullYear();
+  const m = endDate.getMonth() - startDate.getMonth();
+  if (m < 0 || (m === 0 && endDate.getDate() < startDate.getDate())) {
+    years--;
+  }
+  
+  if (years < 0) return '';
+  return years === 1 ? '1 año' : (years > 1 ? `${years} años` : '< 1 año');
+}
 
 const TONE_CYCLE: ExperienceRecord['tone'][] = [
   'brand',
@@ -219,34 +243,51 @@ export function mapExperienciaYFormacion(
   experiencias: ExperienciaRow[],
   formaciones: FormacionRow[]
 ): ExperienceRecord[] {
-  const exp: ExperienceRecord[] = experiencias.map((e, i) => ({
-    id: `db-exp-${e.id_experiencia}`,
-    recordType: 'Experiencia',
-    badge: (e.tipo_contrato ?? 'experiencia').replace(/_/g, ' ').toUpperCase(),
-    title: `${e.titulo_puesto} @ ${e.nombre_empresa}`,
-    description: e.descripcion_puesto ?? '',
-    tone: TONE_CYCLE[i % TONE_CYCLE.length],
-    icon: FileText,
-    footer: (e.fileSize || e.evidenceUrl) ? (e.fileSize ?? 'Documento adjunto') : 
-      ([formatShortDate(e.fecha_inicio), formatShortDate(e.fecha_fin)]
-        .filter(Boolean)
-        .join(' — ') || (e.es_trabajo_actual ? 'Actualidad' : '')),
-    fileSize: e.fileSize,
-    evidenceUrl: e.evidenceUrl,
-  }));
+  const exp: ExperienceRecord[] = experiencias.map((e, i) => {
+    const isCurrent = !!e.es_trabajo_actual;
+    return {
+      id: `db-exp-${e.id_experiencia}`,
+      recordType: 'Experiencia',
+      badge: (e.tipo_experiencia || e.tipo_contrato || 'EXPERIENCIA').replace(/_/g, ' ').toUpperCase(),
+      title: `${e.titulo_puesto} @ ${e.nombre_empresa}`,
+      description: e.descripcion_puesto ?? '',
+      tone: TONE_CYCLE[i % TONE_CYCLE.length],
+      icon: FileText,
+      footer: (e.fileSize || e.evidenceUrl) ? (e.fileSize ?? 'Documento adjunto') : 
+        ([formatShortDate(e.fecha_inicio), formatShortDate(e.fecha_fin)]
+          .filter(Boolean)
+          .join(' — ') || (isCurrent ? 'Actualidad' : '')),
+      fileSize: e.fileSize,
+      evidenceUrl: e.evidenceUrl,
+      isCurrent,
+      durationYears: isCurrent ? '' : calculateDurationYears(e.fecha_inicio, e.fecha_fin, isCurrent),
+      position: e.titulo_puesto,
+      company: e.nombre_empresa,
+      startDate: e.fecha_inicio,
+      endDate: e.fecha_fin,
+    };
+  });
 
-  const cert: ExperienceRecord[] = formaciones.map((f, i) => ({
-    id: `db-form-${f.id_formacion}`,
-    recordType: 'Certificación',
-    badge: f.nivel_estudio.replace(/_/g, ' ').toUpperCase(),
-    title: f.carrera_especialidad,
-    description: [f.institucion, f.descripcion].filter(Boolean).join(' · ') || f.institucion,
-    tone: TONE_CYCLE[(i + exp.length) % TONE_CYCLE.length],
-    icon: ShieldCheck,
-    footer: (f.fileSize || f.evidenceUrl) ? (f.fileSize ?? 'Documento adjunto') : (f.visibilidad === 'privado' ? 'Privado' : 'Público'),
-    fileSize: f.fileSize,
-    evidenceUrl: f.evidenceUrl,
-  }));
+  const cert: ExperienceRecord[] = formaciones.map((f, i) => {
+    const isCurrent = !!f.actualmente_estudiante;
+    return {
+      id: `db-form-${f.id_formacion}`,
+      recordType: 'Certificación',
+      badge: (f.tipo_formacion || f.nivel_estudio || 'CERTIFICACIÓN').replace(/_/g, ' ').toUpperCase(),
+      title: f.carrera_especialidad,
+      description: [f.institucion, f.descripcion].filter(Boolean).join(' · ') || f.institucion,
+      tone: TONE_CYCLE[(i + exp.length) % TONE_CYCLE.length],
+      icon: ShieldCheck,
+      footer: (f.fileSize || f.evidenceUrl) ? (f.fileSize ?? 'Documento adjunto') : (f.visibilidad === 'privado' ? 'Privado' : 'Público'),
+      fileSize: f.fileSize,
+      evidenceUrl: f.evidenceUrl,
+      isCurrent,
+      position: f.carrera_especialidad,
+      company: f.institucion,
+      startDate: f.fecha_inicio,
+      endDate: f.fecha_fin,
+    };
+  });
 
   return [...exp, ...cert];
 }

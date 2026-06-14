@@ -1,16 +1,24 @@
+# Dev Profile UMSS — Frontend
+
+INTRODUCCIÓN
+
+Dev Profile UMSS es la interfaz de presentación del sistema de portafolios profesionales desarrollado por K'awi Soft S.R.L. Esta aplicación SPA (React + TypeScript) permite a los usuarios generar, editar y publicar portafolios digitales interactivos, gestionar visibilidad de secciones, y exportar portafolios a PDF usando capacidades nativas del navegador (jsPDF + html2canvas).
+
+OBJETIVO
+
+Ofrecer una experiencia de usuario responsiva e internacionalizada que permita la creación rápida y confiable de documentos portafolio listos para postulación profesional.
+
+ALCANCE
+
+El frontend contiene la capa visual, componentes reutilizables, servicios para comunicación con la API y utilidades de internacionalización (i18n). Depende de un backend REST (este repositorio paralelo) para persistencia y autenticación.
+
 # Frontend - Plataforma de Servicios
 
-Aplicación frontend construida con **React + TypeScript** para una plataforma tipo **LinkedIn + GitHub + Marketplace/Freelancer**, enfocada en perfiles profesionales, portafolios, proyectos, publicación/consumo de servicios y descubrimiento de talento.
+Aplicación frontend construida con **React + TypeScript** para "DEV PROFILE UMSS una plataforma enfocada en perfiles profesionales, portafolios, proyectos, publicación/consumo de servicios y descubrimiento de talento.
 
 ---
 
 ## Descripción
-
-Este proyecto es una aplicación web que combina:
-
-- **Networking profesional** (estilo LinkedIn)
-- **Portafolio y proyectos** (estilo GitHub)
-- **Marketplace de servicios** (estilo Freelancer)
 
 La base técnica está diseñada con:
 
@@ -32,17 +40,27 @@ La base técnica está diseñada con:
 npm install
 ```
 
+### Configurar entorno local
+
+Crear un archivo `.env` en la raíz del proyecto frontend con la siguiente configuración mínima:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
+
+Esto permite que el frontend se comunique con el backend local.
+
 ---
 
 ## Ejecución en desarrollo
 
 ```bash
-npm run start
+npm run start -- --host 127.0.0.1 --port 4200
 ```
 
 Aplicación disponible en:
 
-- `http://localhost:4200`
+- `http://127.0.0.1:4200`
 
 ---
 

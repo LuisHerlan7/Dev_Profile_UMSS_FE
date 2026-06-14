@@ -5,10 +5,11 @@ import { cn } from '@shared/utils/cn';
 import { useI18n } from '@shared/i18n/I18nProvider';
 
 export type ButtonBackProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  fallbackTo?: string;
+  /** Ruta de destino al pulsar Volver (por defecto: home). */
+  to?: string;
 };
 
-export function ButtonBack({ className, fallbackTo = '/', ...props }: ButtonBackProps) {
+export function ButtonBack({ className, to = '/', onClick, ...props }: ButtonBackProps) {
   const navigate = useNavigate();
   const { t } = useI18n();
 
@@ -22,10 +23,10 @@ export function ButtonBack({ className, fallbackTo = '/', ...props }: ButtonBack
         className
       )}
       onClick={(e) => {
-        props.onClick?.(e);
+        onClick?.(e);
         if (e.defaultPrevented) return;
         if (window.history.length <= 2 || window.location.pathname === '/login' || window.location.pathname === '/register') {
-          navigate(fallbackTo);
+          navigate(to);
           return;
         }
         navigate(-1);
