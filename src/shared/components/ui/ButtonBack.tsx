@@ -25,7 +25,11 @@ export function ButtonBack({ className, to = '/', onClick, ...props }: ButtonBac
       onClick={(e) => {
         onClick?.(e);
         if (e.defaultPrevented) return;
-        navigate(to);
+        if (window.history.length <= 2 || window.location.pathname === '/login' || window.location.pathname === '/register') {
+          navigate(to);
+          return;
+        }
+        navigate(-1);
       }}
       {...props}
     >

@@ -370,7 +370,10 @@ export async function syncHighlights(payload: {
     },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Error al guardar destacados');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Error al guardar destacados');
+  }
   return res.json();
 }
 

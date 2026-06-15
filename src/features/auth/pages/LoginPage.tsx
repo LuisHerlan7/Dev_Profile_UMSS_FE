@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LockKeyhole, Mail } from 'lucide-react';
+import { Github, LockKeyhole, Mail } from 'lucide-react';
 import { AuthSplitLayout } from '@shared/components/auth/AuthSplitLayout';
-import { SocialAuthButtons } from '@shared/components/auth/SocialAuthButtons';
+import { IconGoogle } from '@shared/components/auth/IconGoogle';
+import { SocialButton } from '@shared/components/auth/SocialButton';
 import { TextField } from '@shared/components/auth/TextField';
 import { Button } from '@shared/components/ui/Button';
 import { loginUser, persistAuthSession, readStoredAuthSession } from '@services/auth';
@@ -21,6 +22,10 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || '';
+  const githubOauthUrl = `${apiBase || ''}/api/auth/github/redirect`;
+  const googleOauthUrl = `${apiBase || ''}/api/auth/google/redirect`;
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -57,7 +62,22 @@ export function LoginPage() {
         {t('auth.loginSubtitle')}
       </p>
 
-      <SocialAuthButtons mode="login" />
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <SocialButton
+          icon={<Github className="h-4 w-4" />}
+          aria-label="Continuar con GitHub"
+          onClick={() => window.location.assign(githubOauthUrl)}
+        >
+          GitHub
+        </SocialButton>
+        <SocialButton
+          icon={<IconGoogle />}
+          aria-label="Continuar con Google"
+          onClick={() => window.location.assign(googleOauthUrl)}
+        >
+          Gmail
+        </SocialButton>
+      </div>
 
       <div className="my-6 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
@@ -74,6 +94,7 @@ export function LoginPage() {
           inputMode="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          maxLength={50}
           required
         />
 
@@ -84,6 +105,7 @@ export function LoginPage() {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value.replace(/\s/g, ''))}
+          maxLength={50}
           required
         />
 
@@ -93,7 +115,7 @@ export function LoginPage() {
           className="mt-1 h-12 w-full bg-gradient-to-r from-[#6C63FF] via-[#4F46E5] to-[#0EA5E9] hover:from-[#5A52FF] hover:via-[#4338CA] hover:to-[#0284C7]"
         >
           <span>{isSubmitting ? t('auth.loggingIn') : t('auth.loginAction')}</span>
-          <span className="sr-only">en UMSS Dev Network</span>
+          <span className="sr-only">en Dev Profile UMSS</span>
         </Button>
 
         {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
