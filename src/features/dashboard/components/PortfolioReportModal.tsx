@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, FileText, Image as ImageIcon, X } from 'lucide-react';
+import { CheckCircle2, Download, FileText, Image as ImageIcon, XCircle, X } from 'lucide-react';
 import {
   buildSettingsProfile,
   mapExperienciaYFormacion,
@@ -546,7 +546,14 @@ export function PortfolioReportModal({
     pdf.save(`${reportName}.pdf`);
   };
 
+  const hasContactData = Boolean(
+    profile.contactEmail && profile.phone && profile.github && profile.linkedin
+  );
+  const hasProjects = profile.projects.length > 0;
+  const canExport = hasContactData && hasProjects;
+
   const handleExport = async () => {
+    if (!canExport) return;
     try {
       setIsExporting(true);
 
@@ -666,11 +673,37 @@ export function PortfolioReportModal({
                 </div>
               ) : null}
 
+              <div className="mt-4 rounded-[22px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-3 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 mb-1">Requisitos para exportar</p>
+                <div className={`flex items-center gap-2 text-sm font-medium ${hasContactData ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {hasContactData
+                    ? <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    : <XCircle className="h-4 w-4 shrink-0" />}
+                  <span>Datos de contacto configurados</span>
+                </div>
+                <div className={`flex items-center gap-2 text-sm font-medium ${hasProjects ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {hasProjects
+                    ? <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    : <XCircle className="h-4 w-4 shrink-0" />}
+                  <span>Al menos 1 proyecto registrado</span>
+                </div>
+                {!canExport && (
+                  <p className="pt-1 text-xs text-slate-500">
+                    Completa los requisitos marcados en rojo para habilitar la descarga.
+                  </p>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={handleExport}
-                disabled={isExporting}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--umss-brand)] via-[#5b63ff] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(80,72,229,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isExporting || !canExport}
+                title={!canExport ? 'Completa los requisitos para habilitar la descarga' : undefined}
+                className={`mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(80,72,229,0.9)] transition ${
+                  canExport && !isExporting
+                    ? 'bg-gradient-to-r from-[var(--umss-brand)] via-[#5b63ff] to-[var(--umss-accent)] hover:opacity-95'
+                    : 'cursor-not-allowed bg-slate-300 text-slate-400 shadow-none'
+                }`}
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? t('dashboard.report.generating') : t('dashboard.report.download')}
