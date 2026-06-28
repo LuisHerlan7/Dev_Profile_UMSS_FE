@@ -11,6 +11,13 @@ import type {
 
 const levelOptions = ['Principiante', 'Intermedio', 'Avanzado', 'Experto'] as const;
 
+function getLevelFromProgress(progress: number): string {
+  if (progress <= 25) return 'Principiante';
+  if (progress <= 50) return 'Intermedio';
+  if (progress <= 75) return 'Avanzado';
+  return 'Experto';
+}
+
 type SkillFilter = 'all' | 'technical' | 'soft';
 type LinkKind = 'project' | 'experience' | 'formation';
 
@@ -327,7 +334,8 @@ export function SkillsSection({
         if (skill.id !== id) return skill;
 
         if (field === 'progress') {
-          return { ...skill, progress: Number(value) };
+          const newProgress = Number(value);
+          return { ...skill, progress: newProgress, level: getLevelFromProgress(newProgress) };
         }
 
         if (field === 'level') {
@@ -353,7 +361,8 @@ export function SkillsSection({
         if (skill.id !== id) return skill;
 
         if (field === 'progress') {
-          return { ...skill, progress: Number(value) };
+          const newProgress = Number(value);
+          return { ...skill, progress: newProgress, level: getLevelFromProgress(newProgress) };
         }
 
         if (field === 'level') {
@@ -724,21 +733,10 @@ function SkillCard({
             </div>
 
             <div className="w-full max-w-[180px]">
-              <label className="text-sm font-semibold text-slate-900" htmlFor={`${skill.id}-level`}>
-                Nivel
-              </label>
-              <select
-                id={`${skill.id}-level`}
-                value={skill.level}
-                onChange={(event) => onChange('level', event.target.value)}
-                className="mt-2 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
-              >
-                {levelOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm font-semibold text-slate-900">Nivel</p>
+              <span className="mt-2 flex h-10 w-full items-center rounded-2xl border border-[var(--umss-border)] bg-[var(--umss-lavender)] px-3 text-sm font-semibold text-[var(--umss-brand)]">
+                {getLevelFromProgress(skill.progress)}
+              </span>
             </div>
           </div>
 
@@ -835,7 +833,7 @@ function SkillCard({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">{skill.name}</p>
-              <p className="mt-1 text-sm text-slate-600">{skill.level}</p>
+              <p className="mt-1 text-sm text-slate-600">{getLevelFromProgress(skill.progress)}</p>
             </div>
             <span className="text-sm font-semibold text-[var(--umss-brand)]">
               {skill.progress}%
