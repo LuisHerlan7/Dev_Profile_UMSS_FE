@@ -34,6 +34,37 @@ function calculateYearsInUI(start: string, end: string | null | undefined): stri
   return years === 1 ? '1 año' : (years > 1 ? `${years} años` : '< 1 año');
 }
 
+function isValidDateString(dateStr: string): boolean {
+  if (!dateStr || typeof dateStr !== 'string') return false;
+  const trimmed = dateStr.trim();
+  
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+    const [day, month, year] = trimmed.split('/').map(Number);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) return false;
+    const d = new Date(year, month - 1, day);
+    return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+  }
+  
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-').map(Number);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) return false;
+    const d = new Date(year, month - 1, day);
+    return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
+  }
+
+  return false;
+}
+
+function parseToIsoDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  if (trimmed.includes('/')) {
+    const [day, month, year] = trimmed.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return trimmed;
+}
+
 export function ExperienceSection({
   initialFromServer,
   onDataDirty,
@@ -213,8 +244,29 @@ export function ExperienceSection({
     setIsSaving(true);
     try {
       if (recordType === 'Experiencia') {
-        const bdDateFrom = experienceForm.startDate ? experienceForm.startDate.split('/').reverse().join('-') : new Date().toISOString().split('T')[0];
-        const bdDateTo = experienceForm.endDate ? experienceForm.endDate.split('/').reverse().join('-') : null;
+        if (!experienceForm.startDate || !isValidDateString(experienceForm.startDate)) {
+          showStatus('error', 'Fecha no válida', 'La Fecha de Inicio no es válida. Debe tener el formato dd/mm/aaaa (ejemplo: 15/05/2023).');
+          setIsSaving(false);
+          return;
+        }
+
+        if (!experienceForm.isCurrent && experienceForm.endDate) {
+          if (!isValidDateString(experienceForm.endDate)) {
+            showStatus('error', 'Fecha no válida', 'La Fecha de Fin no es válida. Debe tener el formato dd/mm/aaaa (ejemplo: 20/12/2024).');
+            setIsSaving(false);
+            return;
+          }
+          const startIso = parseToIsoDate(experienceForm.startDate);
+          const endIso = parseToIsoDate(experienceForm.endDate);
+          if (new Date(endIso).getTime() < new Date(startIso).getTime()) {
+            showStatus('error', 'Fechas no válidas', 'La Fecha de Fin no puede ser anterior a la Fecha de Inicio.');
+            setIsSaving(false);
+            return;
+          }
+        }
+
+        const bdDateFrom = parseToIsoDate(experienceForm.startDate);
+        const bdDateTo = experienceForm.endDate ? parseToIsoDate(experienceForm.endDate) : null;
 
         const formData = new FormData();
         formData.append('titulo_puesto', experienceForm.position || 'Experiencia nueva');
@@ -427,7 +479,7 @@ export function ExperienceSection({
                   <FormField
                     label="Tipo Experiencia"
                     value={experienceForm.experienceType}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: SYSTEM ARCHITECTURE, QA REPORT"
                     required
                   />
@@ -441,7 +493,7 @@ export function ExperienceSection({
                   <FormField
                     label="Cargo"
                     value={experienceForm.position}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: Frontend Developer"
                     required
                   />
@@ -836,6 +888,14 @@ export function ExperienceSection({
           </button>
         </div>
       </div>
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 }
@@ -892,7 +952,14 @@ function FormField({
           value={value || ''}
           required={required}
           disabled={disabled}
-          onChange={(event) => onChange?.(event.target.value)}
+          maxLength={inputType === 'date' ? 10 : undefined}
+          onChange={(event) => {
+            let val = event.target.value;
+            if (inputType === 'date') {
+              val = val.replace(/[^0-9\/]/g, '').slice(0, 10);
+            }
+            onChange?.(val);
+          }}
           placeholder={placeholder || ''}
           className={`w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 ${
             inputType === 'date'

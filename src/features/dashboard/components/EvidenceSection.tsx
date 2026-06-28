@@ -10,6 +10,7 @@ import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { uploadProjectEvidence, updateEvidence } from '@services/projects';
 import { SectionHeading } from './SectionHeading';
+import { StatusModal } from '@shared/components/modals/StatusModal';
 
 type EvidenceItem = {
   id: string;
@@ -50,6 +51,23 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
   const [isUpdating, setIsUpdating] = useState(false);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
 
+  // Status Modal state
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const showStatus = (type: 'success' | 'error', title: string, message: string) => {
+    setStatusModal({ isOpen: true, type, title, message });
+  };
+
   useEffect(() => {
     if (!selectedProject && projects.length > 0) {
       setSelectedProject(projects[0].id);
@@ -74,23 +92,40 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
     setSuccess('');
 
     if (!selectedProject) {
-      setError('Selecciona el proyecto al que pertenece la evidencia.');
+      const msg = 'Selecciona el proyecto al que pertenece la evidencia.';
+      setError(msg);
+      showStatus('error', 'Proyecto Requerido', msg);
       return;
     }
 
     if (files.length === 0) {
-      setError('Adjunta al menos un archivo de evidencia.');
+      const msg = 'Adjunta al menos un archivo de evidencia.';
+      setError(msg);
+      showStatus('error', 'Sin Archivos', msg);
       return;
+    }
+
+    for (const f of files) {
+      if (f.size > 50 * 1024 * 1024) {
+        const msg = `El archivo "${f.name}" supera el tamaño máximo permitido de 50MB.`;
+        setError(msg);
+        showStatus('error', 'Archivo Demasiado Grande', msg);
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
       await uploadProjectEvidence(selectedProject, files);
-      setSuccess('Evidencias enviadas. Quedan en revisión.');
+      const msg = 'Evidencias enviadas correctamente. Quedan en estado de revisión.';
+      setSuccess(msg);
+      showStatus('success', '¡Carga Exitosa!', msg);
       setFiles([]);
       onEvidenceUploaded?.();
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'No se pudo subir la evidencia.');
+      const msg = uploadError instanceof Error ? uploadError.message : 'No se pudo subir la evidencia.';
+      setError(msg);
+      showStatus('error', 'Error de Carga', msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,9 +135,14 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
     event.preventDefault();
     if (!editingEvidence) return;
 
+    if (!editingEvidence.title.trim()) {
+      showStatus('error', 'Título Requerido', 'El título del registro no puede estar vacío.');
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const updates = {
-      titulo: formData.get('titulo') as string,
+      titulo: (formData.get('titulo') as string) || editingEvidence.title,
     };
 
     try {
@@ -117,12 +157,16 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
          await uploadProjectEvidence(editingEvidence.project_id, batchFiles);
       }
 
-      setSuccess('Evidencia actualizada correctamente.');
+      const msg = 'La evidencia se ha actualizado correctamente.';
+      setSuccess(msg);
+      showStatus('success', '¡Registro Actualizado!', msg);
       setEditingEvidence(null);
       setBatchFiles([]);
       onEvidenceUploaded?.();
     } catch (err: any) {
-      setError(err.message || 'Error al actualizar evidencia.');
+      const msg = err.message || 'Error al actualizar evidencia.';
+      setError(msg);
+      showStatus('error', 'Error al Actualizar', msg);
     } finally {
       setIsUpdating(false);
     }
@@ -427,6 +471,14 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
            </div>
         </div>
       )}
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 }
