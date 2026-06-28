@@ -427,21 +427,21 @@ export function ExperienceSection({
                   <FormField
                     label="Tipo Experiencia"
                     value={experienceForm.experienceType}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: SYSTEM ARCHITECTURE, QA REPORT"
                     required
                   />
                   <FormField
                     label="Empresa"
                     value={experienceForm.company}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, company: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, company: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: Google, Amazon, Startup local"
                     required
                   />
                   <FormField
                     label="Cargo"
                     value={experienceForm.position}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: Frontend Developer"
                     required
                   />
@@ -478,7 +478,7 @@ export function ExperienceSection({
                   <TextareaField
                     label="Descripción"
                     value={experienceForm.description}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, description: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, description: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_,:;\(\)\-]/g, '') }))}
                     placeholder="Resume tus responsabilidades y logros..."
                   />
                 </>
@@ -487,21 +487,21 @@ export function ExperienceSection({
                   <FormField
                     label="Nombre de la certificación"
                     value={certificationForm.name}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, name: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, name: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: Meta Front-End Developer"
                     required
                   />
                   <FormField
                     label="Organización emisora"
                     value={certificationForm.issuer}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, issuer: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, issuer: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: Coursera, Google, Microsoft"
                     required
                   />
                   <FormField
                     label="ID de credencial"
                     value={certificationForm.credentialId}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, credentialId: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, credentialId: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, '') }))}
                     placeholder="Ej: AB1234CD5678"
                   />
                   <FormField

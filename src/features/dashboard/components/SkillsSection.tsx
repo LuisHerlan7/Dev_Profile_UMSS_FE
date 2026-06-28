@@ -724,7 +724,7 @@ function SkillCard({
               <input
                 id={`${skill.id}-name`}
                 value={skill.name}
-                onChange={(event) => onChange('name', event.target.value)}
+                onChange={(event) => onChange('name', event.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_-]/g, ''))}
                 maxLength={50}
                 required
                 placeholder="Nueva habilidad"

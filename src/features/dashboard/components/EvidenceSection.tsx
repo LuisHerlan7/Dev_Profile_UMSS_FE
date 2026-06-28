@@ -358,7 +358,8 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Título del Registro</label>
                    <input 
                      name="titulo"
-                     defaultValue={editingEvidence.title}
+                     value={editingEvidence.title}
+                     onChange={(e) => setEditingEvidence({ ...editingEvidence, title: e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_-]/g, '') })}
                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 transition"
                    />
                  </div>

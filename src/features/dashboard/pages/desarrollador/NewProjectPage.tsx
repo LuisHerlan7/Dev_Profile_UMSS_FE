@@ -379,14 +379,14 @@ export function NewProjectPage() {
               <div className="group">
                 <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400 group-focus-within:text-indigo-600 transition-colors">Título del Proyecto <span className="text-red-400">*</span></label>
                 <input 
-                  type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="ej. Sistema de Panel Nexus" 
+                  type="text" value={title} onChange={e => setTitle(e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, ''))} placeholder="ej. Sistema de Panel Nexus" 
                   className={`h-14 w-full rounded-2xl bg-[#F8FAFC] px-6 text-sm font-medium text-slate-700 outline-none ring-1 transition-all focus:bg-white focus:ring-2 border-none ${validationErrors.has('title') ? 'ring-red-400 bg-red-50/30' : 'ring-slate-200 focus:ring-indigo-500/20'}`}
                 />
               </div>
               <div className="group">
                 <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400 group-focus-within:text-indigo-600 transition-colors">Descripción Corta <span className="text-red-400">*</span></label>
                 <input 
-                  type="text" value={shortDescription} onChange={e => setShortDescription(e.target.value)} placeholder="Un breve resumen de una línea sobre tu logro" 
+                  type="text" value={shortDescription} onChange={e => setShortDescription(e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_,:;\(\)\-="'!\?]/g, ''))} placeholder="Un breve resumen de una línea sobre tu logro" 
                   className={`h-14 w-full rounded-2xl bg-[#F8FAFC] px-6 text-sm font-medium text-slate-700 outline-none ring-1 transition-all focus:bg-white focus:ring-2 border-none ${validationErrors.has('description') ? 'ring-red-400 bg-red-50/30' : 'ring-slate-200 focus:ring-indigo-500/20'}`}
                 />
               </div>
@@ -427,7 +427,7 @@ export function NewProjectPage() {
           <section className="space-y-6">
             <div className="flex items-center gap-3"><div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><Code className="h-4 w-4" /></div><h2 className="text-xl font-bold text-[#334155]">Ejecución Técnica</h2></div>
             <div className="grid gap-6 sm:grid-cols-2">
-              <div className="group"><label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400 group-focus-within:text-indigo-600">Rol en el Proyecto</label><input type="text" value={role} onChange={e => setRole(e.target.value)} className="h-14 w-full rounded-2xl bg-[#F8FAFC] px-6 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 border-none" /></div>
+              <div className="group"><label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400 group-focus-within:text-indigo-600">Rol en el Proyecto</label><input type="text" value={role} onChange={e => setRole(e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, ''))} className="h-14 w-full rounded-2xl bg-[#F8FAFC] px-6 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 border-none" /></div>
               <div className="group"><label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400 group-focus-within:text-indigo-600">Estado del Proyecto</label><select value={status} onChange={e => setStatus(e.target.value)} className="h-14 w-full appearance-none rounded-2xl bg-[#F8FAFC] px-6 text-sm font-medium text-slate-700 outline-none ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 border-none"><option>En Producción</option><option>En Desarrollo</option><option>Completado</option><option>Pausado</option></select></div>
             </div>
             <div className="group">
@@ -443,7 +443,7 @@ export function NewProjectPage() {
                   ref={techInputRef} 
                   type="text" 
                   value={techInput} 
-                  onChange={e => setTechInput(e.target.value)} 
+                  onChange={e => setTechInput(e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, ''))} 
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTechnology(); } }} 
                   placeholder="Escribe una tecnología y presiona enter" 
                   className="h-12 w-full rounded-2xl bg-[#F8FAFC] px-6 text-xs font-medium text-slate-600 outline-none ring-1 ring-slate-100 border-none pr-12" 
@@ -485,7 +485,7 @@ export function NewProjectPage() {
                   {isCreatingFolder && (
                     <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl ring-1 ring-indigo-100">
                       <Folder className="h-4 w-4 text-indigo-600" />
-                      <input autoFocus value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') createFolder(); if (e.key === 'Escape') setIsCreatingFolder(false); }} onBlur={createFolder} placeholder="Nombre..." className="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none" />
+                      <input autoFocus value={newFolderName} onChange={e => setNewFolderName(e.target.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s+\.#/_\-]/g, ''))} onKeyDown={e => { if (e.key === 'Enter') createFolder(); if (e.key === 'Escape') setIsCreatingFolder(false); }} onBlur={createFolder} placeholder="Nombre..." className="w-full bg-transparent text-[11px] font-bold text-slate-700 outline-none" />
                     </div>
                   )}
                   {folders.length === 0 && !isCreatingFolder && (
