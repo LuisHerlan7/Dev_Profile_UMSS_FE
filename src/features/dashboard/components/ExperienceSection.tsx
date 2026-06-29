@@ -221,11 +221,34 @@ export function ExperienceSection({
     const dateObj = new Date(year, month - 1, day);
     return dateObj.getFullYear() === year && dateObj.getMonth() === month - 1 && dateObj.getDate() === day;
   };
+  const parseValidationError = (err: any): string => {
+    const rawMsg = err.message || '';
+    if (typeof rawMsg === 'string' && rawMsg.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(rawMsg);
+        if (parsed.errors) {
+          return Object.values(parsed.errors)
+            .flat()
+            .map((msg) => `• ${msg}`)
+            .join('\n');
+        }
+        if (parsed.message) return parsed.message;
+      } catch {
+        // Fallback to raw message
+      }
+    }
+    return rawMsg || 'No se pudo guardar la información. Intenta de nuevo.';
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       if (recordType === 'Experiencia') {
+        if (!experienceForm.evidenceFile && !experienceForm.evidenceUrl) {
+          showStatus('error', 'Evidencia Requerida', 'Es obligatorio subir un archivo PDF o imagen de evidencia para registrar la experiencia laboral.');
+          setIsSaving(false);
+          return;
+        }
         if (!experienceForm.startDate) {
           showStatus('error', 'Fecha de Inicio Requerida', 'Debes ingresar una fecha de inicio.');
           setIsSaving(false);
@@ -302,6 +325,12 @@ export function ExperienceSection({
         });
 
       } else {
+        if (!certificationForm.evidenceFile && !certificationForm.evidenceUrl) {
+          showStatus('error', 'Certificado Requerido', 'Es obligatorio subir un archivo PDF o imagen del certificado para registrar la certificación.');
+          setIsSaving(false);
+          return;
+        }
+
         const bdDateFrom = new Date().toISOString().split('T')[0];
         
         const formData = new FormData();
@@ -348,7 +377,7 @@ export function ExperienceSection({
       if (onDataDirty) onDataDirty();
       showStatus('success', '¡Registro Exitoso!', 'La información se ha guardado correctamente en tu historial.');
     } catch (e: any) {
-      showStatus('error', 'Error al Guardar', e.message || 'No se pudo guardar la información. Intenta de nuevo.');
+      showStatus('error', 'Error al Guardar', parseValidationError(e));
     } finally {
       setIsSaving(false);
     }
@@ -877,6 +906,14 @@ export function ExperienceSection({
           </button>
         </div>
       </div>
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 }
@@ -933,7 +970,14 @@ function FormField({
           value={value || ''}
           required={required}
           disabled={disabled}
-          onChange={(event) => onChange?.(event.target.value)}
+          maxLength={inputType === 'date' ? 10 : undefined}
+          onChange={(event) => {
+            let val = event.target.value;
+            if (inputType === 'date') {
+              val = val.replace(/[^0-9\/]/g, '').slice(0, 10);
+            }
+            onChange?.(val);
+          }}
           placeholder={placeholder || ''}
           className={`w-full rounded-2xl border border-[var(--umss-border)] bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 ${
             inputType === 'date'

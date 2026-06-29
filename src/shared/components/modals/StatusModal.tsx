@@ -39,10 +39,8 @@ export function StatusModal({ isOpen, onClose, type, title, message }: StatusMod
               <XCircle className="h-10 w-10" />
             )}
           </div>
-          
           <h3 className="mb-2 text-xl font-bold text-slate-900">{title}</h3>
-          <p className="mb-8 text-sm leading-relaxed text-slate-600">{message}</p>
-          
+          <p className="mb-8 text-sm leading-relaxed text-slate-600 whitespace-pre-line">{message}</p>
           <button
             onClick={onClose}
             className={`w-full rounded-2xl py-3.5 text-sm font-semibold text-white shadow-lg transition-all ${
