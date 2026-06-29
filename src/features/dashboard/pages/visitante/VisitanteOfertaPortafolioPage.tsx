@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
@@ -15,6 +15,11 @@ type Portfolio = {
   avatarUrl?: string;
 };
 
+type LevelFilter = 'all' | Portfolio['level'];
+type ProfileFilter = 'all' | Portfolio['type'];
+
+const ITEMS_PER_PAGE = 9;
+
 export function VisitanteOfertaPortafolioPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -24,8 +29,9 @@ export function VisitanteOfertaPortafolioPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [technologyFilter, setTechnologyFilter] = useState<string>('all');
-  const [levelFilter, setLevelFilter] = useState<'all' | 'Senior' | 'Semi-Senior' | 'Junior'>('all');
-  const [profileFilter, setProfileFilter] = useState<'all' | 'Full Stack' | 'Frontend' | 'Backend' | 'Data'>('all');
+  const [levelFilter, setLevelFilter] = useState<LevelFilter>('all');
+  const [profileFilter, setProfileFilter] = useState<ProfileFilter>('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function load() {
@@ -62,6 +68,32 @@ export function VisitanteOfertaPortafolioPage() {
       return levelMatch && technologyMatch && profileMatch && (q.length === 0 || textMatch);
     });
   }, [query, levelFilter, technologyFilter, profileFilter, portfolios]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const visiblePortfolios = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [currentPage, filtered]);
+
+  const pageItems = useMemo(() => {
+    const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+    return Array.from(pages)
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((a, b) => a - b);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, levelFilter, technologyFilter, profileFilter]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+  };
+
   return (
     <main className="vp-container">
       <style>{`
@@ -103,11 +135,25 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-link { border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; text-decoration: none; display: inline-block; color: #3b82f6; font-weight: 700; }
         .vp-link:hover { background: #eff6ff; }
 
-        .vp-pagination { display: flex; justify-content: center; gap: 10px; margin-top: 24px; }
-        .vp-page { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; padding: 8px 13px; border-radius: 8px; min-width: 36px; text-align: center; cursor: pointer; }
+        .vp-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; padding-bottom: 8px; }
+        .vp-page { border: 1px solid #cbd5e1; background: #fff; color: #0f172a; padding: 8px 13px; border-radius: 8px; min-width: 38px; min-height: 38px; text-align: center; cursor: pointer; font-weight: 700; transition: all .2s ease; }
+        .vp-page:hover:not(:disabled) { border-color: #6366f1; color: #3730a3; transform: translateY(-1px); }
+        .vp-page.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+        .vp-page:disabled { cursor: not-allowed; opacity: .45; }
+        .vp-page-label { min-width: 92px; }
+        .vp-page-ellipsis { color: #64748b; font-weight: 700; padding: 0 2px; }
 
         @media (min-width: 640px) { .vp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (min-width: 1024px) { .vp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 520px) {
+          .vp-container { padding: 12px; }
+          .vp-title { font-size: 1.65rem; }
+          .vp-filter-group, .vp-clear { width: 100%; min-width: 0; margin-left: 0; }
+          .vp-clear { margin-top: 4px; }
+          .vp-page { min-width: 36px; padding: 8px 10px; }
+          .vp-page-label { min-width: 44px; font-size: 0; }
+          .vp-page-label[data-short-label]::after { content: attr(data-short-label); font-size: 0.95rem; }
+        }
       `}</style>
 
       <div className="-mt-[10px]">
@@ -141,7 +187,7 @@ export function VisitanteOfertaPortafolioPage() {
 
               <div className="vp-filter-group">
                 <label>{t('visitor.level')}</label>
-                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as any)} className="vp-select">
+                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as LevelFilter)} className="vp-select">
                   <option value="all">{t('visitor.all')}</option>
                   <option value="Senior">Senior</option>
                   <option value="Semi-Senior">Semi-Senior</option>
@@ -151,7 +197,7 @@ export function VisitanteOfertaPortafolioPage() {
 
               <div className="vp-filter-group">
                 <label>{t('visitor.profileType')}</label>
-                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as any)} className="vp-select">
+                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as ProfileFilter)} className="vp-select">
                   <option value="all">{t('visitor.all')}</option>
                   <option value="Full Stack">Full Stack</option>
                   <option value="Frontend">Frontend</option>
@@ -178,7 +224,7 @@ export function VisitanteOfertaPortafolioPage() {
           {isLoading && <p className="col-span-full py-12 text-center text-slate-500">{t('visitor.loading')}</p>}
           {!isLoading && error && <p className="col-span-full py-12 text-center text-red-500">{error}</p>}
           
-          {!isLoading && !error && filtered.map((portfolio) => (
+          {!isLoading && !error && visiblePortfolios.map((portfolio) => (
             <article key={portfolio.id} className="vp-card">
               <div className="vp-card-top">
                 <div className="vp-avatar">
@@ -230,12 +276,48 @@ export function VisitanteOfertaPortafolioPage() {
         </section>
       </FadeInSection>
 
-      <nav className="vp-pagination" aria-label="Paginación">
-        <button className="vp-page" type="button">1</button>
-        <button className="vp-page" type="button">2</button>
-        <button className="vp-page" type="button">3</button>
-        <button className="vp-page" type="button">{t('visitor.next')}</button>
-      </nav>
+      {!isLoading && !error && filtered.length > ITEMS_PER_PAGE && (
+        <nav className="vp-pagination" aria-label="Paginación">
+          <button
+            className="vp-page vp-page-label"
+            type="button"
+            data-short-label="‹"
+            disabled={currentPage === 1}
+            onClick={() => goToPage(currentPage - 1)}
+          >
+            {t('visitor.previous')}
+          </button>
+
+          {pageItems.map((page, index) => {
+            const previousPage = pageItems[index - 1];
+            const showEllipsis = previousPage !== undefined && page - previousPage > 1;
+
+            return (
+              <Fragment key={page}>
+                {showEllipsis && <span className="vp-page-ellipsis">...</span>}
+                <button
+                  className={`vp-page${page === currentPage ? ' active' : ''}`}
+                  type="button"
+                  aria-current={page === currentPage ? 'page' : undefined}
+                  onClick={() => goToPage(page)}
+                >
+                  {page}
+                </button>
+              </Fragment>
+            );
+          })}
+
+          <button
+            className="vp-page vp-page-label"
+            type="button"
+            data-short-label="›"
+            disabled={currentPage === totalPages}
+            onClick={() => goToPage(currentPage + 1)}
+          >
+            {t('visitor.next')}
+          </button>
+        </nav>
+      )}
     </main>
   );
 }
