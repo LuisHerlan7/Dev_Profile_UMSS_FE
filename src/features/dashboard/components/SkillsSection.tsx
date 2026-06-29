@@ -316,6 +316,20 @@ export function SkillsSection({
       setIsSaving(false);
     }
   };
+  const getCalculatedLevel = (progress: number): string => {
+    if (progress <= 25) return 'Principiante';
+    if (progress <= 50) return 'Intermedio';
+    if (progress <= 75) return 'Avanzado';
+    return 'Experto';
+  };
+
+  const getProgressFromLevel = (level: string): number => {
+    if (level === 'Principiante') return 25;
+    if (level === 'Intermedio') return 50;
+    if (level === 'Avanzado') return 75;
+    if (level === 'Experto') return 100;
+    return 0;
+  };
 
   const handleDraftTechnicalChange = (
     id: string,
@@ -327,18 +341,21 @@ export function SkillsSection({
         if (skill.id !== id) return skill;
 
         if (field === 'progress') {
-          return { ...skill, progress: Number(value) };
+          const p = Number(value);
+          return { ...skill, progress: p, level: getCalculatedLevel(p) };
         }
 
         if (field === 'level') {
-          return { ...skill, level: String(value) };
+          const l = String(value);
+          return { ...skill, level: l, progress: getProgressFromLevel(l) };
         }
 
         if (field === 'links') {
           return { ...skill, links: value as SkillReferenceState[] };
         }
 
-        return { ...skill, name: String(value).slice(0, 50) };
+        const filteredName = String(value).replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\#\+\/]/g, '').slice(0, 50);
+        return { ...skill, name: filteredName };
       })
     );
   };
@@ -353,18 +370,21 @@ export function SkillsSection({
         if (skill.id !== id) return skill;
 
         if (field === 'progress') {
-          return { ...skill, progress: Number(value) };
+          const p = Number(value);
+          return { ...skill, progress: p, level: getCalculatedLevel(p) };
         }
 
         if (field === 'level') {
-          return { ...skill, level: String(value) };
+          const l = String(value);
+          return { ...skill, level: l, progress: getProgressFromLevel(l) };
         }
 
         if (field === 'links') {
           return { ...skill, links: value as SkillReferenceState[] };
         }
 
-        return { ...skill, name: String(value).slice(0, 50) };
+        const filteredName = String(value).replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\#\+\/]/g, '').slice(0, 50);
+        return { ...skill, name: filteredName };
       })
     );
   };

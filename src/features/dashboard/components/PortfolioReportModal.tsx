@@ -417,6 +417,40 @@ export function PortfolioReportModal({
     [profile?.name, t]
   );
 
+  const validationIssues = useMemo(() => {
+    if (!profile) return [];
+    const issues: string[] = [];
+
+    if (!profile.avatarUrl) {
+      issues.push("Foto de perfil (Avatar) cargada.");
+    }
+    if (profile.projects.length < 1) {
+      issues.push("Al menos un (1) proyecto registrado.");
+    }
+    if (!profile.name.trim()) {
+      issues.push("Nombre configurado en el perfil.");
+    }
+    if (!profile.summary.trim()) {
+      issues.push("Biografía (Bio) redactada.");
+    }
+    if (!profile.contactEmail.trim()) {
+      issues.push("Correo electrónico de contacto.");
+    }
+    if (!profile.phone.trim()) {
+      issues.push("Número de teléfono de contacto.");
+    }
+    if (!profile.github.trim()) {
+      issues.push("Enlace de GitHub configurado.");
+    }
+    if (!profile.linkedin.trim()) {
+      issues.push("Enlace de LinkedIn configurado.");
+    }
+
+    return issues;
+  }, [profile]);
+
+  const canDownload = validationIssues.length === 0;
+
   const markup = useMemo(() => {
     if (!profile) {
       return '';
@@ -666,11 +700,22 @@ export function PortfolioReportModal({
                 </div>
               ) : null}
 
+              {!canDownload && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
+                  <p className="font-bold mb-2">Para habilitar la descarga debes completar:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {validationIssues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleExport}
-                disabled={isExporting}
-                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--umss-brand)] via-[#5b63ff] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(80,72,229,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isExporting || !canDownload}
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--umss-brand)] via-[#5b63ff] to-[var(--umss-accent)] text-sm font-semibold text-white shadow-[0_18px_32px_-22px_rgba(80,72,229,0.9)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:from-slate-200 disabled:disabled:to-slate-300"
               >
                 <Download className="h-4 w-4" />
                 {isExporting ? t('dashboard.report.generating') : t('dashboard.report.download')}

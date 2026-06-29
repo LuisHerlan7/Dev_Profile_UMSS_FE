@@ -209,11 +209,51 @@ export function ExperienceSection({
 
   const [isSaving, setIsSaving] = useState(false);
 
+  const isValidDate = (dateStr: string): boolean => {
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    if (!regex.test(dateStr)) return false;
+    const parts = dateStr.split('/').map(Number);
+    const day = parts[0];
+    const month = parts[1];
+    const year = parts[2];
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    const dateObj = new Date(year, month - 1, day);
+    return dateObj.getFullYear() === year && dateObj.getMonth() === month - 1 && dateObj.getDate() === day;
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       if (recordType === 'Experiencia') {
-        const bdDateFrom = experienceForm.startDate ? experienceForm.startDate.split('/').reverse().join('-') : new Date().toISOString().split('T')[0];
+        if (!experienceForm.startDate) {
+          showStatus('error', 'Fecha de Inicio Requerida', 'Debes ingresar una fecha de inicio.');
+          setIsSaving(false);
+          return;
+        }
+        if (!isValidDate(experienceForm.startDate)) {
+          showStatus('error', 'Fecha de Inicio Inválida', 'La Fecha de Inicio no es válida. Debe tener el formato dd/mm/aaaa (ejemplo: 15/05/2023).');
+          setIsSaving(false);
+          return;
+        }
+        if (!experienceForm.isCurrent && experienceForm.endDate) {
+          if (!isValidDate(experienceForm.endDate)) {
+            showStatus('error', 'Fecha de Fin Inválida', 'La Fecha de Fin no es válida. Debe tener el formato dd/mm/aaaa (ejemplo: 15/05/2023).');
+            setIsSaving(false);
+            return;
+          }
+          const startParts = experienceForm.startDate.split('/').map(Number);
+          const endParts = experienceForm.endDate.split('/').map(Number);
+          const startDateObj = new Date(startParts[2], startParts[1] - 1, startParts[0]);
+          const endDateObj = new Date(endParts[2], endParts[1] - 1, endParts[0]);
+          if (endDateObj < startDateObj) {
+            showStatus('error', 'Cronología Inválida', 'La Fecha de Fin debe ser posterior o igual a la Fecha de Inicio.');
+            setIsSaving(false);
+            return;
+          }
+        }
+
+        const bdDateFrom = experienceForm.startDate.split('/').reverse().join('-');
         const bdDateTo = experienceForm.endDate ? experienceForm.endDate.split('/').reverse().join('-') : null;
 
         const formData = new FormData();
@@ -422,26 +462,27 @@ export function ExperienceSection({
 
           <div ref={formRef} className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-4">
+
               {recordType === 'Experiencia' ? (
                 <>
                   <FormField
                     label="Tipo Experiencia"
                     value={experienceForm.experienceType}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, experienceType: value.replace(/[0-9]/g, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\,\_\#\+\/]/g, '') }))}
                     placeholder="Ej: SYSTEM ARCHITECTURE, QA REPORT"
                     required
                   />
                   <FormField
                     label="Empresa"
                     value={experienceForm.company}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, company: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, company: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\,\_\#\+\/]/g, '') }))}
                     placeholder="Ej: Google, Amazon, Startup local"
                     required
                   />
                   <FormField
                     label="Cargo"
                     value={experienceForm.position}
-                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value }))}
+                    onChange={(value) => setExperienceForm((current) => ({ ...current, position: value.replace(/[0-9]/g, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\,\_\#\+\/]/g, '') }))}
                     placeholder="Ej: Frontend Developer"
                     required
                   />
@@ -487,21 +528,21 @@ export function ExperienceSection({
                   <FormField
                     label="Nombre de la certificación"
                     value={certificationForm.name}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, name: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, name: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\,\_\#\+\/]/g, '') }))}
                     placeholder="Ej: Meta Front-End Developer"
                     required
                   />
                   <FormField
                     label="Organización emisora"
                     value={certificationForm.issuer}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, issuer: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, issuer: value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\,\_\#\+\/]/g, '') }))}
                     placeholder="Ej: Coursera, Google, Microsoft"
                     required
                   />
                   <FormField
                     label="ID de credencial"
                     value={certificationForm.credentialId}
-                    onChange={(value) => setCertificationForm((current) => ({ ...current, credentialId: value }))}
+                    onChange={(value) => setCertificationForm((current) => ({ ...current, credentialId: value.replace(/[^a-zA-Z0-9\-\_]/g, '') }))}
                     placeholder="Ej: AB1234CD5678"
                   />
                   <FormField

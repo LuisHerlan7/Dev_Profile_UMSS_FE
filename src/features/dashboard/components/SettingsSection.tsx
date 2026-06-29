@@ -455,18 +455,18 @@ export function SettingsSection({
               <FormField
                 label="Nombre"
                 value={profile.firstName}
-                onChange={(value) => updateField('firstName', value)}
+                onChange={(value) => updateField('firstName', value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''))}
                 required
               />
               <FormField
                 label="Apellido paterno"
                 value={profile.lastName}
-                onChange={(value) => updateField('lastName', value)}
+                onChange={(value) => updateField('lastName', value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''))}
               />
               <FormField
                 label="Apellido materno"
                 value={profile.maternalLastName}
-                onChange={(value) => updateField('maternalLastName', value)}
+                onChange={(value) => updateField('maternalLastName', value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, ''))}
               />
               <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-4">
                 <p className="text-sm font-semibold text-slate-900">Titulos y roles jerarquicos</p>
@@ -500,9 +500,15 @@ export function SettingsSection({
               onChange={(value) => updateField('contactEmail', value)}
             />
             <div>
-              <FormField label="Telefono de contacto" value={profile.phone} onChange={(value) => updateField('phone', value)} />
+              <FormField
+                label="Telefono de contacto"
+                value={profile.phone}
+                onChange={(value) => updateField('phone', value.replace(/\D/g, '').slice(0, 8))}
+                maxLength={8}
+                placeholder="Ej: 71234567"
+              />
               <p className="mt-2 text-xs text-slate-500">
-                Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de revisión'}.
+                Máximo 8 dígitos. Estado del teléfono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de revisión'}.
               </p>
             </div>
           </div>
@@ -859,12 +865,16 @@ function FormField({
   onChange,
   type = 'text',
   required = false,
+  maxLength,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   required?: boolean;
+  maxLength?: number;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -874,6 +884,8 @@ function FormField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
+        maxLength={maxLength}
+        placeholder={placeholder}
         className="mt-3 w-full rounded-2xl border border-[var(--umss-border)] bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[var(--umss-brand)] focus:outline-none"
       />
     </div>

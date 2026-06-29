@@ -10,6 +10,7 @@ import { DashboardBadge } from '@shared/components/dashboard/DashboardBadge';
 import { DashboardCard } from '@shared/components/dashboard/DashboardCard';
 import { uploadProjectEvidence, updateEvidence } from '@services/projects';
 import { SectionHeading } from './SectionHeading';
+import { StatusModal } from '@shared/components/modals/StatusModal';
 
 type EvidenceItem = {
   id: string;
@@ -40,6 +41,24 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Imagen / Captura');
+
+  // Status Modal state
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  const showStatus = (type: 'success' | 'error', title: string, message: string) => {
+    setStatusModal({ isOpen: true, type, title, message });
+  };
 
   // Filtering State
   const [filterProjectId, setFilterProjectId] = useState<string>('all');
@@ -69,28 +88,77 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
     [projects, selectedProject]
   );
 
+  const validateFilesWithCategory = (filesToCheck: File[], category: string): string | null => {
+    for (const f of filesToCheck) {
+      const type = f.type.toLowerCase();
+      const name = f.name.toLowerCase();
+
+      if (category === 'Imagen / Captura') {
+        const isImage = type.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/.test(name);
+        if (!isImage) {
+          return `El archivo "${f.name}" no coincide con la categoría seleccionada (Imagen / Captura). Por favor sube una imagen (PNG, JPG, WEBP).`;
+        }
+      } else if (category === 'Video Demo') {
+        const isVideo = type.startsWith('video/') || /\.(mp4|webm|mov|avi|mkv)$/.test(name);
+        if (!isVideo) {
+          return `El archivo "${f.name}" no coincide con la categoría seleccionada (Video Demo). Por favor sube un video (MP4, WEBM).`;
+        }
+      } else if (category === 'Documento PDF') {
+        const isPdf = type === 'application/pdf' || name.endsWith('.pdf');
+        if (!isPdf) {
+          return `El archivo "${f.name}" no coincide con la categoría seleccionada (Documento PDF). Por favor sube un documento PDF.`;
+        }
+      }
+    }
+    return null;
+  };
+
   const handleUpload = async () => {
     setError('');
     setSuccess('');
 
     if (!selectedProject) {
-      setError('Selecciona el proyecto al que pertenece la evidencia.');
+      const msg = 'Selecciona el proyecto al que pertenece la evidencia.';
+      setError(msg);
+      showStatus('error', 'Proyecto Requerido', msg);
       return;
     }
 
     if (files.length === 0) {
-      setError('Adjunta al menos un archivo de evidencia.');
+      const msg = 'Adjunta al menos un archivo de evidencia.';
+      setError(msg);
+      showStatus('error', 'Sin Archivos', msg);
       return;
+    }
+
+    const categoryError = validateFilesWithCategory(files, selectedCategory);
+    if (categoryError) {
+      setError(categoryError);
+      showStatus('error', 'Categoría no coincide', categoryError);
+      return;
+    }
+
+    for (const f of files) {
+      if (f.size > 50 * 1024 * 1024) {
+        const msg = `El archivo "${f.name}" supera el tamaño máximo permitido de 50MB.`;
+        setError(msg);
+        showStatus('error', 'Archivo Demasiado Grande', msg);
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
       await uploadProjectEvidence(selectedProject, files);
-      setSuccess('Evidencias enviadas. Quedan en revisión.');
+      const msg = 'Evidencias enviadas correctamente. Quedan en estado de revisión.';
+      setSuccess(msg);
+      showStatus('success', '¡Carga Exitosa!', msg);
       setFiles([]);
       onEvidenceUploaded?.();
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'No se pudo subir la evidencia.');
+      const msg = uploadError instanceof Error ? uploadError.message : 'No se pudo subir la evidencia.';
+      setError(msg);
+      showStatus('error', 'Error de Carga', msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,9 +168,14 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
     event.preventDefault();
     if (!editingEvidence) return;
 
+    if (!editingEvidence.title.trim()) {
+      showStatus('error', 'Título Requerido', 'El título del registro no puede estar vacío.');
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const updates = {
-      titulo: formData.get('titulo') as string,
+      titulo: (formData.get('titulo') as string) || editingEvidence.title,
     };
 
     try {
@@ -117,12 +190,16 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
          await uploadProjectEvidence(editingEvidence.project_id, batchFiles);
       }
 
-      setSuccess('Evidencia actualizada correctamente.');
+      const msg = 'La evidencia se ha actualizado correctamente.';
+      setSuccess(msg);
+      showStatus('success', '¡Registro Actualizado!', msg);
       setEditingEvidence(null);
       setBatchFiles([]);
       onEvidenceUploaded?.();
     } catch (err: any) {
-      setError(err.message || 'Error al actualizar evidencia.');
+      const msg = err.message || 'Error al actualizar evidencia.';
+      setError(msg);
+      showStatus('error', 'Error al Actualizar', msg);
     } finally {
       setIsUpdating(false);
     }
@@ -166,7 +243,15 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Categoría</label>
               <div className="relative">
-                <select className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 pr-10 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50">
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => {
+                    setSelectedCategory(event.target.value);
+                    setFiles([]);
+                    setError('');
+                  }}
+                  className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 pr-10 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50"
+                >
                   <option>Imagen / Captura</option>
                   <option>Video Demo</option>
                   <option>Documento PDF</option>
@@ -192,8 +277,28 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
             <input
               type="file"
               multiple
-              accept="image/*,video/*,application/pdf"
-              onChange={(event) => setFiles(Array.from(event.target.files || []))}
+              accept={
+                selectedCategory === 'Imagen / Captura'
+                  ? 'image/png,image/jpeg,image/jpg,image/webp'
+                  : selectedCategory === 'Video Demo'
+                    ? 'video/mp4,video/webm'
+                    : selectedCategory === 'Documento PDF'
+                      ? 'application/pdf'
+                      : '*'
+              }
+              onChange={(event) => {
+                const selectedFiles = Array.from(event.target.files || []);
+                const catError = validateFilesWithCategory(selectedFiles, selectedCategory);
+                if (catError) {
+                  setError(catError);
+                  showStatus('error', 'Categoría no coincide', catError);
+                  event.target.value = '';
+                  setFiles([]);
+                  return;
+                }
+                setError('');
+                setFiles(selectedFiles);
+              }}
               disabled={!hasProjects}
               className="mt-6 w-full text-[11px] font-black uppercase tracking-widest text-indigo-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-6 file:py-2.5 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:text-white hover:file:bg-indigo-700 transition"
             />
@@ -426,6 +531,14 @@ export function EvidenceSection({ evidences, projects, onEvidenceUploaded }: Evi
            </div>
         </div>
       )}
+
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        onClose={() => setStatusModal((prev) => ({ ...prev, isOpen: false }))}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+      />
     </div>
   );
 }
