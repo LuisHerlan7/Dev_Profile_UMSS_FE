@@ -10,7 +10,7 @@ import type {
   VisibilitySettingsState,
 } from '@features/dashboard/utils/developerDashboardMappers';
 
-const initialProfile = {
+const initialProfile: SettingsProfileState = {
   firstName: '',
   lastName: '',
   maternalLastName: '',
@@ -25,8 +25,10 @@ const initialProfile = {
   email: '',
   password: '**********',
   newPassword: '',
+  avatar: null,
   titleHierarchy: [] as string[],
   roleHierarchy: [] as string[],
+  experienceLevel: 'junior' as 'senior' | 'semi-senior' | 'junior',
 };
 
 const initialHighlights = {
@@ -34,6 +36,17 @@ const initialHighlights = {
   skills: [] as string[],
   trajectory: [] as string[],
 };
+
+function readCachedExperienceLevel() {
+  try {
+    const raw = localStorage.getItem('settings_profile_cache');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { experienceLevel?: unknown; timestamp?: unknown };
+    return typeof parsed.experienceLevel === 'string' ? parsed.experienceLevel : null;
+  } catch {
+    return null;
+  }
+}
 
 export function SettingsSection({
   serverProfile,
@@ -50,7 +63,7 @@ export function SettingsSection({
   serverProfile?: SettingsProfileState;
   serverHighlights?: VisibilityHighlightsState;
   serverVisibility?: VisibilitySettingsState;
-  onDataDirty?: () => void;
+  onDataDirty?: () => void | Promise<void>;
   onLocalUpdate?: (updates: Partial<SettingsProfileState>) => void;
   pendingAvatarFile?: File | null;
   setPendingAvatarFile?: (file: File | null) => void;
@@ -58,8 +71,23 @@ export function SettingsSection({
   availableSkills?: string[];
   availableExperience?: string[];
 }) {
-  const [profile, setProfile] = useState(serverProfile || initialProfile);
+  const initialExperienceLevel = readCachedExperienceLevel() ?? serverProfile?.experienceLevel ?? 'junior';
+
+  // Guardar el nivel de experiencia globalmente para evitar pérdida al cambiar de pestaña
+  const savedExperienceLevelRef = useRef<string>(initialExperienceLevel);
+
+  const [profile, setProfile] = useState<SettingsProfileState>(() => {
+    const baseProfile = serverProfile || initialProfile;
+    return {
+      ...baseProfile,
+      experienceLevel: initialExperienceLevel,
+    };
+  });
   const [highlights, setHighlights] = useState<typeof initialHighlights>(serverHighlights || initialHighlights);
+  
+  // Track the last saved experience level to prevent loss on tab changes
+  const lastSavedLevelRef = useRef<string>(profile.experienceLevel);
+
   const [visibility, setVisibility] = useState<VisibilitySettingsState>(
     serverVisibility || {
       mode: 'publico',
@@ -118,6 +146,11 @@ export function SettingsSection({
   ) => {
     const newProfile = { ...profile, [field]: value };
     setProfile(newProfile);
+
+    if (field === 'experienceLevel' && typeof value === 'string') {
+      savedExperienceLevelRef.current = value;
+    }
+
     if (onLocalUpdate) {
       onLocalUpdate({ [field]: value } as Partial<SettingsProfileState>);
     }
@@ -200,9 +233,17 @@ export function SettingsSection({
 
   useEffect(() => {
     if (serverProfile && !isSaving) {
+      const nextExperienceLevel = savedExperienceLevelRef.current || serverProfile.experienceLevel || 'junior';
+
       setProfile((prev) => {
-        if (JSON.stringify(prev) === JSON.stringify(serverProfile)) return prev;
-        return { ...prev, ...serverProfile };
+        const merged = {
+          ...serverProfile,
+          ...prev,
+          experienceLevel: nextExperienceLevel,
+        };
+
+        if (JSON.stringify(prev) === JSON.stringify(merged)) return prev;
+        return merged;
       });
       // Solo actualizamos avatarUrl si NO hay un archivo pendiente (cambio local) Y no se marcó para eliminar
       if (!pendingAvatarFile && !hasRemovedAvatar) {
@@ -254,16 +295,47 @@ export function SettingsSection({
       const primaryRole = [...profile.roleHierarchy].reverse().find((item) => item.trim()) || profile.role || 'Desarrollador';
 
       // 2. Guardar nombre, apellidos, rol, bio
-      await updateProfile({
+      const profilePayload = {
         firstName: profile.firstName,
         lastName: profile.lastName,
         maternalLastName: profile.maternalLastName,
         role: primaryRole,
         bio: profile.bio,
         contactEmail: profile.contactEmail,
+        experienceLevel: profile.experienceLevel,
         titleHierarchy: profile.titleHierarchy,
         roleHierarchy: profile.roleHierarchy,
-      });
+      };
+
+      const profileResponse = await updateProfile(profilePayload);
+
+      let savedLevel = profile.experienceLevel;
+      const returnedLevel = profileResponse?.nivel_experiencia ?? profileResponse?.usuario?.nivel_experiencia;
+
+      if (typeof returnedLevel === 'string' && ['senior', 'semi-senior', 'junior'].includes(returnedLevel)) {
+        savedLevel = returnedLevel;
+      }
+
+      // CRITICAL: Update the ref immediately so that subsequent renders don't override
+      savedExperienceLevelRef.current = savedLevel;
+      lastSavedLevelRef.current = savedLevel;
+      
+      // Guardar el nivel en cache local para preservarlo cuando cambies de pestaña
+      localStorage.setItem('settings_profile_cache', JSON.stringify({ 
+        experienceLevel: savedLevel,
+        timestamp: Date.now()
+      }));
+      
+      if (onLocalUpdate) {
+        onLocalUpdate({
+          experienceLevel: savedLevel,
+        });
+      }
+      
+      setProfile((prev) => ({
+        ...prev,
+        experienceLevel: savedLevel,
+      }));
 
       // 3. Guardar redes sociales y teléfono
       await updateSocialLinks({
@@ -306,7 +378,7 @@ export function SettingsSection({
 
       await updateVisibilitySettings(visibility);
 
-      if (onDataDirty) onDataDirty();
+      await Promise.resolve(onDataDirty?.());
       showStatus('success', '¡Perfil Actualizado!', 'Tus cambios se han guardado correctamente en el sistema.');
     } catch (e: any) {
       showStatus('error', 'Error al Guardar', e.message || 'Ocurrió un problema inesperado al intentar guardar tus cambios.');
@@ -433,6 +505,37 @@ export function SettingsSection({
                 Estado del telefono: {profile.phoneVerificationStatus === 'verificado' ? 'verificado' : 'pendiente de revisión'}.
               </p>
             </div>
+          </div>
+        </DashboardCard>
+
+        <DashboardCard title="Nivel de Experiencia">
+          <div className="rounded-[24px] border border-[var(--umss-border)] bg-[var(--umss-surface)] p-5">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--umss-brand)]">
+              Nivel de experiencia profesional
+            </label>
+            <div className="mt-4 grid gap-3 xl:grid-cols-3">
+              {([
+                { id: 'senior', label: 'Senior' },
+                { id: 'semi-senior', label: 'Semi-Senior' },
+                { id: 'junior', label: 'Junior' },
+              ] as const).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => updateField('experienceLevel', option.id)}
+                  className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    profile.experienceLevel === option.id
+                      ? 'bg-[var(--umss-brand)] text-white shadow-sm'
+                      : 'bg-white text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.08)]'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Selecciona tu nivel de experiencia actual. Esto será visible en tu perfil público.
+            </p>
           </div>
         </DashboardCard>
 
@@ -1206,3 +1309,4 @@ function AvatarUploadTray({
     </div>
   );
 }
+

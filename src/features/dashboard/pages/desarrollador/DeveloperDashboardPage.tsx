@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -109,12 +109,16 @@ export function DeveloperDashboardPage() {
   const [dashboardError, setDashboardError] = useState('');
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const dashboardRequestSeq = useRef(0);
+  const profileRefreshTimerRef = useRef<number | null>(null);
 
   const fetchDashboardData = useCallback(async () => {
     if (!session?.token) return;
+    const requestId = ++dashboardRequestSeq.current;
     try {
       // Usar el nuevo servicio de fetch con el token de sesión
       const data = await fetchDeveloperDashboard(session.token);
+      if (requestId !== dashboardRequestSeq.current) return;
       setDashboardData(data);
       setDashboardError('');
       // Mapear proyectos usando la lógica local existente
@@ -123,6 +127,7 @@ export function DeveloperDashboardPage() {
           setProjects(mapProyectosToProjectItems(rawProyects as any));
       }
     } catch (requestError) {
+      if (requestId !== dashboardRequestSeq.current) return;
       console.error('Error al cargar dashboard', requestError);
       setDashboardError(requestError instanceof Error ? requestError.message : t('dashboard.errors.dashboardLoad'));
     }
@@ -146,6 +151,16 @@ export function DeveloperDashboardPage() {
   const refreshDashboard = async () => {
     await fetchDashboardData();
   };
+
+  const handleDataDirty = useCallback(() => {
+    if (profileRefreshTimerRef.current) {
+      window.clearTimeout(profileRefreshTimerRef.current);
+    }
+
+    profileRefreshTimerRef.current = window.setTimeout(() => {
+      void fetchDashboardData();
+    }, 700);
+  }, [fetchDashboardData]);
 
   const handleOpenProjectForm = () => {
     setActiveSection('projects');
@@ -540,12 +555,16 @@ export function DeveloperDashboardPage() {
           availableProjects={projects.map(p => p.title)}
           availableSkills={[...technicalAndSoft.technical.map(t => t.name), ...technicalAndSoft.soft.map(s => s.name)]}
           availableExperience={experienceRecords.map(e => e.title)}
-          onDataDirty={fetchDashboardData}
+          onDataDirty={handleDataDirty}
           onLocalUpdate={(updates) => {
-            if (updates.avatar !== undefined) {
+            if (updates.avatar !== undefined || updates.experienceLevel !== undefined) {
               setDashboardData((prev: any) => prev ? {
                 ...prev,
-                usuario: { ...(prev.usuario || {}), fotografiaUrl: updates.avatar }
+                usuario: { 
+                  ...(prev.usuario || {}), 
+                  ...(updates.avatar !== undefined ? { fotografiaUrl: updates.avatar } : {}),
+                  ...(updates.experienceLevel !== undefined ? { nivel_experiencia: updates.experienceLevel } : {}),
+                }
               } : prev);
             }
           }}

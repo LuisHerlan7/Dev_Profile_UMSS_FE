@@ -4,6 +4,7 @@ import { Github, Linkedin, Globe, Mail, Phone, ExternalLink } from 'lucide-react
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
 import { fetchPublicPortfolioDetail } from '../../api/developerDashboard';
 import { useI18n } from '@shared/i18n/I18nProvider';
+import { formatExperienceLevelLabel, normalizeExperienceLevel } from '@shared/utils/experienceLevel';
 
 interface Project {
   id: number;
@@ -23,6 +24,7 @@ interface TimelineItem {
   detail: string;
   type: 'experience' | 'education';
   duration?: string;
+  badge?: string;
 }
 
 interface PortfolioData {
@@ -36,6 +38,7 @@ interface PortfolioData {
     phone?: string | null;
     titleHierarchy?: string[];
     roleHierarchy?: string[];
+    experienceLevel?: string;
   };
   social: Record<string, string>;
   skills: {
@@ -252,6 +255,11 @@ export function VisitantePortafolioPage() {
             <span className="vp-tagline">{t('visitor.portfolio.available')}</span>
             <h1 className="vp-hero__title">{t('visitor.portfolio.hello')} <span>{profile.name}</span></h1>
             <p className="vp-subtitle" style={{ fontWeight: 700, color: '#1c2d73' }}>{profile.title}</p>
+            {profile.experienceLevel && (
+              <span className="vp-badge" style={{ background: 'linear-gradient(90deg, #2f45ff 0%, #6c63ff 100%)', color: '#fff', border: 'none', marginTop: '8px' }}>
+                {formatExperienceLevelLabel(normalizeExperienceLevel(profile.experienceLevel))}
+              </span>
+            )}
             <p className="vp-subtitle">{profile.summary}</p>
             {Array.isArray(profile.titleHierarchy) && profile.titleHierarchy.length > 0 ? (
               <div className="vp-btn-group" style={{ marginTop: '8px' }}>

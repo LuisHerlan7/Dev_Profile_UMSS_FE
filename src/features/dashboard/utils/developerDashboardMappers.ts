@@ -8,6 +8,7 @@ import type {
   FormacionRow,
   SkillLinkRow,
 } from '@features/dashboard/api/developerDashboard';
+import { normalizeExperienceLevel } from '@shared/utils/experienceLevel';
 import { FileText, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 const ACCENT_PRESETS: Pick<ProjectItem, 'accentClassName' | 'themeClassName' | 'label'>[] = [
@@ -210,7 +211,7 @@ export type ExperienceRecord = {
   position?: string;
   company?: string;
   startDate?: string;
-  endDate?: string;
+  endDate?: string | null;
 };
 
 function calculateDurationYears(start: string | null | undefined, end: string | null | undefined, isCurrent: boolean): string {
@@ -446,6 +447,7 @@ export type SettingsProfileState = {
   avatar: string | null;
   titleHierarchy: string[];
   roleHierarchy: string[];
+  experienceLevel: string;
 };
 
 export function buildSettingsProfile(payload: DeveloperDashboardPayload): SettingsProfileState {
@@ -477,6 +479,9 @@ export function buildSettingsProfile(payload: DeveloperDashboardPayload): Settin
     avatar: (u?.fotografiaUrl as string | undefined) ?? null,
     titleHierarchy,
     roleHierarchy: roleHierarchy.length > 0 ? roleHierarchy : (currentRole ? [currentRole] : []),
+    experienceLevel: normalizeExperienceLevel(
+      typeof u?.nivel_experiencia === 'string' ? u.nivel_experiencia : null
+    ),
   };
 }
 
