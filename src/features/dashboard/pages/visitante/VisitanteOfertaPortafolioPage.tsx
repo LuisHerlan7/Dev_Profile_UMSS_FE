@@ -2,20 +2,17 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '@shared/components/layout/Navbar';
 import { FadeInSection } from '../../../../pages/home/components/FadeInSection';
-import { fetchPublicPortfolios } from '../../api/developerDashboard';
+import { fetchPublicPortfolios, type PublicPortfolioCard } from '../../api/developerDashboard';
 import { useI18n } from '@shared/i18n/I18nProvider';
+import {
+  experienceLevelBadgeClass,
+  formatExperienceLevelLabel,
+  type ExperienceLevel,
+} from '@shared/utils/experienceLevel';
 
-type Portfolio = {
-  id: number;
-  name: string;
-  title: string;
-  level: 'Senior' | 'Semi-Senior' | 'Junior';
-  type: 'Full Stack' | 'Frontend' | 'Backend' | 'Data';
-  tags: string[];
-  avatarUrl?: string;
-};
+type Portfolio = PublicPortfolioCard;
 
-type LevelFilter = 'all' | Portfolio['level'];
+type LevelFilter = 'all' | ExperienceLevel;
 type ProfileFilter = 'all' | Portfolio['type'];
 
 const ITEMS_PER_PAGE = 9;
@@ -58,7 +55,7 @@ export function VisitanteOfertaPortafolioPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return portfolios.filter((item) => {
-      const levelMatch = levelFilter === 'all' || item.level === levelFilter;
+      const levelMatch = levelFilter === 'all' || item.experienceLevel === levelFilter;
       const technologyMatch = technologyFilter === 'all' || item.tags.some((tag) => tag === technologyFilter);
       const profileMatch = profileFilter === 'all' || item.type === profileFilter;
       const textMatch =
@@ -128,7 +125,10 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-name { margin: 0; font-size: 1.05rem; font-weight: 700; }
         .vp-role { margin: 2px 0 8px; color: #64748b; font-size: 0.95rem; }
 
-        .vp-level { display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #334155; }
+        .vp-level { display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
+        .vp-level--senior { background: #dcfce7; color: #166534; }
+        .vp-level--semi_senior { background: #fef9c3; color: #854d0e; }
+        .vp-level--junior { background: #f1f5f9; color: #334155; }
         .vp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
         .vp-tag { font-size: 0.78rem; padding: 4px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
 
@@ -189,9 +189,9 @@ export function VisitanteOfertaPortafolioPage() {
                 <label>{t('visitor.level')}</label>
                 <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as LevelFilter)} className="vp-select">
                   <option value="all">{t('visitor.all')}</option>
-                  <option value="Senior">Senior</option>
-                  <option value="Semi-Senior">Semi-Senior</option>
-                  <option value="Junior">Junior</option>
+                  <option value="senior">Senior</option>
+                  <option value="semi-senior">Semi-Senior</option>
+                  <option value="junior">Junior</option>
                 </select>
               </div>
 
@@ -250,7 +250,9 @@ export function VisitanteOfertaPortafolioPage() {
                 </div>
               </div>
 
-              <span className="vp-level">{portfolio.level}</span>
+              <span className={experienceLevelBadgeClass(portfolio.experienceLevel)}>
+                {formatExperienceLevelLabel(portfolio.experienceLevel)}
+              </span>
 
               <div className="vp-tags">
                 {portfolio.tags.map((tag) => (

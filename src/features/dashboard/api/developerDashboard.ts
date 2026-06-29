@@ -1,3 +1,5 @@
+import { normalizeExperienceLevel, type ExperienceLevel } from '@shared/utils/experienceLevel';
+
 export type DeveloperDashboardPayload = {
   auth_user: {
     id: number;
@@ -250,6 +252,7 @@ export async function updateProfile(payload: {
   role?: string;
   bio?: string;
   contactEmail?: string;
+  experienceLevel?: string;
   titleHierarchy?: string[];
   roleHierarchy?: string[];
 }) {
@@ -425,10 +428,20 @@ export async function recordReportExport(payload: {
   return res.json();
 }
 
+export type PublicPortfolioCard = {
+  id: number;
+  name: string;
+  title: string;
+  experienceLevel: ExperienceLevel;
+  type: 'Full Stack' | 'Frontend' | 'Backend' | 'Data';
+  tags: string[];
+  avatarUrl?: string;
+};
+
 /**
  * Rutas Públicas
  */
-export async function fetchPublicPortfolios() {
+export async function fetchPublicPortfolios(): Promise<PublicPortfolioCard[]> {
   const res = await fetch('/api/portafolios', {
     headers: {
       'Accept': 'application/json',
@@ -440,7 +453,23 @@ export async function fetchPublicPortfolios() {
     throw new Error(text || 'Error al cargar los portafolios.');
   }
 
-  return res.json() as Promise<any[]>;
+  const data = await res.json();
+
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map((item) => ({
+    id: Number(item.id),
+    name: String(item.name ?? ''),
+    title: String(item.title ?? 'Desarrollador'),
+    experienceLevel: normalizeExperienceLevel(
+      item.experienceLevel ?? item.experience_level ?? item.nivel_experiencia
+    ),
+    type: (item.type ?? 'Full Stack') as PublicPortfolioCard['type'],
+    tags: Array.isArray(item.tags) ? item.tags.map(String) : [],
+    avatarUrl: typeof item.avatarUrl === 'string' ? item.avatarUrl : item.avatar_url,
+  }));
 }
 
 export async function fetchPublicPortfolioDetail(id: string | number) {
@@ -456,14 +485,22 @@ export async function fetchPublicPortfolioDetail(id: string | number) {
     throw new Error(text || 'Error al cargar el detalle del portafolio.');
   }
 
-  return res.json() as Promise<{
+  const payload = await res.json();
+
+  if (payload?.profile) {
+    payload.profile.experienceLevel = normalizeExperienceLevel(
+      payload.profile.experienceLevel ?? payload.profile.experience_level ?? payload.profile.nivel_experiencia
+    );
+  }
+
+  return payload as {
     profile: any;
     social: Record<string, string>;
     skills: any[];
     projects: any[];
     timeline: any[];
     config: any;
-  }>;
+  };
 }
 
 export async function fetchPublicProjectDetail(portfolioId: string | number, projectId: string | number) {
