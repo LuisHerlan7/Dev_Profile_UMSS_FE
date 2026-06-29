@@ -18,22 +18,38 @@ type ProfileFilter = 'all' | Portfolio['type'];
 
 const ITEMS_PER_PAGE = 9;
 
-function getDisplayRole(item: Portfolio, filter: string): string {
-  if (filter === 'all') return item.title;
-  
-  const filterLower = filter.toLowerCase();
-  let keywords: string[] = [];
-  if (filterLower === 'frontend') keywords = ['frontend', 'front-end', 'front end'];
-  else if (filterLower === 'backend') keywords = ['backend', 'back-end', 'back end'];
-  else if (filterLower === 'data') keywords = ['data', 'datos', 'analyst', 'científico', 'ciencia'];
-  else if (filterLower === 'full stack') keywords = ['full stack', 'fullstack', 'full-stack'];
+function normalizeText(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos/diacríticos
+    .replace(/[^a-z0-9]/g, ''); // Elimina espacios, guiones y caracteres especiales
+}
+
+function getDisplayRole(item: Portfolio, filter: string, searchQuery: string): string {
+  const normFilter = filter !== 'all' ? normalizeText(filter) : '';
+  const normQuery = normalizeText(searchQuery);
 
   const allRoles = [item.title, ...(item.roles || [])];
-  const matching = allRoles.find(r => 
-    keywords.some(keyword => r.toLowerCase().includes(keyword))
-  );
 
-  return matching || item.title;
+  // 1. Si hay filtro de perfil activo, tiene prioridad
+  if (normFilter) {
+    const exact = allRoles.find(r => normalizeText(r) === normFilter);
+    if (exact) return exact;
+    const partial = allRoles.find(r => normalizeText(r).includes(normFilter));
+    if (partial) return partial;
+  }
+
+  // 2. Si no hay filtro pero hay texto en la barra de búsqueda, adaptamos al rol que coincida con el texto
+  if (normQuery) {
+    const exact = allRoles.find(r => normalizeText(r) === normQuery);
+    if (exact) return exact;
+    const partial = allRoles.find(r => normalizeText(r).includes(normQuery));
+    if (partial) return partial;
+  }
+
+  return item.title;
 }
 
 export function VisitanteOfertaPortafolioPage() {
@@ -71,6 +87,20 @@ export function VisitanteOfertaPortafolioPage() {
     return Array.from(allTags).sort();
   }, [portfolios]);
 
+  const profileTypeOptions = useMemo(() => {
+    const allTypes = new Set<string>();
+    portfolios.forEach(p => {
+      if (p.type) allTypes.add(p.type);
+      if (p.title) allTypes.add(p.title);
+      if (Array.isArray(p.roles)) {
+        p.roles.forEach(r => {
+          if (r) allTypes.add(r);
+        });
+      }
+    });
+    return Array.from(allTypes).sort();
+  }, [portfolios]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const searchWords = q.split(/\s+/).filter(Boolean);
@@ -78,23 +108,16 @@ export function VisitanteOfertaPortafolioPage() {
     const getMatchesFilter = (item: Portfolio, filter: string): boolean => {
       if (filter === 'all') return true;
       
-      const filterLower = filter.toLowerCase();
-      const allRoles = [item.title, ...(item.roles || [])].map(r => r.toLowerCase());
+      const normFilter = normalizeText(filter);
+      
+      // Coincidencia exacta de forma normalizada
+      if (item.type && normalizeText(item.type) === normFilter) return true;
+      if (item.title && normalizeText(item.title) === normFilter) return true;
+      if (item.roles && item.roles.some(r => normalizeText(r) === normFilter)) return true;
 
-      if (filterLower === 'frontend') {
-        return allRoles.some(r => r.includes('frontend') || r.includes('front-end') || r.includes('front end'));
-      }
-      if (filterLower === 'backend') {
-        return allRoles.some(r => r.includes('backend') || r.includes('back-end') || r.includes('back end'));
-      }
-      if (filterLower === 'data') {
-        return allRoles.some(r => r.includes('data') || r.includes('datos') || r.includes('analyst') || r.includes('científico') || r.includes('ciencia'));
-      }
-      if (filterLower === 'full stack') {
-        return allRoles.some(r => r.includes('full stack') || r.includes('fullstack') || r.includes('full-stack'));
-      }
-
-      return false;
+      // Coincidencia parcial de forma normalizada
+      const allRoles = [item.title, item.type, ...(item.roles || [])].map(r => normalizeText(r));
+      return allRoles.some(r => r.includes(normFilter));
     };
 
     return portfolios.filter((item) => {
@@ -102,12 +125,17 @@ export function VisitanteOfertaPortafolioPage() {
       const technologyMatch = technologyFilter === 'all' || item.tags.some((tag) => tag === technologyFilter);
       const profileMatch = getMatchesFilter(item, profileFilter);
       
-      const textMatch = searchWords.every((word) => 
-        item.name.toLowerCase().includes(word) ||
-        item.title.toLowerCase().includes(word) ||
-        item.type.toLowerCase().includes(word) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(word))
-      );
+      const textMatch = searchWords.every((word) => {
+        const normWord = normalizeText(word);
+        if (!normWord) return true;
+        return (
+          normalizeText(item.name).includes(normWord) ||
+          normalizeText(item.title).includes(normWord) ||
+          normalizeText(item.type).includes(normWord) ||
+          (item.roles || []).some(r => normalizeText(r).includes(normWord)) ||
+          item.tags.some((tag) => normalizeText(tag).includes(normWord))
+        );
+      });
 
       return levelMatch && technologyMatch && profileMatch && (searchWords.length === 0 || textMatch);
     });
@@ -157,23 +185,20 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-input { width: 100%; min-height: 52px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px 48px 12px 48px; font-size: 1rem; background: #fff; transition: all .2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
         .vp-input:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.1); outline: none; }
         .vp-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; width: 20px; height: 20px; }
-        
-        .vp-filters-grid { display: grid; gap: 20px; width: 100%; margin-bottom: 32px; grid-template-columns: 1fr; }
-        @media (min-width: 768px) {
-          .vp-filters-grid { grid-template-columns: 240px 1fr; }
+        .vp-filters-grid { display: grid; gap: 16px; width: 100%; margin-bottom: 32px; grid-template-columns: 1fr; }
+        @media (min-width: 640px) {
+          .vp-filters-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+          .vp-filters-grid { grid-template-columns: 240px repeat(2, 1fr) auto; }
         }
         .vp-filter-group { display: flex; flex-direction: column; gap: 8px; }
         .vp-filter-label { font-weight: 700; color: #475569; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
         .vp-select-wrap { position: relative; width: 100%; }
-        .vp-select { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 36px 10px 14px; background: #fff; color: #1e293b; font-size: 0.9rem; font-weight: 600; appearance: none; cursor: pointer; transition: border-color 0.2s; }
-        .vp-select:focus { border-color: #6366f1; outline: none; }
+        .vp-select { width: 100%; border: 1px solid #818cf8; border-radius: 14px; padding: 10px 36px 10px 14px; background: #fff; color: #1e293b; font-size: 0.9rem; font-weight: 600; appearance: none; cursor: pointer; transition: all 0.2s ease; }
+        .vp-select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); outline: none; }
         
-        .vp-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-        .vp-pill { background: #fff; border: 1px solid #e2e8f0; border-radius: 100px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; color: #475569; cursor: pointer; transition: all .2s ease; }
-        .vp-pill:hover { border-color: #cbd5e1; background: #f8fafc; color: #0f172a; }
-        .vp-pill.active { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,0.15); }
-        
-        .vp-clear-btn { align-self: flex-start; margin-top: auto; display: inline-flex; items-center justify-content: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 18px; background: #f8fafc; color: #475569; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all .2s ease; min-height: 42px; }
+        .vp-clear-btn { align-self: flex-end; display: inline-flex; items-center justify-content: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 18px; background: #f8fafc; color: #475569; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all .2s ease; min-height: 44px; margin-top: auto; }
         .vp-clear-btn:hover { border-color: #cbd5e1; background: #f1f5f9; color: #0f172a; }
         .vp-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 16px; }
         .vp-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); transition: transform .2s ease, box-shadow .2s ease; }
@@ -241,9 +266,7 @@ export function VisitanteOfertaPortafolioPage() {
                 <X className="h-4 w-4" />
               </button>
             )}
-          </div>
-
-          <div className="vp-filters-grid">
+          </div>          <div className="vp-filters-grid">
             <div className="vp-filter-group">
               <label className="vp-filter-label">{t('visitor.technology')}</label>
               <div className="vp-select-wrap">
@@ -257,65 +280,44 @@ export function VisitanteOfertaPortafolioPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-6 items-end justify-between w-full">
-              <div className="vp-filter-group">
-                <label className="vp-filter-label">{t('visitor.level')}</label>
-                <div className="vp-pills">
-                  {([
-                    { id: 'all', label: t('visitor.all') },
-                    { id: 'senior', label: 'Senior' },
-                    { id: 'semi-senior', label: 'Semi-Senior' },
-                    { id: 'junior', label: 'Junior' },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setLevelFilter(opt.id)}
-                      className={`vp-pill ${levelFilter === opt.id ? 'active' : ''}`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+            <div className="vp-filter-group">
+              <label className="vp-filter-label">{t('visitor.level')}</label>
+              <div className="vp-select-wrap">
+                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as LevelFilter)} className="vp-select">
+                  <option value="all">{t('visitor.all')}</option>
+                  <option value="senior">Senior</option>
+                  <option value="semi-senior">Semi-Senior</option>
+                  <option value="junior">Junior</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
-
-              <div className="vp-filter-group">
-                <label className="vp-filter-label">{t('visitor.profileType')}</label>
-                <div className="vp-pills">
-                  {([
-                    { id: 'all', label: t('visitor.all') },
-                    { id: 'Full Stack', label: 'Full Stack' },
-                    { id: 'Frontend', label: 'Frontend' },
-                    { id: 'Backend', label: 'Backend' },
-                    { id: 'Data', label: 'Data' },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setProfileFilter(opt.id)}
-                      className={`vp-pill ${profileFilter === opt.id ? 'active' : ''}`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="vp-clear-btn"
-                onClick={() => {
-                  setQuery('');
-                  setTechnologyFilter('all');
-                  setLevelFilter('all');
-                  setProfileFilter('all');
-                }}
-              >
-                <X className="h-4 w-4" />
-                {t('visitor.clearFilters')}
-              </button>
             </div>
-          </div>
+
+            <div className="vp-filter-group">
+              <label className="vp-filter-label">{t('visitor.profileType')}</label>
+              <div className="vp-select-wrap">
+                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as ProfileFilter)} className="vp-select">
+                  <option value="all">{t('visitor.all')}</option>
+                  {profileTypeOptions.map((type) => (
+                    <option value={type} key={type}>{type}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="vp-clear-btn"
+              onClick={() => {
+                setQuery('');
+                setTechnologyFilter('all');
+                setLevelFilter('all');
+                setProfileFilter('all');
+              }}
+            >
+              <X className="h-4 w-4" />
+              {t('visitor.clearFilters')}
+            </button>
           </div>
         </section>
       </FadeInSection>
@@ -347,7 +349,7 @@ export function VisitanteOfertaPortafolioPage() {
                 </div>
                 <div>
                   <p className="vp-name">{portfolio.name}</p>
-                  <p className="vp-role">{getDisplayRole(portfolio, profileFilter)}</p>
+                  <p className="vp-role">{getDisplayRole(portfolio, profileFilter, query)}</p>
                 </div>
               </div>
 
