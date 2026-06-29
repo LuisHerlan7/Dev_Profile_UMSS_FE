@@ -226,6 +226,7 @@ export const messages = {
       viewPortfolio: 'Ver Portafolio →',
       loading: 'Cargando portafolios...',
       empty: 'No se encontraron portafolios que coincidan con tu búsqueda.',
+      previous: 'Anterior',
       next: 'Siguiente',
       portfolio: {
         loading: 'Cargando portafolio del desarrollador...',
@@ -495,6 +496,7 @@ export const messages = {
       viewPortfolio: 'View Portfolio →',
       loading: 'Loading portfolios...',
       empty: 'No portfolios matched your search.',
+      previous: 'Previous',
       next: 'Next',
       portfolio: {
         loading: 'Loading developer portfolio...',
