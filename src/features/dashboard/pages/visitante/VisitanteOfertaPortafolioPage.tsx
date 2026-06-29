@@ -9,6 +9,7 @@ import {
   formatExperienceLevelLabel,
   type ExperienceLevel,
 } from '@shared/utils/experienceLevel';
+import { Search, X, ChevronDown, Filter } from 'lucide-react';
 
 type Portfolio = PublicPortfolioCard;
 
@@ -16,6 +17,24 @@ type LevelFilter = 'all' | ExperienceLevel;
 type ProfileFilter = 'all' | Portfolio['type'];
 
 const ITEMS_PER_PAGE = 9;
+
+function getDisplayRole(item: Portfolio, filter: string): string {
+  if (filter === 'all') return item.title;
+  
+  const filterLower = filter.toLowerCase();
+  let keywords: string[] = [];
+  if (filterLower === 'frontend') keywords = ['frontend', 'front-end', 'front end'];
+  else if (filterLower === 'backend') keywords = ['backend', 'back-end', 'back end'];
+  else if (filterLower === 'data') keywords = ['data', 'datos', 'analyst', 'científico', 'ciencia'];
+  else if (filterLower === 'full stack') keywords = ['full stack', 'fullstack', 'full-stack'];
+
+  const allRoles = [item.title, ...(item.roles || [])];
+  const matching = allRoles.find(r => 
+    keywords.some(keyword => r.toLowerCase().includes(keyword))
+  );
+
+  return matching || item.title;
+}
 
 export function VisitanteOfertaPortafolioPage() {
   const { t } = useI18n();
@@ -54,15 +73,43 @@ export function VisitanteOfertaPortafolioPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const searchWords = q.split(/\s+/).filter(Boolean);
+
+    const getMatchesFilter = (item: Portfolio, filter: string): boolean => {
+      if (filter === 'all') return true;
+      
+      const filterLower = filter.toLowerCase();
+      const allRoles = [item.title, ...(item.roles || [])].map(r => r.toLowerCase());
+
+      if (filterLower === 'frontend') {
+        return allRoles.some(r => r.includes('frontend') || r.includes('front-end') || r.includes('front end'));
+      }
+      if (filterLower === 'backend') {
+        return allRoles.some(r => r.includes('backend') || r.includes('back-end') || r.includes('back end'));
+      }
+      if (filterLower === 'data') {
+        return allRoles.some(r => r.includes('data') || r.includes('datos') || r.includes('analyst') || r.includes('científico') || r.includes('ciencia'));
+      }
+      if (filterLower === 'full stack') {
+        return allRoles.some(r => r.includes('full stack') || r.includes('fullstack') || r.includes('full-stack'));
+      }
+
+      return false;
+    };
+
     return portfolios.filter((item) => {
       const levelMatch = levelFilter === 'all' || item.experienceLevel === levelFilter;
       const technologyMatch = technologyFilter === 'all' || item.tags.some((tag) => tag === technologyFilter);
-      const profileMatch = profileFilter === 'all' || item.type === profileFilter;
-      const textMatch =
-        item.name.toLowerCase().includes(q) ||
-        item.title.toLowerCase().includes(q) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(q));
-      return levelMatch && technologyMatch && profileMatch && (q.length === 0 || textMatch);
+      const profileMatch = getMatchesFilter(item, profileFilter);
+      
+      const textMatch = searchWords.every((word) => 
+        item.name.toLowerCase().includes(word) ||
+        item.title.toLowerCase().includes(word) ||
+        item.type.toLowerCase().includes(word) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(word))
+      );
+
+      return levelMatch && technologyMatch && profileMatch && (searchWords.length === 0 || textMatch);
     });
   }, [query, levelFilter, technologyFilter, profileFilter, portfolios]);
 
@@ -106,17 +153,28 @@ export function VisitanteOfertaPortafolioPage() {
         .vp-title { font-size: 2rem; font-weight: 700; margin: 0 0 8px; }
         .vp-subtitle { margin: 0 0 16px; color: #475569; }
 
-        .vp-search-wrap { display: grid; gap: 12px; width: 100%; margin-bottom: 16px; }
-        .vp-input { width: 100%; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; font-size: 1rem; }
-
-        .vp-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-        .vp-btn { border: 1px solid #cbd5e1; border-radius: 100px; padding: 8px 14px; background: #fff; color: #0f172a; cursor: pointer; font-weight: 500; transition: all .2s ease; }
-        .vp-btn:hover { transform: translateY(-1px); border-color: #6366f1; color: #1e40af; }
-        .vp-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
-        .vp-filter-group { display: flex; flex-direction: column; gap: 6px; min-width: 190px; }
-        .vp-filter-group label { font-weight: 700; color: #4f5f7d; font-size: 0.85rem; }
-        .vp-select { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 10px; background: #fff; color: #1f2a45; }
-        .vp-clear { display: grid;height: 35px; width: 190px;margin-top: 25px;margin-left: 40px; background: #f8fafc; color: #1f2a45; border: 1px solid #cbd5e1;}
+        .vp-search-box { position: relative; width: 100%; margin-bottom: 24px; }
+        .vp-input { width: 100%; min-height: 52px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px 48px 12px 48px; font-size: 1rem; background: #fff; transition: all .2s ease; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .vp-input:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.1); outline: none; }
+        .vp-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; width: 20px; height: 20px; }
+        
+        .vp-filters-grid { display: grid; gap: 20px; width: 100%; margin-bottom: 32px; grid-template-columns: 1fr; }
+        @media (min-width: 768px) {
+          .vp-filters-grid { grid-template-columns: 240px 1fr; }
+        }
+        .vp-filter-group { display: flex; flex-direction: column; gap: 8px; }
+        .vp-filter-label { font-weight: 700; color: #475569; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .vp-select-wrap { position: relative; width: 100%; }
+        .vp-select { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 36px 10px 14px; background: #fff; color: #1e293b; font-size: 0.9rem; font-weight: 600; appearance: none; cursor: pointer; transition: border-color 0.2s; }
+        .vp-select:focus { border-color: #6366f1; outline: none; }
+        
+        .vp-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+        .vp-pill { background: #fff; border: 1px solid #e2e8f0; border-radius: 100px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; color: #475569; cursor: pointer; transition: all .2s ease; }
+        .vp-pill:hover { border-color: #cbd5e1; background: #f8fafc; color: #0f172a; }
+        .vp-pill.active { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,0.15); }
+        
+        .vp-clear-btn { align-self: flex-start; margin-top: auto; display: inline-flex; items-center justify-content: center; gap: 6px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 18px; background: #f8fafc; color: #475569; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all .2s ease; min-height: 42px; }
+        .vp-clear-btn:hover { border-color: #cbd5e1; background: #f1f5f9; color: #0f172a; }
         .vp-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 16px; }
         .vp-card { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 16px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); transition: transform .2s ease, box-shadow .2s ease; }
         .vp-card:hover { transform: scale(1.03); box-shadow: 0 8px 20px rgba(15,23,42,0.18); }
@@ -165,7 +223,8 @@ export function VisitanteOfertaPortafolioPage() {
           <h1 className="vp-title">{t('visitor.exploreTitle')}</h1>
           <p className="vp-subtitle">{t('visitor.exploreSubtitle')}</p>
 
-          <div className="vp-search-wrap">
+          <div className="vp-search-box">
+            <Search className="vp-search-icon" />
             <input
               aria-label={t('common.search')}
               className="vp-input"
@@ -173,48 +232,90 @@ export function VisitanteOfertaPortafolioPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
 
-            <div className="vp-filters">
-              <div className="vp-filter-group">
-                <label>{t('visitor.technology')}</label>
+          <div className="vp-filters-grid">
+            <div className="vp-filter-group">
+              <label className="vp-filter-label">{t('visitor.technology')}</label>
+              <div className="vp-select-wrap">
                 <select value={technologyFilter} onChange={(e) => setTechnologyFilter(e.target.value)} className="vp-select">
                   <option value="all">{t('visitor.allFemale')}</option>
                   {technologyOptions.map((tech) => (
                     <option value={tech} key={tech}>{tech}</option>
                   ))}
                 </select>
+                <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-6 items-end justify-between w-full">
+              <div className="vp-filter-group">
+                <label className="vp-filter-label">{t('visitor.level')}</label>
+                <div className="vp-pills">
+                  {([
+                    { id: 'all', label: t('visitor.all') },
+                    { id: 'senior', label: 'Senior' },
+                    { id: 'semi-senior', label: 'Semi-Senior' },
+                    { id: 'junior', label: 'Junior' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setLevelFilter(opt.id)}
+                      className={`vp-pill ${levelFilter === opt.id ? 'active' : ''}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="vp-filter-group">
-                <label>{t('visitor.level')}</label>
-                <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as LevelFilter)} className="vp-select">
-                  <option value="all">{t('visitor.all')}</option>
-                  <option value="senior">Senior</option>
-                  <option value="semi-senior">Semi-Senior</option>
-                  <option value="junior">Junior</option>
-                </select>
+                <label className="vp-filter-label">{t('visitor.profileType')}</label>
+                <div className="vp-pills">
+                  {([
+                    { id: 'all', label: t('visitor.all') },
+                    { id: 'Full Stack', label: 'Full Stack' },
+                    { id: 'Frontend', label: 'Frontend' },
+                    { id: 'Backend', label: 'Backend' },
+                    { id: 'Data', label: 'Data' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setProfileFilter(opt.id)}
+                      className={`vp-pill ${profileFilter === opt.id ? 'active' : ''}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="vp-filter-group">
-                <label>{t('visitor.profileType')}</label>
-                <select value={profileFilter} onChange={(e) => setProfileFilter(e.target.value as ProfileFilter)} className="vp-select">
-                  <option value="all">{t('visitor.all')}</option>
-                  <option value="Full Stack">Full Stack</option>
-                  <option value="Frontend">Frontend</option>
-                  <option value="Backend">Backend</option>
-                  <option value="Data">Data</option>
-                </select>
-              </div>
-
-              <button type="button" className="vp-btn vp-clear" onClick={() => {
-                setQuery('');
-                setTechnologyFilter('all');
-                setLevelFilter('all');
-                setProfileFilter('all');
-              }}>
+              <button
+                type="button"
+                className="vp-clear-btn"
+                onClick={() => {
+                  setQuery('');
+                  setTechnologyFilter('all');
+                  setLevelFilter('all');
+                  setProfileFilter('all');
+                }}
+              >
+                <X className="h-4 w-4" />
                 {t('visitor.clearFilters')}
               </button>
             </div>
+          </div>
           </div>
         </section>
       </FadeInSection>
@@ -246,7 +347,7 @@ export function VisitanteOfertaPortafolioPage() {
                 </div>
                 <div>
                   <p className="vp-name">{portfolio.name}</p>
-                  <p className="vp-role">{portfolio.title}</p>
+                  <p className="vp-role">{getDisplayRole(portfolio, profileFilter)}</p>
                 </div>
               </div>
 

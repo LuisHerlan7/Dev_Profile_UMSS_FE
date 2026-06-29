@@ -427,13 +427,13 @@ export async function recordReportExport(payload: {
 
   return res.json();
 }
-
 export type PublicPortfolioCard = {
   id: number;
   name: string;
   title: string;
   experienceLevel: ExperienceLevel;
   type: 'Full Stack' | 'Frontend' | 'Backend' | 'Data';
+  roles: string[];
   tags: string[];
   avatarUrl?: string;
 };
@@ -467,6 +467,7 @@ export async function fetchPublicPortfolios(): Promise<PublicPortfolioCard[]> {
       item.experienceLevel ?? item.experience_level ?? item.nivel_experiencia
     ),
     type: (item.type ?? 'Full Stack') as PublicPortfolioCard['type'],
+    roles: Array.isArray(item.roles) ? item.roles.map(String) : [],
     tags: Array.isArray(item.tags) ? item.tags.map(String) : [],
     avatarUrl: typeof item.avatarUrl === 'string' ? item.avatarUrl : item.avatar_url,
   }));
